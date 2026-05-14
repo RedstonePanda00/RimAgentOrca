@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <MainButtonDef>
+    <defName>DTO_DeepseekOrcaDebug</defName>
+    <label>Orca AI</label>
+    <description>Inspect and test Deepseek the Orca tool calls.</description>
+    <workerClass>DeepseekTheOrca.MainButtonWorker_OrcaDebug</workerClass>
+    <tabWindowClass>DeepseekTheOrca.MainTabWindow_DeepseekOrcaDebug</tabWindowClass>
+    <order>95</order>
+    <validWithoutMap>false</validWithoutMap>
+    <closesWorldView>true</closesWorldView>
+  </MainButtonDef>
+</Defs>

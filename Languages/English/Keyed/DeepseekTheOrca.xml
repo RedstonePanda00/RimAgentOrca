@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <DTO_EnableAiPlanning>Enable AI planning</DTO_EnableAiPlanning>
+  <DTO_EnableAiPlanningTooltip>Allow the configured LLM provider to run once a provider is connected. When no provider is connected, the AI comp stays silent.</DTO_EnableAiPlanningTooltip>
+  <DTO_DebugLogging>Enable debug logging</DTO_DebugLogging>
+  <DTO_DebugLoggingTooltip>Write tool calls, selected incidents, and rejection reasons to the RimWorld log.</DTO_DebugLoggingTooltip>
+  <DTO_EnableWebSearch>Enable Orca web search</DTO_EnableWebSearch>
+  <DTO_EnableWebSearchTooltip>Expose a public web search tool to Orca chat. Current local provider is Tavily and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
+  <DTO_WebSearchProvider>Web search provider</DTO_WebSearchProvider>
+  <DTO_WebSearchProviderTavily>Tavily local tool</DTO_WebSearchProviderTavily>
+  <DTO_WebSearchProviderTooltip>Current implementation exposes Tavily as a function tool. Future model adapters can use provider-native search instead.</DTO_WebSearchProviderTooltip>
+  <DTO_TavilyApiKey>Tavily API key</DTO_TavilyApiKey>
+  <DTO_TavilyApiKeyTooltip>Required only when Orca web search is enabled. Stored in RimWorld mod settings.</DTO_TavilyApiKeyTooltip>
+  <DTO_TavilyMaxResults>Tavily max results</DTO_TavilyMaxResults>
+  <DTO_TavilySearchDepth>Tavily search depth</DTO_TavilySearchDepth>
+  <DTO_WebSearchNativeReserved>Reserved: provider-native web search can be enabled later for model adapters that support their own hosted search tool.</DTO_WebSearchNativeReserved>
+  <DTO_SettingsPageLlm>LLM connection</DTO_SettingsPageLlm>
+  <DTO_SettingsPageApiKeys>API keys</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageStoryteller>Storyteller</DTO_SettingsPageStoryteller>
+  <DTO_SettingsPagePersonas>Personas</DTO_SettingsPagePersonas>
+  <DTO_SettingsPageSkills>Skills</DTO_SettingsPageSkills>
+  <DTO_SettingsPagePlugins>Plugins</DTO_SettingsPagePlugins>
+  <DTO_SettingsPageTools>Tools</DTO_SettingsPageTools>
+  <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
+  <DTO_SettingsPageDebug>Debug</DTO_SettingsPageDebug>
+  <DTO_EnableHttpMcp>Enable external HTTP MCP</DTO_EnableHttpMcp>
+  <DTO_EnableHttpMcpTooltip>Expose tools from one player-configured HTTP MCP server to Orca chat. This mod does not provide MCP tools by itself.</DTO_EnableHttpMcpTooltip>
+  <DTO_HttpMcpUrl>HTTP MCP endpoint URL</DTO_HttpMcpUrl>
+  <DTO_HttpMcpUrlTooltip>For example http://127.0.0.1:3333/mcp. Prefer local endpoints you control.</DTO_HttpMcpUrlTooltip>
+  <DTO_HttpMcpBearerToken>HTTP MCP bearer token</DTO_HttpMcpBearerToken>
+  <DTO_HttpMcpBearerTokenTooltip>Optional. Sent as an Authorization: Bearer header when not empty.</DTO_HttpMcpBearerTokenTooltip>
+  <DTO_HttpMcpMaxResultChars>MCP max result chars</DTO_HttpMcpMaxResultChars>
+  <DTO_HttpMcpAddServer>Add MCP server</DTO_HttpMcpAddServer>
+  <DTO_HttpMcpRemoveServer>Remove</DTO_HttpMcpRemoveServer>
+  <DTO_HttpMcpNoServers>No HTTP MCP servers configured.</DTO_HttpMcpNoServers>
+  <DTO_HttpMcpServer>Server</DTO_HttpMcpServer>
+  <DTO_HttpMcpServerEnabled>Enable this server</DTO_HttpMcpServerEnabled>
+  <DTO_HttpMcpServerName>Server name</DTO_HttpMcpServerName>
+  <DTO_HttpMcpNote>MCP tools are discovered from configured servers and exposed to Orca chat with an mcp_ prefix. If more than one server is enabled, exposed tool names include the server name. Use only servers you trust.</DTO_HttpMcpNote>
+  <DTO_ApiProvider>LLM provider</DTO_ApiProvider>
+  <DTO_ApiProviderTooltip>Click to cycle providers. OpenAI, OpenRouter, and Custom expect an OpenAI-compatible /chat/completions API.</DTO_ApiProviderTooltip>
+  <DTO_CustomBaseUrl>Custom base URL</DTO_CustomBaseUrl>
+  <DTO_CustomBaseUrlTooltip>Base URL for an OpenAI-compatible API, for example http://localhost:1234/v1 or https://example.com/v1.</DTO_CustomBaseUrlTooltip>
+  <DTO_ActiveBaseUrl>Active base URL</DTO_ActiveBaseUrl>
+  <DTO_ApiKey>LLM API key</DTO_ApiKey>
+  <DTO_ApiKeyTooltip>Stored in RimWorld mod settings. The offline base storyteller does not send requests.</DTO_ApiKeyTooltip>
+  <DTO_ApiKeyAddConnection>Add API connection</DTO_ApiKeyAddConnection>
+  <DTO_ApiKeyRemoveConnection>Remove</DTO_ApiKeyRemoveConnection>
+  <DTO_ApiKeyNoConnections>No API connections configured.</DTO_ApiKeyNoConnections>
+  <DTO_ApiKeyConnectionEnabled>Enable this connection</DTO_ApiKeyConnectionEnabled>
+  <DTO_ApiKeyConnectionName>Connection name</DTO_ApiKeyConnectionName>
+  <DTO_ApiKeyRefreshModels>Refresh models</DTO_ApiKeyRefreshModels>
+  <DTO_ApiKeyAvailableModels>Available models</DTO_ApiKeyAvailableModels>
+  <DTO_OpenAiOrganization>OpenAI organization ID</DTO_OpenAiOrganization>
+  <DTO_OpenAiOrganizationTooltip>Optional. Use only if your OpenAI account or legacy key requires a specific organization.</DTO_OpenAiOrganizationTooltip>
+  <DTO_OpenAiProject>OpenAI project ID</DTO_OpenAiProject>
+  <DTO_OpenAiProjectTooltip>Optional. Use only if you need to force requests into a specific OpenAI project.</DTO_OpenAiProjectTooltip>
+  <DTO_ApiProxyUrl>HTTP proxy URL</DTO_ApiProxyUrl>
+  <DTO_ApiProxyUrlTooltip>Optional. Example: http://127.0.0.1:7890. Leave empty to use the system/default network path. SOCKS proxies are not supported here unless your proxy exposes an HTTP port.</DTO_ApiProxyUrlTooltip>
+  <DTO_Model>Model</DTO_Model>
+  <DTO_ModelFallback>Fallback model</DTO_ModelFallback>
+  <DTO_ModelFallbackTooltip>Used when a role-specific model is empty. This is not the controller model.</DTO_ModelFallbackTooltip>
+  <DTO_ModelController>Controller model</DTO_ModelController>
+  <DTO_ModelControllerTooltip>Optional. Routes each Orca chat turn to dialogue, tool, vision, or web-search specialists before the specialist model replies.</DTO_ModelControllerTooltip>
+  <DTO_ModelDecision>Decision model</DTO_ModelDecision>
+  <DTO_ModelDecisionTooltip>Used by the automatic storyteller planner that chooses incidents.</DTO_ModelDecisionTooltip>
+  <DTO_ModelDialogue>Dialogue model</DTO_ModelDialogue>
+  <DTO_ModelDialogueTooltip>Used for Orca chat replies and memory compression.</DTO_ModelDialogueTooltip>
+  <DTO_ModelTool>Tool model</DTO_ModelTool>
+  <DTO_ModelToolTooltip>Optional. When set, Orca chat uses this model for the first tool-capable pass, then the dialogue model after tool results.</DTO_ModelToolTooltip>
+  <DTO_ModelVision>Vision model</DTO_ModelVision>
+  <DTO_ModelVisionTooltip>Reserved for future image-recognition tools. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
+  <DTO_ModelWebSearch>Web-search model</DTO_ModelWebSearch>
+  <DTO_ModelWebSearchTooltip>Reserved for future provider-native web search. Current Tavily search remains a local tool.</DTO_ModelWebSearchTooltip>
+  <DTO_ModelUseFallback>Use fallback model</DTO_ModelUseFallback>
+  <DTO_ModelNoDiscoveredModels>No discovered models. Configure an API key and wait for model discovery.</DTO_ModelNoDiscoveredModels>
+  <DTO_ModelSelectTitle>Select model</DTO_ModelSelectTitle>
+  <DTO_ModelFilter>Filter</DTO_ModelFilter>
+  <DTO_ModelFilterCount>{0} of {1} models</DTO_ModelFilterCount>
+  <DTO_ModelNoMatchingModels>No matching models.</DTO_ModelNoMatchingModels>
+  <DTO_StorytellerAppearanceTitle>Storyteller appearance</DTO_StorytellerAppearanceTitle>
+  <DTO_StorytellerAppearanceNote>These values are saved in RimWorld mod settings and applied to the Deepseek The Orca storyteller at runtime. Portrait paths are relative to a loaded Textures folder.</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerLabel>Storyteller name</DTO_StorytellerLabel>
+  <DTO_StorytellerDescription>Storyteller description</DTO_StorytellerDescription>
+  <DTO_StorytellerPortraitFolder>Portrait folder</DTO_StorytellerPortraitFolder>
+  <DTO_StorytellerPortraitFolderTooltip>Texture folder under Textures. For the default portraits this is Orca.</DTO_StorytellerPortraitFolderTooltip>
+  <DTO_StorytellerPortraitLargeName>Large portrait file name</DTO_StorytellerPortraitLargeName>
+  <DTO_StorytellerPortraitTinyName>Tiny portrait file name</DTO_StorytellerPortraitTinyName>
+  <DTO_StorytellerPortraitNameTooltip>File name inside the portrait folder, without extension. PNG files are loaded by RimWorld from Textures.</DTO_StorytellerPortraitNameTooltip>
+  <DTO_StorytellerPortraitLargePath>Large portrait path</DTO_StorytellerPortraitLargePath>
+  <DTO_StorytellerPortraitTinyPath>Tiny portrait path</DTO_StorytellerPortraitTinyPath>
+  <DTO_StorytellerResetAppearance>Reset storyteller appearance</DTO_StorytellerResetAppearance>
+  <DTO_DefaultOrcaStorytellerLabel>Orca Deepseek</DTO_DefaultOrcaStorytellerLabel>
+  <DTO_DefaultOrcaStorytellerDescription>Orca is an AI agent whose storytelling rhythm is like the ocean: sometimes calm, sometimes fierce. Orca calmly observes the colony's story, giving challenges and rewards when she thinks the moment is right.</DTO_DefaultOrcaStorytellerDescription>
+  <DTO_ChatPersona>Dialogue persona</DTO_ChatPersona>
+  <DTO_ChatPersonaTooltip>Select the persona profile used by the dialogue model and storyteller appearance. Built-in Orca is hardcoded and read-only; custom personas are stored under the RimWorld config folder.</DTO_ChatPersonaTooltip>
+  <DTO_ChatPersonaReadOnly>read-only</DTO_ChatPersonaReadOnly>
+  <DTO_ChatPersonaMissing>Missing persona</DTO_ChatPersonaMissing>
+  <DTO_ChatPersonaManage>Manage personas</DTO_ChatPersonaManage>
+  <DTO_ChatPersonaNew>New persona</DTO_ChatPersonaNew>
+  <DTO_ChatPersonaReload>Reload files</DTO_ChatPersonaReload>
+  <DTO_ChatPersonaFolder>Persona folder</DTO_ChatPersonaFolder>
+  <DTO_ChatPersonaSelect>Select</DTO_ChatPersonaSelect>
+  <DTO_ChatPersonaEdit>Edit</DTO_ChatPersonaEdit>
+  <DTO_ChatPersonaDelete>Delete</DTO_ChatPersonaDelete>
+  <DTO_ChatPersonaDeleteConfirm>Delete persona "{0}"?</DTO_ChatPersonaDeleteConfirm>
+  <DTO_ChatPersonaName>Name</DTO_ChatPersonaName>
+  <DTO_ChatPersonaDescription>Description</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaPrompt>Persona prompt</DTO_ChatPersonaPrompt>
+  <DTO_ChatPersonaSave>Save</DTO_ChatPersonaSave>
+  <DTO_ChatPersonaFormatNote>Local persona files use XML and include persona prompt, storyteller name, storyteller description, and portrait texture paths.</DTO_ChatPersonaFormatNote>
+  <DTO_SkillManagerTitle>Agent skills</DTO_SkillManagerTitle>
+  <DTO_SkillManagerDescription>Manage optional skill modules. Enabled skills add focused instructions to chat prompts and routing hints to the controller model.</DTO_SkillManagerDescription>
+  <DTO_SkillManage>Manage skills</DTO_SkillManage>
+  <DTO_SkillNew>New skill</DTO_SkillNew>
+  <DTO_SkillReload>Reload files</DTO_SkillReload>
+  <DTO_SkillFolder>Skill folder</DTO_SkillFolder>
+  <DTO_SkillFormatNote>Local skill files use XML and include name, description, enabled state, trigger hints, prompt, and allowed or recommended tools.</DTO_SkillFormatNote>
+  <DTO_SkillEnabledCount>Enabled skills: {0}/{1}</DTO_SkillEnabledCount>
+  <DTO_SkillNoEnabled>No skills are currently enabled.</DTO_SkillNoEnabled>
+  <DTO_SkillNoSkills>No skills created.</DTO_SkillNoSkills>
+  <DTO_SkillEnabled>enabled</DTO_SkillEnabled>
+  <DTO_SkillDisabled>disabled</DTO_SkillDisabled>
+  <DTO_SkillEnable>Enable</DTO_SkillEnable>
+  <DTO_SkillDisable>Disable</DTO_SkillDisable>
+  <DTO_SkillEdit>Edit</DTO_SkillEdit>
+  <DTO_SkillDelete>Delete</DTO_SkillDelete>
+  <DTO_SkillDeleteConfirm>Delete skill "{0}"?</DTO_SkillDeleteConfirm>
+  <DTO_SkillReadOnly>read-only</DTO_SkillReadOnly>
+  <DTO_SkillEnableThis>Enable this skill</DTO_SkillEnableThis>
+  <DTO_SkillName>Name</DTO_SkillName>
+  <DTO_SkillDescription>Description</DTO_SkillDescription>
+  <DTO_SkillTriggerHints>Trigger hints</DTO_SkillTriggerHints>
+  <DTO_SkillAllowedTools>Allowed tools</DTO_SkillAllowedTools>
+  <DTO_SkillPrompt>Skill prompt</DTO_SkillPrompt>
+  <DTO_SkillSave>Save</DTO_SkillSave>
+  <DTO_PluginManagerTitle>Agent plugins</DTO_PluginManagerTitle>
+  <DTO_PluginManagerDescription>Manage optional agent modules. Plugins can add prompt context, response schema requirements, tool behavior, or runtime state.</DTO_PluginManagerDescription>
+  <DTO_PluginManagerInstalled>Installed plugins</DTO_PluginManagerInstalled>
+  <DTO_PluginManagerFutureNote>Future agent plugins will appear in this manager instead of being mixed into model or tool settings.</DTO_PluginManagerFutureNote>
+  <DTO_PluginManagerEmpty>No plugins installed.</DTO_PluginManagerEmpty>
+  <DTO_PluginCategory>Category</DTO_PluginCategory>
+  <DTO_PluginStateEnabled>Enabled</DTO_PluginStateEnabled>
+  <DTO_PluginStateDisabled>Disabled</DTO_PluginStateDisabled>
+  <DTO_MoodPluginName>Orca mood</DTO_MoodPluginName>
+  <DTO_MoodPluginCategory>Dialogue state</DTO_MoodPluginCategory>
+  <DTO_MoodPluginDescription>Adds an internal mood value to Orca dialogue and lets the model return moodDelta with each reply.</DTO_MoodPluginDescription>
+  <DTO_MoodPluginDetails>When enabled, Orca chat receives mood state, replies must include moodDelta, and mood can affect event execution willingness. When disabled, replies only need a reply field and execution tools are not randomly refused because of mood.</DTO_MoodPluginDetails>
+  <DTO_EnableMoodPlugin>Enable mood plugin</DTO_EnableMoodPlugin>
+  <DTO_EnableMoodPluginTooltip>Inject Orca mood state into dialogue, ask the model for moodDelta, and let mood affect event willingness.</DTO_EnableMoodPluginTooltip>
+  <DTO_MoodPluginNote>When disabled, Orca chat does not receive mood state, replies only need a reply field, and execution tools are not randomly refused because of mood.</DTO_MoodPluginNote>
+  <DTO_MoodPluginDisabled>disabled</DTO_MoodPluginDisabled>
+  <DTO_ProactivePluginName>Ambient proactive dialogue</DTO_ProactivePluginName>
+  <DTO_ProactivePluginCategory>Conversation triggers</DTO_ProactivePluginCategory>
+  <DTO_ProactivePluginDescription>Lets Orca speak proactively about colony observations and RimTalk player-initiated conversations.</DTO_ProactivePluginDescription>
+  <DTO_ProactivePluginDetails>Storyteller events selected by Orca still trigger proactive dialogue separately. These settings only affect ambient observations: new letters, colony state changes, and RimTalk records. Letters and colony state changes are merged into one colony observation stream.</DTO_ProactivePluginDetails>
+  <DTO_EnableAmbientProactiveDialogue>Enable ambient proactive dialogue</DTO_EnableAmbientProactiveDialogue>
+  <DTO_EnableAmbientProactiveDialogueTooltip>When disabled, only Orca-selected storyteller events can trigger proactive dialogue automatically.</DTO_EnableAmbientProactiveDialogueTooltip>
+  <DTO_ProactivePluginSettings>Trigger probabilities</DTO_ProactivePluginSettings>
+  <DTO_ColonyObservationProactiveChance>Colony observation chance (0-1)</DTO_ColonyObservationProactiveChance>
+  <DTO_RimtalkProactiveBaseChance>RimTalk base chance (0-1)</DTO_RimtalkProactiveBaseChance>
+  <DTO_RimtalkProactiveMissBonus>RimTalk miss bonus (0-1)</DTO_RimtalkProactiveMissBonus>
+  <DTO_RimtalkProactiveForceAfterMisses>RimTalk force after misses</DTO_RimtalkProactiveForceAfterMisses>
+  <DTO_ProactivePluginSettingsNote>Defaults: colony observations 0.25, RimTalk 0.15 plus 0.05 per miss, forced after 8 misses.</DTO_ProactivePluginSettingsNote>
+  <DTO_TestConnection>Test LLM connection</DTO_TestConnection>
+  <DTO_TestConnectionRunning>Testing connection...</DTO_TestConnectionRunning>
+  <DTO_ConnectionStatus>Connection status</DTO_ConnectionStatus>
+  <DTO_ConnectionStatusNotTested>Not tested</DTO_ConnectionStatusNotTested>
+  <DTO_ConnectionStatusTesting>Testing</DTO_ConnectionStatusTesting>
+  <DTO_ConnectionStatusSucceeded>Succeeded</DTO_ConnectionStatusSucceeded>
+  <DTO_ConnectionStatusFailed>Failed</DTO_ConnectionStatusFailed>
+  <DTO_ConnectionNotTested>Connection has not been tested.</DTO_ConnectionNotTested>
+  <DTO_ConnectionTesting>Testing LLM API connection.</DTO_ConnectionTesting>
+  <DTO_DebugToolCallTest>Run tool-call test now</DTO_DebugToolCallTest>
+  <DTO_DebugToolCallRunningButton>Tool-call test running...</DTO_DebugToolCallRunningButton>
+  <DTO_DebugToolCallStatus>Tool-call test</DTO_DebugToolCallStatus>
+  <DTO_DebugToolCallNotRun>Not run.</DTO_DebugToolCallNotRun>
+  <DTO_DebugToolCallRunning>Running.</DTO_DebugToolCallRunning>
+  <DTO_DebugTabTitle>Deepseek the Orca Debug</DTO_DebugTabTitle>
+  <DTO_DebugClearLog>Clear log</DTO_DebugClearLog>
+  <DTO_DebugLogEmpty>No log entries.</DTO_DebugLogEmpty>
+  <DTO_DebugCurrentMap>Current map</DTO_DebugCurrentMap>
+  <DTO_DebugNoCurrentMap>No current map</DTO_DebugNoCurrentMap>
+  <DTO_DebugPlanningEnabled>planning enabled</DTO_DebugPlanningEnabled>
+  <DTO_DebugPlanningDisabled>planning disabled or API key missing</DTO_DebugPlanningDisabled>
+  <DTO_DebugToolChainTab>Tool-call chain</DTO_DebugToolChainTab>
+  <DTO_DebugSingleToolTab>Single tool</DTO_DebugSingleToolTab>
+  <DTO_DebugSelectTool>Select tool</DTO_DebugSelectTool>
+  <DTO_DebugRunSingleTool>Run selected tool</DTO_DebugRunSingleTool>
+  <DTO_DebugNoArguments>No arguments.</DTO_DebugNoArguments>
+  <DTO_MaxToolCalls>Max tool calls</DTO_MaxToolCalls>
+  <DTO_PlanningMtbDays>Planner MTB days</DTO_PlanningMtbDays>
+  <DTO_OrcaChatTab>Orca chat</DTO_OrcaChatTab>
+  <DTO_OrcaChatOpen>Open Orca chat</DTO_OrcaChatOpen>
+  <DTO_OrcaChatClose>Close Orca chat</DTO_OrcaChatClose>
+  <DTO_OrcaChatNote>Floating chat; can read tools and trigger incidents on request.</DTO_OrcaChatNote>
+  <DTO_OrcaChatTitle>Deepseek the Orca</DTO_OrcaChatTitle>
+  <DTO_OrcaChatAlpha>Background alpha</DTO_OrcaChatAlpha>
+  <DTO_OrcaChatSend>Send</DTO_OrcaChatSend>
+  <DTO_OrcaChatWaiting>Waiting...</DTO_OrcaChatWaiting>
+  <DTO_OrcaChatUsingTools>Using tools...</DTO_OrcaChatUsingTools>
+  <DTO_OrcaChatToolBudgetReached>Tool budget reached.</DTO_OrcaChatToolBudgetReached>
+  <DTO_OrcaChatReady>Ready.</DTO_OrcaChatReady>
+  <DTO_OrcaChatClear>Clear</DTO_OrcaChatClear>
+  <DTO_OrcaChatEmpty>No conversation yet.</DTO_OrcaChatEmpty>
+  <DTO_OrcaChatNoApiKey>API key is empty.</DTO_OrcaChatNoApiKey>
+  <DTO_OrcaChatStatus>Status</DTO_OrcaChatStatus>
+  <DTO_OrcaChatStatusIdle>Idle.</DTO_OrcaChatStatusIdle>
+  <DTO_OrcaChatMood>Mood</DTO_OrcaChatMood>
+  <DTO_OrcaChatWillingness>Event willingness</DTO_OrcaChatWillingness>
+  <DTO_OrcaChatSpeakerOrca>Orca</DTO_OrcaChatSpeakerOrca>
+  <DTO_OrcaChatLogEmpty>No Orca chat request has been recorded yet.</DTO_OrcaChatLogEmpty>
+  <DTO_OrcaChatLogUser>1. User message</DTO_OrcaChatLogUser>
+  <DTO_OrcaChatLogProcess>2. Orca process</DTO_OrcaChatLogProcess>
+  <DTO_OrcaChatLogReply>3. Orca reply</DTO_OrcaChatLogReply>
+  <DTO_OrcaChatLogError>4. Error</DTO_OrcaChatLogError>
+  <DTO_OrcaChatPromptLocation>Persona prompt is currently hardcoded in OrcaChatSession.EnsureSystemPrompt in OrcaChatWindow.cs. It is intentionally separate from the storyteller planner prompt.</DTO_OrcaChatPromptLocation>
+  <DTO_OfflineNote>Offline behavior: the AI decision layer returns immediately. Story events are generated only by the XML-defined vanilla storyteller comps until an LLM provider is connected.</DTO_OfflineNote>
+</LanguageData>

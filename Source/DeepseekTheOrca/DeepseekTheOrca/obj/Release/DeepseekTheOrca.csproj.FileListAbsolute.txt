@@ -1,0 +1,6 @@
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\1.6\Assemblies\DeepseekTheOrca.dll
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\1.6\Assemblies\DeepseekTheOrca.pdb
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\Source\DeepseekTheOrca\DeepseekTheOrca\obj\Release\DeepseekTheOrca.csproj.AssemblyReference.cache
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\Source\DeepseekTheOrca\DeepseekTheOrca\obj\Release\DeepseekTheOrca.csproj.CoreCompileInputs.cache
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\Source\DeepseekTheOrca\DeepseekTheOrca\obj\Release\DeepseekTheOrca.dll
+C:\Users\15858\OneDrive\Documents\Sundry\RimworldMod\DeepseekTheOrca\Source\DeepseekTheOrca\DeepseekTheOrca\obj\Release\DeepseekTheOrca.pdb

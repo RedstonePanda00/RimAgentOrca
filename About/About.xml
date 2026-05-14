@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ModMetaData>
+	<packageId>RedstonePanda.Orca</packageId>
+	<name>AI Storyteller Expand: Deepseek The Orca</name>
+	<author>RedstonePanda</author>
+	<supportedVersions>
+		<li>1.6</li>
+	</supportedVersions>
+	<modDependencies>
+		<li>
+			<packageId>brrainz.harmony</packageId>
+			<displayName>Harmony</displayName>
+			<steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+		</li>
+	</modDependencies>
+	<loadAfter>
+		<li>brrainz.harmony</li>
+		<li>cj.rimtalk</li>
+	</loadAfter>
+	<description>Add Deepseek the Orca, an AI Storyteller to game, need connect to LLM.</description>
+</ModMetaData>

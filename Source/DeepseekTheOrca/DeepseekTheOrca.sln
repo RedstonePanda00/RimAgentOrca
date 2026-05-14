@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepseekTheOrca", "DeepseekTheOrca\DeepseekTheOrca.csproj", "{395950EC-2196-4CA3-A3B1-E9BE7017DE04}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{395950EC-2196-4CA3-A3B1-E9BE7017DE04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{395950EC-2196-4CA3-A3B1-E9BE7017DE04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{395950EC-2196-4CA3-A3B1-E9BE7017DE04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{395950EC-2196-4CA3-A3B1-E9BE7017DE04}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

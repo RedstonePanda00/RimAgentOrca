@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+  <DTO_EnableAiPlanning>启用 DeepSeek 规划</DTO_EnableAiPlanning>
+  <DTO_EnableAiPlanningTooltip>允许已配置的 LLM 提供方在连接后运行。没有提供方连接时，AI 组件保持沉默。</DTO_EnableAiPlanningTooltip>
+  <DTO_DebugLogging>启用调试日志</DTO_DebugLogging>
+  <DTO_DebugLoggingTooltip>把工具调用、事件选择和拒绝原因写入 RimWorld 日志。</DTO_DebugLoggingTooltip>
+  <DTO_EnableWebSearch>启用奥卡联网搜索</DTO_EnableWebSearch>
+  <DTO_EnableWebSearchTooltip>向奥卡对话暴露公网搜索工具。当前本地提供方为 Tavily，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
+  <DTO_WebSearchProvider>联网搜索提供方</DTO_WebSearchProvider>
+  <DTO_WebSearchProviderTavily>Tavily 本地工具</DTO_WebSearchProviderTavily>
+  <DTO_WebSearchProviderTooltip>当前实现会把 Tavily 暴露为函数工具。未来支持带原生联网搜索的模型适配器时，可改用提供方原生搜索。</DTO_WebSearchProviderTooltip>
+  <DTO_TavilyApiKey>Tavily API 密钥</DTO_TavilyApiKey>
+  <DTO_TavilyApiKeyTooltip>仅在启用奥卡联网搜索时需要。保存在 RimWorld mod 设置内。</DTO_TavilyApiKeyTooltip>
+  <DTO_TavilyMaxResults>Tavily 最大结果数</DTO_TavilyMaxResults>
+  <DTO_TavilySearchDepth>Tavily 搜索深度</DTO_TavilySearchDepth>
+  <DTO_WebSearchNativeReserved>预留：后续模型适配器如果支持托管的原生联网搜索工具，可以在这里切换到提供方原生搜索。</DTO_WebSearchNativeReserved>
+  <DTO_SettingsPageLlm>LLM 连接</DTO_SettingsPageLlm>
+  <DTO_SettingsPageApiKeys>API 密钥</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageStoryteller>叙事者</DTO_SettingsPageStoryteller>
+  <DTO_SettingsPagePersonas>人格</DTO_SettingsPagePersonas>
+  <DTO_SettingsPageSkills>技能</DTO_SettingsPageSkills>
+  <DTO_SettingsPagePlugins>插件</DTO_SettingsPagePlugins>
+  <DTO_SettingsPageTools>工具</DTO_SettingsPageTools>
+  <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
+  <DTO_SettingsPageDebug>调试</DTO_SettingsPageDebug>
+  <DTO_EnableHttpMcp>启用外部 HTTP MCP</DTO_EnableHttpMcp>
+  <DTO_EnableHttpMcpTooltip>把一个由玩家配置的 HTTP MCP 服务器工具暴露给奥卡对话。此模组本身不提供 MCP 工具。</DTO_EnableHttpMcpTooltip>
+  <DTO_HttpMcpUrl>HTTP MCP 端点 URL</DTO_HttpMcpUrl>
+  <DTO_HttpMcpUrlTooltip>例如 http://127.0.0.1:3333/mcp。建议只使用你信任的本地端点。</DTO_HttpMcpUrlTooltip>
+  <DTO_HttpMcpBearerToken>HTTP MCP Bearer 令牌</DTO_HttpMcpBearerToken>
+  <DTO_HttpMcpBearerTokenTooltip>可选。非空时会作为 Authorization: Bearer 请求头发送。</DTO_HttpMcpBearerTokenTooltip>
+  <DTO_HttpMcpMaxResultChars>MCP 最大返回字符数</DTO_HttpMcpMaxResultChars>
+  <DTO_HttpMcpAddServer>添加 MCP 服务器</DTO_HttpMcpAddServer>
+  <DTO_HttpMcpRemoveServer>移除</DTO_HttpMcpRemoveServer>
+  <DTO_HttpMcpNoServers>尚未配置 HTTP MCP 服务器。</DTO_HttpMcpNoServers>
+  <DTO_HttpMcpServer>服务器</DTO_HttpMcpServer>
+  <DTO_HttpMcpServerEnabled>启用此服务器</DTO_HttpMcpServerEnabled>
+  <DTO_HttpMcpServerName>服务器名称</DTO_HttpMcpServerName>
+  <DTO_HttpMcpNote>MCP 工具会从配置的服务器发现，并以 mcp_ 前缀暴露给奥卡对话。启用多个服务器时，暴露的工具名会包含服务器名称。请只使用你信任的服务器。</DTO_HttpMcpNote>
+  <DTO_ApiProvider>LLM 提供方</DTO_ApiProvider>
+  <DTO_ApiProviderTooltip>点击循环切换提供方。OpenAI、OpenRouter 和自定义提供方需要兼容 OpenAI 的 /chat/completions API。</DTO_ApiProviderTooltip>
+  <DTO_CustomBaseUrl>自定义基础 URL</DTO_CustomBaseUrl>
+  <DTO_CustomBaseUrlTooltip>兼容 OpenAI API 的基础 URL，例如 http://localhost:1234/v1 或 https://example.com/v1。</DTO_CustomBaseUrlTooltip>
+  <DTO_ActiveBaseUrl>当前基础 URL</DTO_ActiveBaseUrl>
+  <DTO_ApiKey>LLM API 密钥</DTO_ApiKey>
+  <DTO_ApiKeyTooltip>保存到 RimWorld 模组设置。当前离线基底叙事者不会发送请求。</DTO_ApiKeyTooltip>
+  <DTO_ApiKeyAddConnection>添加 API 连接</DTO_ApiKeyAddConnection>
+  <DTO_ApiKeyRemoveConnection>移除</DTO_ApiKeyRemoveConnection>
+  <DTO_ApiKeyNoConnections>尚未配置 API 连接。</DTO_ApiKeyNoConnections>
+  <DTO_ApiKeyConnectionEnabled>启用此连接</DTO_ApiKeyConnectionEnabled>
+  <DTO_ApiKeyConnectionName>连接名称</DTO_ApiKeyConnectionName>
+  <DTO_ApiKeyRefreshModels>刷新模型列表</DTO_ApiKeyRefreshModels>
+  <DTO_ApiKeyAvailableModels>可用模型</DTO_ApiKeyAvailableModels>
+  <DTO_OpenAiOrganization>OpenAI 组织 ID</DTO_OpenAiOrganization>
+  <DTO_OpenAiOrganizationTooltip>可选。仅当你的 OpenAI 账号或旧版密钥需要指定组织时填写。</DTO_OpenAiOrganizationTooltip>
+  <DTO_OpenAiProject>OpenAI 项目 ID</DTO_OpenAiProject>
+  <DTO_OpenAiProjectTooltip>可选。仅当你需要强制请求进入某个 OpenAI 项目时填写。</DTO_OpenAiProjectTooltip>
+  <DTO_ApiProxyUrl>HTTP 代理 URL</DTO_ApiProxyUrl>
+  <DTO_ApiProxyUrlTooltip>可选。例如：http://127.0.0.1:7890。留空则使用系统/默认网络路径。这里不直接支持 SOCKS，除非你的代理软件提供 HTTP 端口。</DTO_ApiProxyUrlTooltip>
+  <DTO_Model>模型</DTO_Model>
+  <DTO_ModelFallback>兜底模型</DTO_ModelFallback>
+  <DTO_ModelFallbackTooltip>某个角色模型留空时使用这个模型。它不是主控模型。</DTO_ModelFallbackTooltip>
+  <DTO_ModelController>主控模型</DTO_ModelController>
+  <DTO_ModelControllerTooltip>可选。每轮奥卡聊天先由它路由到对话、工具、识图或联网搜索专门模型，再由专门模型回复。</DTO_ModelControllerTooltip>
+  <DTO_ModelDecision>决策模型</DTO_ModelDecision>
+  <DTO_ModelDecisionTooltip>用于自动叙事者规划，也就是选择故事事件。</DTO_ModelDecisionTooltip>
+  <DTO_ModelDialogue>对话模型</DTO_ModelDialogue>
+  <DTO_ModelDialogueTooltip>用于奥卡聊天回复和记忆压缩。</DTO_ModelDialogueTooltip>
+  <DTO_ModelTool>工具模型</DTO_ModelTool>
+  <DTO_ModelToolTooltip>可选。填写后，奥卡聊天的第一轮可工具调用请求使用此模型；工具结果返回后再交给对话模型。</DTO_ModelToolTooltip>
+  <DTO_ModelVision>识图模型</DTO_ModelVision>
+  <DTO_ModelVisionTooltip>为后续图像识别工具预留。留空则回退到兜底模型。</DTO_ModelVisionTooltip>
+  <DTO_ModelWebSearch>联网搜索模型</DTO_ModelWebSearch>
+  <DTO_ModelWebSearchTooltip>为后续提供方原生联网搜索预留。当前 Tavily 搜索仍是本地工具。</DTO_ModelWebSearchTooltip>
+  <DTO_ModelUseFallback>使用兜底模型</DTO_ModelUseFallback>
+  <DTO_ModelNoDiscoveredModels>尚未发现模型。请配置 API 密钥并等待模型发现完成。</DTO_ModelNoDiscoveredModels>
+  <DTO_ModelSelectTitle>选择模型</DTO_ModelSelectTitle>
+  <DTO_ModelFilter>过滤</DTO_ModelFilter>
+  <DTO_ModelFilterCount>{0} / {1} 个模型</DTO_ModelFilterCount>
+  <DTO_ModelNoMatchingModels>没有匹配的模型。</DTO_ModelNoMatchingModels>
+  <DTO_StorytellerAppearanceTitle>叙事者外观</DTO_StorytellerAppearanceTitle>
+  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到 Deepseek The Orca 叙事者。贴图路径相对于已加载的 Textures 文件夹。</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerLabel>叙事者名称</DTO_StorytellerLabel>
+  <DTO_StorytellerDescription>叙事者描述</DTO_StorytellerDescription>
+  <DTO_StorytellerPortraitFolder>贴图目录</DTO_StorytellerPortraitFolder>
+  <DTO_StorytellerPortraitFolderTooltip>Textures 下的贴图目录。默认头像目录是 Orca。</DTO_StorytellerPortraitFolderTooltip>
+  <DTO_StorytellerPortraitLargeName>大头像文件名</DTO_StorytellerPortraitLargeName>
+  <DTO_StorytellerPortraitTinyName>小头像文件名</DTO_StorytellerPortraitTinyName>
+  <DTO_StorytellerPortraitNameTooltip>贴图目录内的文件名，不包含扩展名。PNG 会由 RimWorld 从 Textures 目录加载。</DTO_StorytellerPortraitNameTooltip>
+  <DTO_StorytellerPortraitLargePath>大头像路径</DTO_StorytellerPortraitLargePath>
+  <DTO_StorytellerPortraitTinyPath>小头像路径</DTO_StorytellerPortraitTinyPath>
+  <DTO_StorytellerResetAppearance>重置叙事者外观</DTO_StorytellerResetAppearance>
+  <DTO_DefaultOrcaStorytellerLabel>「深度求索」奥卡</DTO_DefaultOrcaStorytellerLabel>
+  <DTO_DefaultOrcaStorytellerDescription>奥卡是一个智能体，她的叙事节奏如同海洋，时而平静，时而凶猛。奥卡冷静地观察着殖民地的故事，并且在她认为合适的时候给出挑战和奖励。</DTO_DefaultOrcaStorytellerDescription>
+  <DTO_ChatPersona>对话人格</DTO_ChatPersona>
+  <DTO_ChatPersonaTooltip>选择对话模型使用的人格配置和叙事者外观。内置奥卡已硬编码且只读；自定义人格保存在 RimWorld 配置目录下。</DTO_ChatPersonaTooltip>
+  <DTO_ChatPersonaReadOnly>只读</DTO_ChatPersonaReadOnly>
+  <DTO_ChatPersonaMissing>人格缺失</DTO_ChatPersonaMissing>
+  <DTO_ChatPersonaManage>管理人格</DTO_ChatPersonaManage>
+  <DTO_ChatPersonaNew>新建人格</DTO_ChatPersonaNew>
+  <DTO_ChatPersonaReload>重新加载文件</DTO_ChatPersonaReload>
+  <DTO_ChatPersonaFolder>人格文件夹</DTO_ChatPersonaFolder>
+  <DTO_ChatPersonaSelect>选择</DTO_ChatPersonaSelect>
+  <DTO_ChatPersonaEdit>编辑</DTO_ChatPersonaEdit>
+  <DTO_ChatPersonaDelete>删除</DTO_ChatPersonaDelete>
+  <DTO_ChatPersonaDeleteConfirm>删除人格“{0}”？</DTO_ChatPersonaDeleteConfirm>
+  <DTO_ChatPersonaName>名称</DTO_ChatPersonaName>
+  <DTO_ChatPersonaDescription>描述</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaPrompt>人格提示词</DTO_ChatPersonaPrompt>
+  <DTO_ChatPersonaSave>保存</DTO_ChatPersonaSave>
+  <DTO_ChatPersonaFormatNote>本地人格文件使用 XML，包含人格提示词、叙事者名称、叙事者描述和头像贴图路径。</DTO_ChatPersonaFormatNote>
+  <DTO_SkillManagerTitle>Agent 技能</DTO_SkillManagerTitle>
+  <DTO_SkillManagerDescription>管理可选的 skill 配置。启用的 skill 会向对话提示词添加专门指令，并向主控模型提供路由线索。</DTO_SkillManagerDescription>
+  <DTO_SkillManage>管理技能</DTO_SkillManage>
+  <DTO_SkillNew>新建技能</DTO_SkillNew>
+  <DTO_SkillReload>重新加载文件</DTO_SkillReload>
+  <DTO_SkillFolder>技能文件夹</DTO_SkillFolder>
+  <DTO_SkillFormatNote>本地 skill 文件使用 XML，包含名称、描述、启用状态、触发线索、提示词，以及允许或推荐的工具。</DTO_SkillFormatNote>
+  <DTO_SkillEnabledCount>已启用 skill：{0}/{1}</DTO_SkillEnabledCount>
+  <DTO_SkillNoEnabled>当前没有启用的 skill。</DTO_SkillNoEnabled>
+  <DTO_SkillNoSkills>尚未创建 skill。</DTO_SkillNoSkills>
+  <DTO_SkillEnabled>已启用</DTO_SkillEnabled>
+  <DTO_SkillDisabled>已关闭</DTO_SkillDisabled>
+  <DTO_SkillEnable>启用</DTO_SkillEnable>
+  <DTO_SkillDisable>关闭</DTO_SkillDisable>
+  <DTO_SkillEdit>编辑</DTO_SkillEdit>
+  <DTO_SkillDelete>删除</DTO_SkillDelete>
+  <DTO_SkillDeleteConfirm>删除 skill“{0}”？</DTO_SkillDeleteConfirm>
+  <DTO_SkillReadOnly>只读</DTO_SkillReadOnly>
+  <DTO_SkillEnableThis>启用此 skill</DTO_SkillEnableThis>
+  <DTO_SkillName>名称</DTO_SkillName>
+  <DTO_SkillDescription>描述</DTO_SkillDescription>
+  <DTO_SkillTriggerHints>触发线索</DTO_SkillTriggerHints>
+  <DTO_SkillAllowedTools>允许工具</DTO_SkillAllowedTools>
+  <DTO_SkillPrompt>Skill 提示词</DTO_SkillPrompt>
+  <DTO_SkillSave>保存</DTO_SkillSave>
+  <DTO_PluginManagerTitle>Agent 插件</DTO_PluginManagerTitle>
+  <DTO_PluginManagerDescription>管理可选的 agent 模块。插件可以添加提示词上下文、回复格式要求、工具行为或运行时状态。</DTO_PluginManagerDescription>
+  <DTO_PluginManagerInstalled>已安装插件</DTO_PluginManagerInstalled>
+  <DTO_PluginManagerFutureNote>后续新增的 agent 插件会进入这个管理器，而不是混在模型或工具设置里。</DTO_PluginManagerFutureNote>
+  <DTO_PluginManagerEmpty>尚未安装插件。</DTO_PluginManagerEmpty>
+  <DTO_PluginCategory>分类</DTO_PluginCategory>
+  <DTO_PluginStateEnabled>已启用</DTO_PluginStateEnabled>
+  <DTO_PluginStateDisabled>已关闭</DTO_PluginStateDisabled>
+  <DTO_MoodPluginName>奥卡心情</DTO_MoodPluginName>
+  <DTO_MoodPluginCategory>对话状态</DTO_MoodPluginCategory>
+  <DTO_MoodPluginDescription>为奥卡对话添加内部心情值，并允许模型在每次回复中返回 moodDelta。</DTO_MoodPluginDescription>
+  <DTO_MoodPluginDetails>启用后，奥卡对话会收到心情状态，回复必须包含 moodDelta，心情也会影响事件执行意愿。关闭后，回复只需要 reply 字段，执行工具不会因为心情随机拒绝。</DTO_MoodPluginDetails>
+  <DTO_EnableMoodPlugin>启用心情插件</DTO_EnableMoodPlugin>
+  <DTO_EnableMoodPluginTooltip>向对话注入奥卡心情状态，要求模型返回 moodDelta，并让心情影响事件执行意愿。</DTO_EnableMoodPluginTooltip>
+  <DTO_MoodPluginNote>关闭后，奥卡对话不会收到心情状态，回复只需要 reply 字段，执行工具也不会因为心情随机拒绝。</DTO_MoodPluginNote>
+  <DTO_MoodPluginDisabled>已关闭</DTO_MoodPluginDisabled>
+  <DTO_ProactivePluginName>环境主动对话</DTO_ProactivePluginName>
+  <DTO_ProactivePluginCategory>对话触发器</DTO_ProactivePluginCategory>
+  <DTO_ProactivePluginDescription>允许奥卡针对殖民地观察和 RimTalk 玩家发起对话进行主动发言。</DTO_ProactivePluginDescription>
+  <DTO_ProactivePluginDetails>奥卡自己选择的叙事事件仍会单独触发主动对话。这里的设置只影响环境观察：新信件、殖民地状态变化和 RimTalk 记录。信件和殖民地状态变化会合并为同一个殖民地观察流。</DTO_ProactivePluginDetails>
+  <DTO_EnableAmbientProactiveDialogue>启用环境主动对话</DTO_EnableAmbientProactiveDialogue>
+  <DTO_EnableAmbientProactiveDialogueTooltip>关闭后，只有奥卡自己选择的叙事事件会自动触发主动对话。</DTO_EnableAmbientProactiveDialogueTooltip>
+  <DTO_ProactivePluginSettings>触发概率</DTO_ProactivePluginSettings>
+  <DTO_ColonyObservationProactiveChance>殖民地观察概率 (0-1)</DTO_ColonyObservationProactiveChance>
+  <DTO_RimtalkProactiveBaseChance>RimTalk 基础概率 (0-1)</DTO_RimtalkProactiveBaseChance>
+  <DTO_RimtalkProactiveMissBonus>RimTalk 未触发递增 (0-1)</DTO_RimtalkProactiveMissBonus>
+  <DTO_RimtalkProactiveForceAfterMisses>RimTalk 几次未触发后强制触发</DTO_RimtalkProactiveForceAfterMisses>
+  <DTO_ProactivePluginSettingsNote>默认值：殖民地观察 0.25，RimTalk 0.15，每次未触发 +0.05，连续 8 次未触发后强制触发。</DTO_ProactivePluginSettingsNote>
+  <DTO_TestConnection>检测 DeepSeek 连接</DTO_TestConnection>
+  <DTO_TestConnectionRunning>正在检测连接...</DTO_TestConnectionRunning>
+  <DTO_ConnectionStatus>连接状态</DTO_ConnectionStatus>
+  <DTO_ConnectionStatusNotTested>未检测</DTO_ConnectionStatusNotTested>
+  <DTO_ConnectionStatusTesting>检测中</DTO_ConnectionStatusTesting>
+  <DTO_ConnectionStatusSucceeded>成功</DTO_ConnectionStatusSucceeded>
+  <DTO_ConnectionStatusFailed>失败</DTO_ConnectionStatusFailed>
+  <DTO_ConnectionNotTested>尚未检测连接。</DTO_ConnectionNotTested>
+  <DTO_ConnectionTesting>正在检测 DeepSeek API 连接。</DTO_ConnectionTesting>
+  <DTO_DebugToolCallTest>立即运行工具调用测试</DTO_DebugToolCallTest>
+  <DTO_DebugToolCallRunningButton>工具调用测试运行中...</DTO_DebugToolCallRunningButton>
+  <DTO_DebugToolCallStatus>工具调用测试</DTO_DebugToolCallStatus>
+  <DTO_DebugToolCallNotRun>未运行。</DTO_DebugToolCallNotRun>
+  <DTO_DebugToolCallRunning>运行中。</DTO_DebugToolCallRunning>
+  <DTO_DebugTabTitle>“深度求索” 奥卡调试</DTO_DebugTabTitle>
+  <DTO_DebugClearLog>清空日志</DTO_DebugClearLog>
+  <DTO_DebugLogEmpty>暂无日志。</DTO_DebugLogEmpty>
+  <DTO_DebugCurrentMap>当前地图</DTO_DebugCurrentMap>
+  <DTO_DebugNoCurrentMap>没有当前地图</DTO_DebugNoCurrentMap>
+  <DTO_DebugPlanningEnabled>规划已启用</DTO_DebugPlanningEnabled>
+  <DTO_DebugPlanningDisabled>规划未启用或 API 密钥为空</DTO_DebugPlanningDisabled>
+  <DTO_DebugToolChainTab>工具调用链</DTO_DebugToolChainTab>
+  <DTO_DebugSingleToolTab>单工具测试</DTO_DebugSingleToolTab>
+  <DTO_DebugSelectTool>选择工具</DTO_DebugSelectTool>
+  <DTO_DebugRunSingleTool>运行选中工具</DTO_DebugRunSingleTool>
+  <DTO_DebugNoArguments>无参数。</DTO_DebugNoArguments>
+  <DTO_MaxToolCalls>最大工具调用次数</DTO_MaxToolCalls>
+  <DTO_PlanningMtbDays>规划器 MTB 天数</DTO_PlanningMtbDays>
+  <DTO_OfflineNote>离线行为：AI 决策层直接返回。直到 LLM 提供方连接前，故事事件只由 XML 中定义的原版叙事者组件生成。</DTO_OfflineNote>
+  <DTO_OrcaChatOpen>打开奥卡对话</DTO_OrcaChatOpen>
+  <DTO_OrcaChatClose>关闭奥卡对话</DTO_OrcaChatClose>
+  <DTO_OrcaChatNote>悬浮对话；可读取工具，并可按请求触发事件。</DTO_OrcaChatNote>
+  <DTO_OrcaChatTitle>“深度求索” 奥卡</DTO_OrcaChatTitle>
+  <DTO_OrcaChatAlpha>背景透明度</DTO_OrcaChatAlpha>
+  <DTO_OrcaChatSend>发送</DTO_OrcaChatSend>
+  <DTO_OrcaChatWaiting>等待中...</DTO_OrcaChatWaiting>
+  <DTO_OrcaChatReady>就绪。</DTO_OrcaChatReady>
+  <DTO_OrcaChatClear>清空</DTO_OrcaChatClear>
+  <DTO_OrcaChatEmpty>暂无对话。</DTO_OrcaChatEmpty>
+  <DTO_OrcaChatNoApiKey>API 密钥为空。</DTO_OrcaChatNoApiKey>
+  <DTO_OrcaChatTab>奥卡对话</DTO_OrcaChatTab>
+  <DTO_OrcaChatPromptLocation>人格提示词目前写在 OrcaChatWindow.cs 的 OrcaChatSession.EnsureSystemPrompt 内。它和叙事者规划提示词是分离的。</DTO_OrcaChatPromptLocation>
+  <DTO_OrcaChatStatus>状态</DTO_OrcaChatStatus>
+  <DTO_OrcaChatStatusIdle>空闲。</DTO_OrcaChatStatusIdle>
+  <DTO_OrcaChatSpeakerOrca>奥卡</DTO_OrcaChatSpeakerOrca>
+  <DTO_OrcaChatMood>心情值</DTO_OrcaChatMood>
+  <DTO_OrcaChatUsingTools>正在使用工具...</DTO_OrcaChatUsingTools>
+  <DTO_OrcaChatToolBudgetReached>工具调用预算已耗尽。</DTO_OrcaChatToolBudgetReached>
+  <DTO_OrcaChatWillingness>事件意愿</DTO_OrcaChatWillingness>
+  <DTO_OrcaChatLogEmpty>尚未记录奥卡对话请求。</DTO_OrcaChatLogEmpty>
+  <DTO_OrcaChatLogUser>1. 用户发言</DTO_OrcaChatLogUser>
+  <DTO_OrcaChatLogProcess>2. 奥卡的运行过程</DTO_OrcaChatLogProcess>
+  <DTO_OrcaChatLogReply>3. 奥卡的回复</DTO_OrcaChatLogReply>
+  <DTO_OrcaChatLogError>4. 错误原因</DTO_OrcaChatLogError>
+</LanguageData>
