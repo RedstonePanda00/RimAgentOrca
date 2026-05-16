@@ -47,14 +47,14 @@ namespace DeepseekTheOrca
 
             List<OrcaSkillProfile> skills = OrcaSkillManager.AllSkills();
             Rect outRect = new Rect(inRect.x, y, inRect.width, inRect.height - y);
-            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, Mathf.Max(outRect.height, skills.Count * 86f + 8f));
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, Mathf.Max(outRect.height, skills.Count * 96f + 8f));
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
 
             float rowY = 0f;
             for (int i = 0; i < skills.Count; i++)
             {
-                DrawSkillRow(skills[i], new Rect(0f, rowY, viewRect.width, 80f));
-                rowY += 86f;
+                DrawSkillRow(skills[i], new Rect(0f, rowY, viewRect.width, 90f));
+                rowY += 96f;
             }
 
             if (skills.Count == 0)
@@ -70,26 +70,37 @@ namespace DeepseekTheOrca
             Widgets.DrawBoxSolid(rect, new Color(0.08f, 0.08f, 0.09f, 0.7f));
             Rect textRect = new Rect(rect.x + 8f, rect.y + 6f, rect.width - 260f, 24f);
             string state = profile.enabled ? "DTO_SkillEnabled".Translate().ToString() : "DTO_SkillDisabled".Translate().ToString();
-            Widgets.Label(textRect, profile.label + " (" + state + ")");
+            string title = profile.label + " (" + state + ")" + (profile.readOnly ? " (" + "DTO_SkillReadOnly".Translate().ToString() + ")" : "");
+            Widgets.Label(textRect, title);
             Widgets.Label(new Rect(textRect.x, textRect.yMax + 4f, textRect.width, 24f), profile.description ?? "");
 
             Rect enableRect = new Rect(rect.xMax - 242f, rect.y + 8f, 76f, 28f);
             bool enabled = profile.enabled;
             if (Widgets.ButtonText(enableRect, enabled ? "DTO_SkillDisable".Translate() : "DTO_SkillEnable".Translate()))
             {
-                profile.enabled = !profile.enabled;
-                OrcaSkillManager.Save(profile);
-                OrcaChatWindowManager.Session.Clear();
+                OrcaSkillManager.SetEnabled(profile, !profile.enabled);
             }
 
             Rect editRect = new Rect(enableRect.xMax + 8f, enableRect.y, 72f, 28f);
-            if (Widgets.ButtonText(editRect, "DTO_SkillEdit".Translate()))
+            if (profile.readOnly)
+            {
+                GUI.color = Color.gray;
+                Widgets.ButtonText(editRect, "DTO_SkillEdit".Translate());
+                GUI.color = Color.white;
+            }
+            else if (Widgets.ButtonText(editRect, "DTO_SkillEdit".Translate()))
             {
                 Find.WindowStack.Add(new OrcaSkillEditorWindow(profile));
             }
 
             Rect deleteRect = new Rect(editRect.xMax + 8f, editRect.y, 72f, 28f);
-            if (Widgets.ButtonText(deleteRect, "DTO_SkillDelete".Translate()))
+            if (profile.readOnly)
+            {
+                GUI.color = Color.gray;
+                Widgets.ButtonText(deleteRect, "DTO_SkillDelete".Translate());
+                GUI.color = Color.white;
+            }
+            else if (Widgets.ButtonText(deleteRect, "DTO_SkillDelete".Translate()))
             {
                 Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("DTO_SkillDeleteConfirm".Translate(profile.label), delegate
                 {
@@ -99,8 +110,23 @@ namespace DeepseekTheOrca
 
             if (profile.triggerHints != null && profile.triggerHints.Count > 0)
             {
-                Widgets.Label(new Rect(textRect.x, textRect.yMax + 30f, textRect.width, 22f), "DTO_SkillTriggerHints".Translate() + ": " + string.Join(", ", profile.triggerHints.Take(5).ToArray()));
+                Widgets.Label(new Rect(textRect.x, textRect.yMax + 30f, textRect.width, 22f), SourceText(profile) + " | " + "DTO_SkillTriggerHints".Translate() + ": " + string.Join(", ", profile.triggerHints.Take(5).ToArray()));
             }
+            else
+            {
+                Widgets.Label(new Rect(textRect.x, textRect.yMax + 30f, textRect.width, 22f), SourceText(profile));
+            }
+        }
+
+        private static string SourceText(OrcaSkillProfile profile)
+        {
+            string source = profile == null ? "" : profile.sourceMod;
+            if (source.NullOrEmpty())
+            {
+                source = "DTO_ExtensionSourceLocal".Translate().ToString();
+            }
+
+            return "DTO_ExtensionSource".Translate() + ": " + source;
         }
     }
 

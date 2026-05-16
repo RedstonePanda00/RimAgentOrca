@@ -11,7 +11,7 @@ namespace DeepseekTheOrca
     {
         public override Vector2 RequestedTabSize
         {
-            get { return new Vector2(820f, 360f); }
+            get { return new Vector2(980f, 520f); }
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -180,7 +180,7 @@ namespace DeepseekTheOrca
             DrawOutline(inRect);
 
             Rect content = inRect.ContractedBy(12f);
-            float bottomHeight = 166f;
+            float bottomHeight = 236f;
             float gap = 12f;
             Rect top = new Rect(content.x, content.y, content.width, content.height - bottomHeight - gap);
             Rect bottom = new Rect(content.x, top.yMax + gap, content.width, bottomHeight);
@@ -572,8 +572,8 @@ namespace DeepseekTheOrca
         private void DrawBottom(Rect rect)
         {
             float gap = 12f;
-            float chartWidth = rect.width * 0.52f;
-            float actionWidth = 170f;
+            float chartWidth = Mathf.Min(380f, Mathf.Max(300f, rect.width * 0.38f));
+            float actionWidth = 150f;
             Rect chart = new Rect(rect.x, rect.y, chartWidth, rect.height);
             Rect actions = new Rect(rect.xMax - actionWidth, rect.y, actionWidth, rect.height);
             Rect status = new Rect(chart.xMax + gap, rect.y, actions.x - chart.xMax - gap * 2f, rect.height);
@@ -634,35 +634,99 @@ namespace DeepseekTheOrca
             LlmConnectionTester.Snapshot(out connectionStatus, out connectionMessage);
 
             LlmUsageSummary summary = LlmUsageTracker.Summary();
+            OrcaChatSession session = OrcaChatWindowManager.Session;
             string mapText = Find.CurrentMap == null
                 ? "DTO_DebugNoCurrentMap".Translate().ToString()
                 : (Find.CurrentMap.Parent == null ? Find.CurrentMap.ToString() : Find.CurrentMap.Parent.LabelCap.ToString());
 
-            float y = rect.y;
-            DrawStatusLine(rect, ref y, "AI status", AiStatusText());
-            DrawStatusLine(rect, ref y, "Current map", mapText);
-            DrawStatusLine(rect, ref y, "Connection", ConnectionStatusText(connectionStatus));
-            DrawStatusLine(rect, ref y, "Calls", summary.totalCalls.ToString());
-            DrawStatusLine(rect, ref y, "Total tokens", summary.totalTokens.ToString());
-            DrawStatusLine(rect, ref y, "Cache hit", summary.cacheHitTokens.ToString());
-            DrawStatusLine(rect, ref y, "Cache miss", summary.cacheMissTokens.ToString());
-            DrawStatusLine(rect, ref y, "Cache rate", FormatCacheRate(summary));
-            DrawStatusLine(rect, ref y, "Avg tokens", summary.averageTokens.ToString("0.0"));
-            DrawStatusLine(rect, ref y, "Avg ms", summary.averageElapsedMs.ToString("0"));
-        }
+            float gap = 12f;
+            float columnWidth = (rect.width - gap) / 2f;
+            Rect left = new Rect(rect.x, rect.y, columnWidth, rect.height);
+            Rect right = new Rect(left.xMax + gap, rect.y, columnWidth, rect.height);
+            float leftY = left.y;
+            float rightY = right.y;
 
-        private static string FormatCacheRate(LlmUsageSummary summary)
-        {
-            return summary.cacheHitTokens + summary.cacheMissTokens <= 0 ? "n/a" : summary.cacheHitRate.ToString("P1");
+            DrawStatusLine(left, ref leftY, "AI status", AiStatusText());
+            DrawStatusLine(left, ref leftY, "Map", mapText);
+            DrawStatusLine(left, ref leftY, "Connection", ConnectionStatusText(connectionStatus));
+            DrawStatusLine(left, ref leftY, "Route", session.LastControllerRoute);
+            DrawStatusLine(left, ref leftY, "Model role", EmptyAsDash(session.CurrentModelRoleLabel));
+            DrawStatusLine(left, ref leftY, "Model", TrimForPanel(session.CurrentModelReference, 38));
+            DrawStatusLine(left, ref leftY, "Last error", TrimForPanel(EmptyAsDash(session.LastErrorText), 38));
+
+            DrawStatusLine(right, ref rightY, "LLM calls", summary.totalCalls.ToString());
+            DrawStatusLine(right, ref rightY, "By role", FormatRoleCalls(summary));
+            DrawStatusLine(right, ref rightY, "Last LLM", FormatLastLlm(summary));
+            DrawStatusLine(right, ref rightY, "Last tokens", summary.lastTokens.ToString());
+            DrawStatusLine(right, ref rightY, "Total tokens", summary.totalTokens.ToString());
+            DrawStatusLine(right, ref rightY, "Avg tokens", summary.averageTokens.ToString("0.0"));
+            DrawStatusLine(right, ref rightY, "Avg ms", summary.averageElapsedMs.ToString("0"));
+            DrawStatusLine(right, ref rightY, "Tool calls", session.TotalToolCalls + " / failed " + session.FailedToolCalls);
+            DrawStatusLine(right, ref rightY, "Last tool", TrimForPanel(FormatLastTool(session), 34));
         }
 
         private static void DrawStatusLine(Rect rect, ref float y, string label, string value)
         {
             GUI.color = MutedTextColor;
-            Widgets.Label(new Rect(rect.x, y, 110f, 22f), label + ":");
+            Widgets.Label(new Rect(rect.x, y, 82f, 22f), label + ":");
             GUI.color = Color.white;
-            Widgets.Label(new Rect(rect.x + 118f, y, rect.width - 118f, 22f), value);
+            Widgets.Label(new Rect(rect.x + 90f, y, rect.width - 90f, 22f), value);
             y += 22f;
+        }
+
+        private static string FormatRoleCalls(LlmUsageSummary summary)
+        {
+            string text = "C " + summary.controllerCalls
+                + " Dlg " + summary.dialogueCalls
+                + " Tool " + summary.toolModelCalls
+                + " Dec " + summary.decisionCalls;
+            if (summary.webSearchCalls > 0)
+            {
+                text += " Web " + summary.webSearchCalls;
+            }
+            if (summary.visionCalls > 0)
+            {
+                text += " Vis " + summary.visionCalls;
+            }
+            if (summary.fallbackCalls > 0)
+            {
+                text += " F " + summary.fallbackCalls;
+            }
+
+            return text;
+        }
+
+        private static string FormatLastLlm(LlmUsageSummary summary)
+        {
+            string role = EmptyAsDash(summary.lastRole);
+            string model = TrimForPanel(summary.lastModel, 24);
+            return model == "-" ? role : role + " / " + model;
+        }
+
+        private static string FormatLastTool(OrcaChatSession session)
+        {
+            if (session == null || session.LastToolName.NullOrEmpty())
+            {
+                return "-";
+            }
+
+            return session.LastToolName + " " + session.LastToolResult;
+        }
+
+        private static string EmptyAsDash(string value)
+        {
+            return value.NullOrEmpty() ? "-" : value;
+        }
+
+        private static string TrimForPanel(string value, int maxChars)
+        {
+            value = EmptyAsDash(value).Replace("\r", " ").Replace("\n", " ");
+            if (value.Length <= maxChars)
+            {
+                return value;
+            }
+
+            return value.Substring(0, Mathf.Max(0, maxChars - 3)) + "...";
         }
 
         private static string AiStatusText()

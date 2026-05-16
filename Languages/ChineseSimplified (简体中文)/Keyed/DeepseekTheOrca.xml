@@ -79,22 +79,26 @@
   <DTO_ModelFilterCount>{0} / {1} 个模型</DTO_ModelFilterCount>
   <DTO_ModelNoMatchingModels>没有匹配的模型。</DTO_ModelNoMatchingModels>
   <DTO_StorytellerAppearanceTitle>叙事者外观</DTO_StorytellerAppearanceTitle>
-  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到 Deepseek The Orca 叙事者。贴图路径相对于已加载的 Textures 文件夹。</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到 Deepseek The Orca 叙事者。头像路径从合并后的 Textures 根目录开始，例如 Orca/Orca 或 AnotherMod/Portraits/Foo。</DTO_StorytellerAppearanceNote>
   <DTO_StorytellerLabel>叙事者名称</DTO_StorytellerLabel>
   <DTO_StorytellerDescription>叙事者描述</DTO_StorytellerDescription>
   <DTO_StorytellerPortraitFolder>贴图目录</DTO_StorytellerPortraitFolder>
-  <DTO_StorytellerPortraitFolderTooltip>Textures 下的贴图目录。默认头像目录是 Orca。</DTO_StorytellerPortraitFolderTooltip>
+  <DTO_StorytellerPortraitFolderTooltip>旧字段。新人格应使用从合并后 Textures 根目录开始的完整头像路径。</DTO_StorytellerPortraitFolderTooltip>
   <DTO_StorytellerPortraitLargeName>大头像文件名</DTO_StorytellerPortraitLargeName>
   <DTO_StorytellerPortraitTinyName>小头像文件名</DTO_StorytellerPortraitTinyName>
-  <DTO_StorytellerPortraitNameTooltip>贴图目录内的文件名，不包含扩展名。PNG 会由 RimWorld 从 Textures 目录加载。</DTO_StorytellerPortraitNameTooltip>
-  <DTO_StorytellerPortraitLargePath>大头像路径</DTO_StorytellerPortraitLargePath>
-  <DTO_StorytellerPortraitTinyPath>小头像路径</DTO_StorytellerPortraitTinyPath>
+  <DTO_StorytellerPortraitNameTooltip>旧字段。新人格应使用不带扩展名的完整头像路径。</DTO_StorytellerPortraitNameTooltip>
+  <DTO_StorytellerPortraitLargePath>大头像贴图路径</DTO_StorytellerPortraitLargePath>
+  <DTO_StorytellerPortraitTinyPath>小头像贴图路径</DTO_StorytellerPortraitTinyPath>
+  <DTO_StorytellerPortraitResolvedLargePath>解析后的大头像路径</DTO_StorytellerPortraitResolvedLargePath>
+  <DTO_StorytellerPortraitResolvedTinyPath>解析后的小头像路径</DTO_StorytellerPortraitResolvedTinyPath>
   <DTO_StorytellerResetAppearance>重置叙事者外观</DTO_StorytellerResetAppearance>
   <DTO_DefaultOrcaStorytellerLabel>「深度求索」奥卡</DTO_DefaultOrcaStorytellerLabel>
   <DTO_DefaultOrcaStorytellerDescription>奥卡是一个智能体，她的叙事节奏如同海洋，时而平静，时而凶猛。奥卡冷静地观察着殖民地的故事，并且在她认为合适的时候给出挑战和奖励。</DTO_DefaultOrcaStorytellerDescription>
   <DTO_ChatPersona>对话人格</DTO_ChatPersona>
   <DTO_ChatPersonaTooltip>选择对话模型使用的人格配置和叙事者外观。内置奥卡已硬编码且只读；自定义人格保存在 RimWorld 配置目录下。</DTO_ChatPersonaTooltip>
   <DTO_ChatPersonaReadOnly>只读</DTO_ChatPersonaReadOnly>
+  <DTO_ExtensionSource>来源</DTO_ExtensionSource>
+  <DTO_ExtensionSourceLocal>本地</DTO_ExtensionSourceLocal>
   <DTO_ChatPersonaMissing>人格缺失</DTO_ChatPersonaMissing>
   <DTO_ChatPersonaManage>管理人格</DTO_ChatPersonaManage>
   <DTO_ChatPersonaNew>新建人格</DTO_ChatPersonaNew>

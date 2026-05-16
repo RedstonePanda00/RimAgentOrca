@@ -20,6 +20,8 @@ namespace DeepseekTheOrca
         public List<string> allowedTools = new List<string>();
         public bool readOnly;
         public string filePath;
+        public string sourceMod;
+        public bool defaultEnabled = true;
 
         public bool IsLocal
         {
@@ -30,6 +32,7 @@ namespace DeepseekTheOrca
     public static class OrcaSkillManager
     {
         public const string LocalPrefix = "local:";
+        public const string DefPrefix = "def:";
         private static readonly List<OrcaSkillProfile> localSkills = new List<OrcaSkillProfile>();
         private static bool loadedLocal;
 
@@ -41,13 +44,15 @@ namespace DeepseekTheOrca
         public static List<OrcaSkillProfile> AllSkills()
         {
             EnsureLoaded();
-            return localSkills.OrderBy(profile => profile.label).ToList();
+            List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
+            result.AddRange(localSkills);
+            result.AddRange(DefSkills());
+            return result.OrderBy(profile => profile.label).ToList();
         }
 
         public static List<OrcaSkillProfile> EnabledSkills()
         {
-            EnsureLoaded();
-            return localSkills.Where(profile => profile.enabled).OrderBy(profile => profile.label).ToList();
+            return AllSkills().Where(profile => profile.enabled).OrderBy(profile => profile.label).ToList();
         }
 
         public static OrcaSkillProfile CreateLocal()
@@ -62,7 +67,8 @@ namespace DeepseekTheOrca
                 triggerHints = new List<string> { "keyword" },
                 prompt = "Write the skill instructions here. Keep this focused on the skill's domain-specific behavior.",
                 allowedTools = new List<string>(),
-                readOnly = false
+                readOnly = false,
+                defaultEnabled = true
             };
             profile.filePath = PathFor(profile);
             localSkills.Add(profile);
@@ -114,6 +120,30 @@ namespace DeepseekTheOrca
             if (!profile.filePath.NullOrEmpty() && File.Exists(profile.filePath))
             {
                 File.Delete(profile.filePath);
+            }
+
+            OrcaChatWindowManager.Session.Clear();
+        }
+
+        public static void SetEnabled(OrcaSkillProfile profile, bool enabled)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            if (profile.id != null && profile.id.StartsWith(DefPrefix, StringComparison.Ordinal))
+            {
+                DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+                if (settings != null)
+                {
+                    settings.SetDefSkillEnabled(profile.id.Substring(DefPrefix.Length), enabled, profile.defaultEnabled);
+                }
+            }
+            else
+            {
+                profile.enabled = enabled;
+                Save(profile);
             }
 
             OrcaChatWindowManager.Session.Clear();
@@ -217,6 +247,41 @@ namespace DeepseekTheOrca
                     localSkills.Add(profile);
                 }
             }
+        }
+
+        private static List<OrcaSkillProfile> DefSkills()
+        {
+            List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
+            List<OrcaSkillDef> defs = DefDatabase<OrcaSkillDef>.AllDefsListForReading;
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                OrcaSkillDef def = defs[i];
+                if (def == null || def.defName.NullOrEmpty())
+                {
+                    continue;
+                }
+
+                bool enabled = settings == null ? def.defaultEnabled : settings.IsDefSkillEnabled(def.defName, def.defaultEnabled);
+                OrcaSkillProfile profile = new OrcaSkillProfile
+                {
+                    id = DefPrefix + def.defName,
+                    label = def.label.NullOrEmpty() ? def.defName : def.LabelCap.ToString(),
+                    description = def.description ?? "",
+                    enabled = enabled,
+                    triggerHints = CleanList(def.triggerHints),
+                    prompt = def.prompt ?? "",
+                    allowedTools = CleanList(def.allowedTools),
+                    readOnly = true,
+                    filePath = "",
+                    sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name,
+                    defaultEnabled = def.defaultEnabled
+                };
+                Normalize(profile);
+                result.Add(profile);
+            }
+
+            return result;
         }
 
         private static OrcaSkillProfile LoadFile(string file)

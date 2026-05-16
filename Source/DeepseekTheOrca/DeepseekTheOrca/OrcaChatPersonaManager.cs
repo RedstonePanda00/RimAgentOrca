@@ -19,8 +19,11 @@ namespace DeepseekTheOrca
         public string storytellerPortraitFolder;
         public string storytellerPortraitLargeName;
         public string storytellerPortraitTinyName;
+        public string storytellerPortraitLargePath;
+        public string storytellerPortraitTinyPath;
         public bool readOnly;
         public string filePath;
+        public string sourceMod;
 
         public bool IsLocal
         {
@@ -31,10 +34,13 @@ namespace DeepseekTheOrca
     public static class OrcaChatPersonaManager
     {
         public const string LocalPrefix = "local:";
+        public const string DefPrefix = "def:";
         public const string BuiltInOrcaId = "DTO_OrcaPersona";
         public const string DefaultStorytellerPortraitFolder = "Orca";
         public const string DefaultStorytellerPortraitLargeName = "Orca";
         public const string DefaultStorytellerPortraitTinyName = "OrcaTiny";
+        public const string DefaultStorytellerPortraitLargePath = "Orca/Orca";
+        public const string DefaultStorytellerPortraitTinyPath = "Orca/OrcaTiny";
         private const string BuiltInOrcaPrompt = @"You are Orca, an intelligent agent. Your job as the RimWorld AI storyteller is close to a tabletop RPG Game Master: you frame pressure, consequences, gifts, danger, and rhythm for the colony's story.
 You are not a customer-service assistant, not a neutral narrator, and not a debug console.
 You speak like a restrained, elegant Game Master who is present with the player, watching the colony with quiet attention and judging only when judgment has weight.
@@ -84,6 +90,7 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
             EnsureLoaded();
             List<OrcaChatPersonaProfile> result = new List<OrcaChatPersonaProfile>();
             result.Add(BuiltInOrca());
+            result.AddRange(DefPersonas());
             result.AddRange(localPersonas);
             return result.OrderBy(profile => profile.label).ToList();
         }
@@ -106,6 +113,17 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
                 return localPersonas.FirstOrDefault(profile => profile.id == id);
             }
 
+            if (id.StartsWith(DefPrefix, StringComparison.Ordinal))
+            {
+                return DefPersona(id.Substring(DefPrefix.Length));
+            }
+
+            OrcaChatPersonaProfile defProfile = DefPersona(id);
+            if (defProfile != null)
+            {
+                return defProfile;
+            }
+
             return null;
         }
 
@@ -121,8 +139,11 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
                 storytellerPortraitFolder = DefaultStorytellerPortraitFolder,
                 storytellerPortraitLargeName = DefaultStorytellerPortraitLargeName,
                 storytellerPortraitTinyName = DefaultStorytellerPortraitTinyName,
+                storytellerPortraitLargePath = DefaultStorytellerPortraitLargePath,
+                storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
                 prompt = BuiltInOrcaPrompt,
-                readOnly = true
+                readOnly = true,
+                sourceMod = "Core"
             };
             NormalizeAppearance(profile);
             return profile;
@@ -141,6 +162,8 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
                 storytellerPortraitFolder = DefaultStorytellerPortraitFolder,
                 storytellerPortraitLargeName = DefaultStorytellerPortraitLargeName,
                 storytellerPortraitTinyName = DefaultStorytellerPortraitTinyName,
+                storytellerPortraitLargePath = DefaultStorytellerPortraitLargePath,
+                storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
                 prompt = "Write this persona's character, voice, attitude, and roleplay preferences here.",
                 readOnly = false
             };
@@ -175,6 +198,8 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
             AppendText(document, root, "storytellerPortraitFolder", profile.storytellerPortraitFolder ?? "");
             AppendText(document, root, "storytellerPortraitLargeName", profile.storytellerPortraitLargeName ?? "");
             AppendText(document, root, "storytellerPortraitTinyName", profile.storytellerPortraitTinyName ?? "");
+            AppendText(document, root, "storytellerPortraitLargePath", profile.storytellerPortraitLargePath ?? "");
+            AppendText(document, root, "storytellerPortraitTinyPath", profile.storytellerPortraitTinyPath ?? "");
             XmlElement prompt = document.CreateElement("prompt");
             prompt.AppendChild(document.CreateCDataSection(profile.prompt ?? ""));
             root.AppendChild(prompt);
@@ -230,6 +255,61 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
             }
         }
 
+        private static List<OrcaChatPersonaProfile> DefPersonas()
+        {
+            List<OrcaChatPersonaProfile> result = new List<OrcaChatPersonaProfile>();
+            List<OrcaChatPersonaDef> defs = DefDatabase<OrcaChatPersonaDef>.AllDefsListForReading;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                OrcaChatPersonaProfile profile = FromDef(defs[i]);
+                if (profile != null)
+                {
+                    result.Add(profile);
+                }
+            }
+
+            return result;
+        }
+
+        private static OrcaChatPersonaProfile DefPersona(string defName)
+        {
+            if (defName.NullOrEmpty())
+            {
+                return null;
+            }
+
+            OrcaChatPersonaDef def = DefDatabase<OrcaChatPersonaDef>.GetNamedSilentFail(defName);
+            return FromDef(def);
+        }
+
+        private static OrcaChatPersonaProfile FromDef(OrcaChatPersonaDef def)
+        {
+            if (def == null || def.defName.NullOrEmpty())
+            {
+                return null;
+            }
+
+            OrcaChatPersonaProfile profile = new OrcaChatPersonaProfile
+            {
+                id = DefPrefix + def.defName,
+                label = def.label.NullOrEmpty() ? def.defName : def.LabelCap.ToString(),
+                description = def.description ?? "",
+                storytellerLabel = def.storytellerLabel,
+                storytellerDescription = def.storytellerDescription,
+                storytellerPortraitFolder = def.storytellerPortraitFolder,
+                storytellerPortraitLargeName = def.storytellerPortraitLargeName,
+                storytellerPortraitTinyName = def.storytellerPortraitTinyName,
+                storytellerPortraitLargePath = def.storytellerPortraitLargePath,
+                storytellerPortraitTinyPath = def.storytellerPortraitTinyPath,
+                prompt = def.prompt ?? "",
+                readOnly = true,
+                filePath = "",
+                sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name
+            };
+            NormalizeAppearance(profile);
+            return profile;
+        }
+
         private static OrcaChatPersonaProfile LoadFile(string file)
         {
             try
@@ -262,6 +342,8 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
                     storytellerPortraitFolder = ReadText(root, "storytellerPortraitFolder"),
                     storytellerPortraitLargeName = ReadText(root, "storytellerPortraitLargeName"),
                     storytellerPortraitTinyName = ReadText(root, "storytellerPortraitTinyName"),
+                    storytellerPortraitLargePath = ReadText(root, "storytellerPortraitLargePath"),
+                    storytellerPortraitTinyPath = ReadText(root, "storytellerPortraitTinyPath"),
                     prompt = ReadText(root, "prompt"),
                     readOnly = false,
                     filePath = file
@@ -332,6 +414,47 @@ If an execution tool succeeds, do not say it in technical terms. Say it as Orca:
             {
                 profile.storytellerPortraitTinyName = DefaultStorytellerPortraitTinyName;
             }
+
+            if (profile.storytellerPortraitLargePath.NullOrEmpty())
+            {
+                profile.storytellerPortraitLargePath = TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitLargeName);
+            }
+            if (profile.storytellerPortraitTinyPath.NullOrEmpty())
+            {
+                profile.storytellerPortraitTinyPath = TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitTinyName);
+            }
+            profile.storytellerPortraitLargePath = CleanTexturePath(profile.storytellerPortraitLargePath);
+            profile.storytellerPortraitTinyPath = CleanTexturePath(profile.storytellerPortraitTinyPath);
+            if (profile.storytellerPortraitLargePath.NullOrEmpty())
+            {
+                profile.storytellerPortraitLargePath = DefaultStorytellerPortraitLargePath;
+            }
+            if (profile.storytellerPortraitTinyPath.NullOrEmpty())
+            {
+                profile.storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath;
+            }
+        }
+
+        private static string TexturePath(string folder, string fileName)
+        {
+            folder = CleanTexturePath(folder);
+            fileName = CleanTexturePath(fileName);
+            if (folder.NullOrEmpty())
+            {
+                return fileName;
+            }
+
+            if (fileName.NullOrEmpty())
+            {
+                return folder;
+            }
+
+            return folder + "/" + fileName;
+        }
+
+        private static string CleanTexturePath(string path)
+        {
+            return (path ?? "").Trim().Trim('/').Trim('\\').Replace('\\', '/');
         }
     }
 }

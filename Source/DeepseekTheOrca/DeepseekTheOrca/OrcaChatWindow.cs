@@ -255,6 +255,13 @@ namespace DeepseekTheOrca
         private OrcaChatRequestStage pendingStage;
         private bool hasForcedNextModelRole;
         private OrcaLlmModelRole forcedNextModelRole;
+        private string lastControllerRoute = "direct";
+        private string currentModelRoleLabel = "";
+        private string currentModelReference = "";
+        private int totalToolCalls;
+        private int failedToolCalls;
+        private string lastToolName = "";
+        private string lastToolResult = "";
 
         public bool IsWaiting
         {
@@ -317,6 +324,41 @@ namespace DeepseekTheOrca
         public List<OrcaChatTurnLog> TurnLogs
         {
             get { return turnLogs; }
+        }
+
+        public string LastControllerRoute
+        {
+            get { return lastControllerRoute; }
+        }
+
+        public string CurrentModelRoleLabel
+        {
+            get { return currentModelRoleLabel; }
+        }
+
+        public string CurrentModelReference
+        {
+            get { return currentModelReference; }
+        }
+
+        public int TotalToolCalls
+        {
+            get { return totalToolCalls; }
+        }
+
+        public int FailedToolCalls
+        {
+            get { return failedToolCalls; }
+        }
+
+        public string LastToolName
+        {
+            get { return lastToolName; }
+        }
+
+        public string LastToolResult
+        {
+            get { return lastToolResult; }
         }
 
         public void Send(string userText)
@@ -490,6 +532,13 @@ namespace DeepseekTheOrca
             processLines.Clear();
             turnLogs.Clear();
             currentTurn = null;
+            lastControllerRoute = "direct";
+            currentModelRoleLabel = "";
+            currentModelReference = "";
+            totalToolCalls = 0;
+            failedToolCalls = 0;
+            lastToolName = "";
+            lastToolResult = "";
             conversationVersion++;
         }
 
@@ -507,6 +556,8 @@ namespace DeepseekTheOrca
                 900,
                 0.85f,
                 role);
+            currentModelRoleLabel = ModelRoleLabel(role);
+            currentModelReference = settings.ModelForRole(role);
             AddProcess("Request sent to " + ModelRoleLabel(role) + " model: " + settings.ModelForRole(role));
         }
 
@@ -518,6 +569,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            lastControllerRoute = "direct";
             StartRequest(settings);
         }
 
@@ -525,6 +577,8 @@ namespace DeepseekTheOrca
         {
             pendingStage = OrcaChatRequestStage.Controller;
             pendingRequest = client.SendPlainChatCompletionAsync(settings, BuildControllerMessages(), OrcaLlmModelRole.Controller);
+            currentModelRoleLabel = ModelRoleLabel(OrcaLlmModelRole.Controller);
+            currentModelReference = settings.ModelForRole(OrcaLlmModelRole.Controller);
             AddProcess("Request sent to controller model: " + settings.ModelForRole(OrcaLlmModelRole.Controller));
         }
 
@@ -542,6 +596,7 @@ namespace DeepseekTheOrca
 
             List<LlmChatMessage> controllerMessages = new List<LlmChatMessage>();
             string skillRoutingHint = OrcaSkillManager.FormatControllerRoutingHint();
+            string pluginRoutingHint = DeepseekTheOrcaMod.FormatPluginControllerRoutingHint();
             controllerMessages.Add(LlmChatMessage.System(
                 "You are the chat controller model. Route the latest RimWorld chat turn to exactly one specialist. "
                 + "Return exactly one JSON object and no extra text. "
@@ -551,7 +606,8 @@ namespace DeepseekTheOrca
                 + "Use web_search only for current external public-web information outside the game. "
                 + "Use vision only when the request clearly depends on image recognition. "
                 + "If unsure, choose tool when game state might matter, otherwise dialogue. "
-                + skillRoutingHint));
+                + skillRoutingHint
+                + pluginRoutingHint));
             controllerMessages.Add(LlmChatMessage.User(latestUserContent));
             return controllerMessages;
         }
@@ -568,6 +624,7 @@ namespace DeepseekTheOrca
 
             string route = ParseControllerRoute(response.content);
             OrcaLlmModelRole role = ModelRoleForControllerRoute(route, settings);
+            lastControllerRoute = route;
             ForceNextModelRole(role);
             AddProcess("Controller route: " + route + " -> " + ModelRoleLabel(role) + " model.");
             StartRequest(settings);
@@ -666,6 +723,13 @@ namespace DeepseekTheOrca
                 }
 
                 AddProcess("Tool result: " + (result.success ? "ok" : "failed") + " - " + result.message + FormatValues(result));
+                totalToolCalls++;
+                lastToolName = toolCall.name;
+                lastToolResult = (result.success ? "ok" : "failed") + " - " + result.message;
+                if (!result.success)
+                {
+                    failedToolCalls++;
+                }
                 RecordToolMemory(toolCall.name, result);
                 messages.Add(LlmChatMessage.Tool(toolCall.id, SerializeToolResult(result)));
             }
@@ -868,6 +932,13 @@ namespace DeepseekTheOrca
             if (!skillPrompt.NullOrEmpty())
             {
                 builder.AppendLine(skillPrompt);
+                builder.AppendLine();
+            }
+
+            string pluginPrompt = DeepseekTheOrcaMod.FormatEnabledPluginPrompt();
+            if (!pluginPrompt.NullOrEmpty())
+            {
+                builder.AppendLine(pluginPrompt);
                 builder.AppendLine();
             }
 

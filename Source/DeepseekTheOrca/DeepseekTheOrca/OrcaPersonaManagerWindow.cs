@@ -46,14 +46,14 @@ namespace DeepseekTheOrca
 
             List<OrcaChatPersonaProfile> personas = OrcaChatPersonaManager.AllPersonas();
             Rect outRect = new Rect(inRect.x, y, inRect.width, inRect.height - y);
-            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, Mathf.Max(outRect.height, personas.Count * 78f + 8f));
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, Mathf.Max(outRect.height, personas.Count * 88f + 8f));
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
 
             float rowY = 0f;
             for (int i = 0; i < personas.Count; i++)
             {
-                DrawPersonaRow(personas[i], new Rect(0f, rowY, viewRect.width, 72f));
-                rowY += 78f;
+                DrawPersonaRow(personas[i], new Rect(0f, rowY, viewRect.width, 82f));
+                rowY += 88f;
             }
 
             Widgets.EndScrollView();
@@ -63,7 +63,7 @@ namespace DeepseekTheOrca
         {
             Widgets.DrawBoxSolid(rect, new Color(0.08f, 0.08f, 0.09f, 0.7f));
             Rect textRect = new Rect(rect.x + 8f, rect.y + 6f, rect.width - 250f, 24f);
-            string title = profile.label + (profile.readOnly ? " (" + "DTO_ChatPersonaReadOnly".Translate().ToString() + ")" : "");
+            string title = profile.label + " (" + SourceName(profile) + ")";
             Widgets.Label(textRect, title);
             Widgets.Label(new Rect(textRect.x, textRect.yMax + 4f, textRect.width, 24f), profile.description ?? "");
 
@@ -76,31 +76,30 @@ namespace DeepseekTheOrca
             }
 
             Rect editRect = new Rect(selectRect.xMax + 8f, selectRect.y, 72f, 28f);
-            if (profile.readOnly)
-            {
-                GUI.color = Color.gray;
-                Widgets.ButtonText(editRect, "DTO_ChatPersonaEdit".Translate());
-                GUI.color = Color.white;
-            }
-            else if (Widgets.ButtonText(editRect, "DTO_ChatPersonaEdit".Translate()))
+            if (!profile.readOnly && Widgets.ButtonText(editRect, "DTO_ChatPersonaEdit".Translate()))
             {
                 Find.WindowStack.Add(new OrcaPersonaEditorWindow(profile));
             }
 
             Rect deleteRect = new Rect(editRect.xMax + 8f, editRect.y, 72f, 28f);
-            if (profile.readOnly)
-            {
-                GUI.color = Color.gray;
-                Widgets.ButtonText(deleteRect, "DTO_ChatPersonaDelete".Translate());
-                GUI.color = Color.white;
-            }
-            else if (Widgets.ButtonText(deleteRect, "DTO_ChatPersonaDelete".Translate()))
+            if (!profile.readOnly && Widgets.ButtonText(deleteRect, "DTO_ChatPersonaDelete".Translate()))
             {
                 Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("DTO_ChatPersonaDeleteConfirm".Translate(profile.label), delegate
                 {
                     OrcaChatPersonaManager.Delete(profile);
                 }, destructive: true));
             }
+        }
+
+        private static string SourceName(OrcaChatPersonaProfile profile)
+        {
+            string source = profile == null ? "" : profile.sourceMod;
+            if (source.NullOrEmpty())
+            {
+                source = "DTO_ExtensionSourceLocal".Translate().ToString();
+            }
+
+            return source;
         }
     }
 
@@ -111,9 +110,8 @@ namespace DeepseekTheOrca
         private string descriptionBuffer;
         private string storytellerLabelBuffer;
         private string storytellerDescriptionBuffer;
-        private string portraitFolderBuffer;
-        private string portraitLargeNameBuffer;
-        private string portraitTinyNameBuffer;
+        private string portraitLargePathBuffer;
+        private string portraitTinyPathBuffer;
         private string promptBuffer;
         private Vector2 promptScrollPosition;
 
@@ -125,9 +123,8 @@ namespace DeepseekTheOrca
             OrcaChatPersonaManager.NormalizeAppearance(profile);
             storytellerLabelBuffer = profile == null ? "" : profile.storytellerLabel;
             storytellerDescriptionBuffer = profile == null ? "" : profile.storytellerDescription;
-            portraitFolderBuffer = profile == null ? "" : profile.storytellerPortraitFolder;
-            portraitLargeNameBuffer = profile == null ? "" : profile.storytellerPortraitLargeName;
-            portraitTinyNameBuffer = profile == null ? "" : profile.storytellerPortraitTinyName;
+            portraitLargePathBuffer = profile == null ? "" : profile.storytellerPortraitLargePath;
+            portraitTinyPathBuffer = profile == null ? "" : profile.storytellerPortraitTinyPath;
             promptBuffer = profile == null ? "" : profile.prompt;
             doCloseX = true;
             closeOnAccept = false;
@@ -175,14 +172,14 @@ namespace DeepseekTheOrca
             storytellerDescriptionBuffer = Widgets.TextField(new Rect(inRect.x, y, inRect.width, 28f), storytellerDescriptionBuffer ?? "");
             y += 36f;
 
-            float columnWidth = (inRect.width - 16f) / 3f;
-            Widgets.Label(new Rect(inRect.x, y, columnWidth, 24f), "DTO_StorytellerPortraitFolder".Translate());
-            Widgets.Label(new Rect(inRect.x + columnWidth + 8f, y, columnWidth, 24f), "DTO_StorytellerPortraitLargeName".Translate());
-            Widgets.Label(new Rect(inRect.x + (columnWidth + 8f) * 2f, y, columnWidth, 24f), "DTO_StorytellerPortraitTinyName".Translate());
+            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitLargePath".Translate());
             y += 24f;
-            portraitFolderBuffer = Widgets.TextField(new Rect(inRect.x, y, columnWidth, 28f), portraitFolderBuffer ?? "");
-            portraitLargeNameBuffer = Widgets.TextField(new Rect(inRect.x + columnWidth + 8f, y, columnWidth, 28f), portraitLargeNameBuffer ?? "");
-            portraitTinyNameBuffer = Widgets.TextField(new Rect(inRect.x + (columnWidth + 8f) * 2f, y, columnWidth, 28f), portraitTinyNameBuffer ?? "");
+            portraitLargePathBuffer = Widgets.TextField(new Rect(inRect.x, y, inRect.width, 28f), portraitLargePathBuffer ?? "");
+            y += 34f;
+
+            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitTinyPath".Translate());
+            y += 24f;
+            portraitTinyPathBuffer = Widgets.TextField(new Rect(inRect.x, y, inRect.width, 28f), portraitTinyPathBuffer ?? "");
             y += 34f;
 
             OrcaChatPersonaProfile preview = new OrcaChatPersonaProfile
@@ -191,13 +188,12 @@ namespace DeepseekTheOrca
                 description = descriptionBuffer,
                 storytellerLabel = storytellerLabelBuffer,
                 storytellerDescription = storytellerDescriptionBuffer,
-                storytellerPortraitFolder = portraitFolderBuffer,
-                storytellerPortraitLargeName = portraitLargeNameBuffer,
-                storytellerPortraitTinyName = portraitTinyNameBuffer
+                storytellerPortraitLargePath = portraitLargePathBuffer,
+                storytellerPortraitTinyPath = portraitTinyPathBuffer
             };
-            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitLargePath".Translate() + ": " + OrcaStorytellerAppearance.LargePortraitPath(preview));
+            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitResolvedLargePath".Translate() + ": " + OrcaStorytellerAppearance.LargePortraitPath(preview));
             y += 24f;
-            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitTinyPath".Translate() + ": " + OrcaStorytellerAppearance.TinyPortraitPath(preview));
+            Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_StorytellerPortraitResolvedTinyPath".Translate() + ": " + OrcaStorytellerAppearance.TinyPortraitPath(preview));
             y += 34f;
 
             Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_ChatPersonaPrompt".Translate());
@@ -216,9 +212,8 @@ namespace DeepseekTheOrca
                 profile.description = descriptionBuffer ?? "";
                 profile.storytellerLabel = storytellerLabelBuffer ?? "";
                 profile.storytellerDescription = storytellerDescriptionBuffer ?? "";
-                profile.storytellerPortraitFolder = portraitFolderBuffer ?? "";
-                profile.storytellerPortraitLargeName = portraitLargeNameBuffer ?? "";
-                profile.storytellerPortraitTinyName = portraitTinyNameBuffer ?? "";
+                profile.storytellerPortraitLargePath = portraitLargePathBuffer ?? "";
+                profile.storytellerPortraitTinyPath = portraitTinyPathBuffer ?? "";
                 OrcaChatPersonaManager.NormalizeAppearance(profile);
                 profile.prompt = promptBuffer ?? "";
                 OrcaChatPersonaManager.Save(profile);

@@ -164,6 +164,10 @@ namespace DeepseekTheOrca
         public string httpMcpBearerToken = "";
         public int httpMcpMaxResultChars = 6000;
         public List<OrcaHttpMcpServerSettings> httpMcpServers = new List<OrcaHttpMcpServerSettings>();
+        public List<string> enabledDefSkills = new List<string>();
+        public List<string> disabledDefSkills = new List<string>();
+        public List<string> enabledDefPlugins = new List<string>();
+        public List<string> disabledDefPlugins = new List<string>();
         public string apiProvider = LlmProviderConfig.DeepSeek;
         public string customBaseUrl = "";
         public string apiKey = "";
@@ -353,6 +357,79 @@ namespace DeepseekTheOrca
             }
 
             return options;
+        }
+
+        public bool IsDefSkillEnabled(string defName, bool defaultEnabled)
+        {
+            return IsDefToggleEnabled(defName, defaultEnabled, enabledDefSkills, disabledDefSkills);
+        }
+
+        public void SetDefSkillEnabled(string defName, bool enabled, bool defaultEnabled)
+        {
+            SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefSkills, ref disabledDefSkills);
+        }
+
+        public bool IsDefPluginEnabled(string defName, bool defaultEnabled)
+        {
+            return IsDefToggleEnabled(defName, defaultEnabled, enabledDefPlugins, disabledDefPlugins);
+        }
+
+        public void SetDefPluginEnabled(string defName, bool enabled, bool defaultEnabled)
+        {
+            SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefPlugins, ref disabledDefPlugins);
+        }
+
+        private static bool IsDefToggleEnabled(string defName, bool defaultEnabled, List<string> enabledOverrides, List<string> disabledOverrides)
+        {
+            if (defName.NullOrEmpty())
+            {
+                return defaultEnabled;
+            }
+
+            if (enabledOverrides != null && enabledOverrides.Contains(defName))
+            {
+                return true;
+            }
+
+            if (disabledOverrides != null && disabledOverrides.Contains(defName))
+            {
+                return false;
+            }
+
+            return defaultEnabled;
+        }
+
+        private static void SetDefToggleEnabled(string defName, bool enabled, bool defaultEnabled, ref List<string> enabledOverrides, ref List<string> disabledOverrides)
+        {
+            if (defName.NullOrEmpty())
+            {
+                return;
+            }
+
+            if (enabledOverrides == null)
+            {
+                enabledOverrides = new List<string>();
+            }
+            if (disabledOverrides == null)
+            {
+                disabledOverrides = new List<string>();
+            }
+
+            enabledOverrides.RemoveAll(value => value == defName);
+            disabledOverrides.RemoveAll(value => value == defName);
+            if (enabled == defaultEnabled)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                enabledOverrides.Add(defName);
+            }
+            else
+            {
+                disabledOverrides.Add(defName);
+            }
         }
 
         public string ModelReferenceLabel(string reference)
@@ -560,6 +637,10 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref httpMcpBearerToken, "httpMcpBearerToken", "");
             Scribe_Values.Look(ref httpMcpMaxResultChars, "httpMcpMaxResultChars", 6000);
             Scribe_Collections.Look(ref httpMcpServers, "httpMcpServers", LookMode.Deep);
+            Scribe_Collections.Look(ref enabledDefSkills, "enabledDefSkills", LookMode.Value);
+            Scribe_Collections.Look(ref disabledDefSkills, "disabledDefSkills", LookMode.Value);
+            Scribe_Collections.Look(ref enabledDefPlugins, "enabledDefPlugins", LookMode.Value);
+            Scribe_Collections.Look(ref disabledDefPlugins, "disabledDefPlugins", LookMode.Value);
             Scribe_Values.Look(ref apiProvider, "apiProvider", LlmProviderConfig.DeepSeek);
             Scribe_Values.Look(ref customBaseUrl, "customBaseUrl", "");
             Scribe_Values.Look(ref apiKey, "apiKey", "");
@@ -587,6 +668,22 @@ namespace DeepseekTheOrca
             if (httpMcpServers == null)
             {
                 httpMcpServers = new List<OrcaHttpMcpServerSettings>();
+            }
+            if (enabledDefSkills == null)
+            {
+                enabledDefSkills = new List<string>();
+            }
+            if (disabledDefSkills == null)
+            {
+                disabledDefSkills = new List<string>();
+            }
+            if (enabledDefPlugins == null)
+            {
+                enabledDefPlugins = new List<string>();
+            }
+            if (disabledDefPlugins == null)
+            {
+                disabledDefPlugins = new List<string>();
             }
 
             if (httpMcpServers.Count == 0 && !httpMcpUrl.NullOrEmpty())

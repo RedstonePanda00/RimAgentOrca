@@ -73,6 +73,7 @@
         <Compile Include="MainTabWindow_DeepseekOrcaDebug.cs" />
         <Compile Include="MiniJson.cs" />
         <Compile Include="OrcaHttpMcpClient.cs" />
+        <Compile Include="OrcaExtensionDefs.cs" />
         <Compile Include="OrcaDecisionProvider.cs" />
         <Compile Include="OrcaChatWindow.cs" />
         <Compile Include="OrcaIncidentDefCache.cs" />

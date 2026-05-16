@@ -1,0 +1,3 @@
+# Keep development source files in the repository, but omit them from
+# release archives created with `git archive`.
+/Source/** export-ignore

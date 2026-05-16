@@ -13,6 +13,9 @@ namespace DeepseekTheOrca
         public int cacheHitTokens;
         public int cacheMissTokens;
         public int elapsedMs;
+        public string role;
+        public string model;
+        public string providerId;
     }
 
     public sealed class LlmUsageSummary
@@ -25,6 +28,17 @@ namespace DeepseekTheOrca
         public float averageTokens;
         public float cacheHitRate;
         public float averageElapsedMs;
+        public string lastRole;
+        public string lastModel;
+        public int lastTokens;
+        public int lastElapsedMs;
+        public int controllerCalls;
+        public int decisionCalls;
+        public int dialogueCalls;
+        public int toolModelCalls;
+        public int visionCalls;
+        public int webSearchCalls;
+        public int fallbackCalls;
     }
 
     public static class LlmUsageTracker
@@ -50,7 +64,10 @@ namespace DeepseekTheOrca
                     totalTokens = response.totalTokens,
                     cacheHitTokens = response.cacheHitTokens,
                     cacheMissTokens = response.cacheMissTokens,
-                    elapsedMs = response.elapsedMs
+                    elapsedMs = response.elapsedMs,
+                    role = response.role ?? "",
+                    model = response.model ?? "",
+                    providerId = response.providerId ?? ""
                 });
 
                 while (samples.Count > MaxSamples)
@@ -72,7 +89,10 @@ namespace DeepseekTheOrca
                     totalTokens = sample.totalTokens,
                     cacheHitTokens = sample.cacheHitTokens,
                     cacheMissTokens = sample.cacheMissTokens,
-                    elapsedMs = sample.elapsedMs
+                    elapsedMs = sample.elapsedMs,
+                    role = sample.role,
+                    model = sample.model,
+                    providerId = sample.providerId
                 }).ToList();
             }
         }
@@ -100,8 +120,25 @@ namespace DeepseekTheOrca
                 summary.maxTokens = samples.Max(sample => sample.totalTokens);
                 summary.averageTokens = (float)samples.Average(sample => sample.totalTokens);
                 summary.averageElapsedMs = (float)samples.Average(sample => sample.elapsedMs);
+                LlmUsageSample last = samples[samples.Count - 1];
+                summary.lastRole = last.role ?? "";
+                summary.lastModel = last.model ?? "";
+                summary.lastTokens = last.totalTokens;
+                summary.lastElapsedMs = last.elapsedMs;
+                summary.controllerCalls = CountRole("Controller");
+                summary.decisionCalls = CountRole("Decision");
+                summary.dialogueCalls = CountRole("Dialogue");
+                summary.toolModelCalls = CountRole("Tool");
+                summary.visionCalls = CountRole("Vision");
+                summary.webSearchCalls = CountRole("WebSearch");
+                summary.fallbackCalls = CountRole("Fallback");
                 return summary;
             }
+        }
+
+        private static int CountRole(string role)
+        {
+            return samples.Count(sample => string.Equals(sample.role, role, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

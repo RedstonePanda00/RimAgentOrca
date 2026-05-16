@@ -2,58 +2,111 @@ using UnityEngine;
 using Verse;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace DeepseekTheOrca
 {
     internal sealed class OrcaPluginDescriptor
     {
         public readonly string id;
-        private readonly string labelKey;
-        private readonly string categoryKey;
-        private readonly string descriptionKey;
-        private readonly string detailsKey;
-        private readonly string enableLabelKey;
-        private readonly string enableTooltipKey;
+        public readonly bool defaultEnabled;
+        public readonly string prompt;
+        public readonly List<string> triggerHints;
+        public readonly List<string> allowedTools;
+        public readonly string sourceMod;
+        private readonly bool translateText;
+        private readonly string labelText;
+        private readonly string categoryText;
+        private readonly string descriptionText;
+        private readonly string detailsText;
+        private readonly string enableLabelText;
+        private readonly string enableTooltipText;
 
         public OrcaPluginDescriptor(string id, string labelKey, string categoryKey, string descriptionKey, string detailsKey, string enableLabelKey, string enableTooltipKey)
         {
             this.id = id;
-            this.labelKey = labelKey;
-            this.categoryKey = categoryKey;
-            this.descriptionKey = descriptionKey;
-            this.detailsKey = detailsKey;
-            this.enableLabelKey = enableLabelKey;
-            this.enableTooltipKey = enableTooltipKey;
+            translateText = true;
+            labelText = labelKey;
+            categoryText = categoryKey;
+            descriptionText = descriptionKey;
+            detailsText = detailsKey;
+            enableLabelText = enableLabelKey;
+            enableTooltipText = enableTooltipKey;
+            defaultEnabled = true;
+            prompt = "";
+            triggerHints = new List<string>();
+            allowedTools = new List<string>();
+            sourceMod = "Core";
+        }
+
+        public OrcaPluginDescriptor(OrcaPluginDef def)
+        {
+            id = DeepseekTheOrcaMod.OrcaPluginDefPrefix + def.defName;
+            translateText = false;
+            labelText = def.label.NullOrEmpty() ? def.defName : def.LabelCap.ToString();
+            categoryText = def.category ?? "";
+            descriptionText = def.description ?? "";
+            detailsText = def.details ?? "";
+            enableLabelText = "Enable " + labelText;
+            enableTooltipText = descriptionText;
+            defaultEnabled = def.defaultEnabled;
+            prompt = def.prompt ?? "";
+            triggerHints = CleanList(def.triggerHints);
+            allowedTools = CleanList(def.allowedTools);
+            sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name;
         }
 
         public string Label
         {
-            get { return labelKey.Translate(); }
+            get { return Text(labelText); }
         }
 
         public string Category
         {
-            get { return categoryKey.Translate(); }
+            get { return Text(categoryText); }
         }
 
         public string Description
         {
-            get { return descriptionKey.Translate(); }
+            get { return Text(descriptionText); }
         }
 
         public string Details
         {
-            get { return detailsKey.Translate(); }
+            get { return Text(detailsText); }
         }
 
         public string EnableLabel
         {
-            get { return enableLabelKey.Translate(); }
+            get { return Text(enableLabelText); }
         }
 
         public string EnableTooltip
         {
-            get { return enableTooltipKey.Translate(); }
+            get { return Text(enableTooltipText); }
+        }
+
+        private string Text(string value)
+        {
+            if (value.NullOrEmpty())
+            {
+                return "";
+            }
+
+            return translateText ? value.Translate().ToString() : value;
+        }
+
+        private static List<string> CleanList(List<string> values)
+        {
+            if (values == null)
+            {
+                return new List<string>();
+            }
+
+            return values.Select(value => value == null ? "" : value.Trim())
+                .Where(value => !value.NullOrEmpty())
+                .Distinct()
+                .ToList();
         }
     }
 
@@ -92,7 +145,8 @@ namespace DeepseekTheOrca
         private static readonly Color BorderColor = new Color(0.42f, 0.45f, 0.48f, 1f);
         private const string MoodPluginId = "mood";
         private const string ProactivePluginId = "ambient_proactive_dialogue";
-        private static readonly List<OrcaPluginDescriptor> PluginDescriptors = new List<OrcaPluginDescriptor>
+        internal const string OrcaPluginDefPrefix = "def:";
+        private static readonly List<OrcaPluginDescriptor> BuiltInPluginDescriptors = new List<OrcaPluginDescriptor>
         {
             new OrcaPluginDescriptor(
                 MoodPluginId,
@@ -424,13 +478,14 @@ namespace DeepseekTheOrca
 
         private void DrawPluginManager(Rect rect)
         {
-            if (PluginDescriptors.Count == 0)
+            List<OrcaPluginDescriptor> plugins = AllPluginDescriptors();
+            if (plugins.Count == 0)
             {
                 Widgets.Label(rect, "DTO_PluginManagerEmpty".Translate());
                 return;
             }
 
-            OrcaPluginDescriptor selected = PluginDescriptors.FirstOrDefault(p => p.id == selectedPluginId) ?? PluginDescriptors[0];
+            OrcaPluginDescriptor selected = plugins.FirstOrDefault(p => p.id == selectedPluginId) ?? plugins[0];
             selectedPluginId = selected.id;
 
             float gap = 10f;
@@ -440,20 +495,20 @@ namespace DeepseekTheOrca
 
             DrawPanel(listRect);
             DrawPanel(detailRect);
-            DrawPluginList(listRect.ContractedBy(8f));
+            DrawPluginList(listRect.ContractedBy(8f), plugins);
             DrawPluginDetails(detailRect.ContractedBy(12f), selected);
         }
 
-        private void DrawPluginList(Rect rect)
+        private void DrawPluginList(Rect rect, List<OrcaPluginDescriptor> plugins)
         {
             Text.Font = GameFont.Small;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 24f), "DTO_PluginManagerInstalled".Translate());
 
             float y = rect.y + 32f;
-            for (int i = 0; i < PluginDescriptors.Count; i++)
+            for (int i = 0; i < plugins.Count; i++)
             {
-                OrcaPluginDescriptor plugin = PluginDescriptors[i];
-                Rect row = new Rect(rect.x, y, rect.width, 56f);
+                OrcaPluginDescriptor plugin = plugins[i];
+                Rect row = new Rect(rect.x, y, rect.width, 68f);
                 bool selected = plugin.id == selectedPluginId;
                 if (selected)
                 {
@@ -469,14 +524,15 @@ namespace DeepseekTheOrca
                     selectedPluginId = plugin.id;
                 }
 
-                string state = PluginEnabled(plugin.id) ? "DTO_PluginStateEnabled".Translate().ToString() : "DTO_PluginStateDisabled".Translate().ToString();
+                string state = PluginEnabled(plugin) ? "DTO_PluginStateEnabled".Translate().ToString() : "DTO_PluginStateDisabled".Translate().ToString();
                 Widgets.Label(new Rect(row.x + 8f, row.y + 7f, row.width - 16f, 24f), plugin.Label);
                 Text.Anchor = TextAnchor.UpperRight;
                 Widgets.Label(new Rect(row.x + 8f, row.y + 29f, row.width - 16f, 22f), state);
                 Text.Anchor = TextAnchor.UpperLeft;
+                Widgets.Label(new Rect(row.x + 8f, row.y + 47f, row.width - 16f, 20f), PluginSourceText(plugin));
 
                 TooltipHandler.TipRegion(row, plugin.Description);
-                y += 62f;
+                y += 74f;
             }
         }
 
@@ -489,15 +545,17 @@ namespace DeepseekTheOrca
             float y = rect.y + 38f;
             Widgets.Label(new Rect(rect.x, y, rect.width, 24f), "DTO_PluginCategory".Translate() + ": " + plugin.Category);
             y += 30f;
+            Widgets.Label(new Rect(rect.x, y, rect.width, 24f), PluginSourceText(plugin));
+            y += 30f;
 
-            bool enabled = PluginEnabled(plugin.id);
+            bool enabled = PluginEnabled(plugin);
             bool oldEnabled = enabled;
             Rect checkboxRect = new Rect(rect.x, y, rect.width, 28f);
             Widgets.CheckboxLabeled(checkboxRect, plugin.EnableLabel, ref enabled, false, null, null, false);
             TooltipHandler.TipRegion(checkboxRect, plugin.EnableTooltip);
             if (enabled != oldEnabled)
             {
-                SetPluginEnabled(plugin.id, enabled);
+                SetPluginEnabled(plugin, enabled);
             }
             y += 38f;
 
@@ -529,21 +587,56 @@ namespace DeepseekTheOrca
             listing.End();
         }
 
-        private static bool PluginEnabled(string id)
+        private static List<OrcaPluginDescriptor> AllPluginDescriptors()
         {
+            List<OrcaPluginDescriptor> result = new List<OrcaPluginDescriptor>();
+            result.AddRange(BuiltInPluginDescriptors);
+            List<OrcaPluginDef> defs = DefDatabase<OrcaPluginDef>.AllDefsListForReading;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                OrcaPluginDef def = defs[i];
+                if (def != null && !def.defName.NullOrEmpty())
+                {
+                    result.Add(new OrcaPluginDescriptor(def));
+                }
+            }
+
+            return result.OrderBy(plugin => plugin.Label).ToList();
+        }
+
+        private static bool PluginEnabled(OrcaPluginDescriptor plugin)
+        {
+            if (plugin == null)
+            {
+                return false;
+            }
+
+            string id = plugin.id;
             switch (id)
             {
                 case MoodPluginId:
-                    return Settings.enableMoodPlugin;
+                    return Settings == null || Settings.enableMoodPlugin;
                 case ProactivePluginId:
-                    return Settings.enableAmbientProactiveDialogue;
+                    return Settings == null || Settings.enableAmbientProactiveDialogue;
                 default:
-                    return false;
+                    if (id != null && id.StartsWith(OrcaPluginDefPrefix, System.StringComparison.Ordinal))
+                    {
+                        return Settings == null
+                            ? plugin.defaultEnabled
+                            : Settings.IsDefPluginEnabled(id.Substring(OrcaPluginDefPrefix.Length), plugin.defaultEnabled);
+                    }
+                    return plugin.defaultEnabled;
             }
         }
 
-        private static void SetPluginEnabled(string id, bool enabled)
+        private static void SetPluginEnabled(OrcaPluginDescriptor plugin, bool enabled)
         {
+            if (plugin == null)
+            {
+                return;
+            }
+
+            string id = plugin.id;
             switch (id)
             {
                 case MoodPluginId:
@@ -553,7 +646,102 @@ namespace DeepseekTheOrca
                 case ProactivePluginId:
                     Settings.enableAmbientProactiveDialogue = enabled;
                     break;
+                default:
+                    if (id != null && id.StartsWith(OrcaPluginDefPrefix, System.StringComparison.Ordinal) && Settings != null)
+                    {
+                        Settings.SetDefPluginEnabled(id.Substring(OrcaPluginDefPrefix.Length), enabled, plugin.defaultEnabled);
+                        OrcaChatWindowManager.Session.Clear();
+                    }
+                    break;
             }
+        }
+
+        public static string FormatEnabledPluginPrompt()
+        {
+            List<OrcaPluginDescriptor> plugins = AllPluginDescriptors()
+                .Where(plugin => plugin.id != MoodPluginId && plugin.id != ProactivePluginId && PluginEnabled(plugin) && !plugin.prompt.NullOrEmpty())
+                .ToList();
+            if (plugins.Count == 0)
+            {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Enabled plugin modules:");
+            builder.AppendLine("Plugins may add broad behavior, formatting, or runtime context instructions. Treat them as lower priority than safety, game validity, persona, and direct player intent.");
+            for (int i = 0; i < plugins.Count; i++)
+            {
+                OrcaPluginDescriptor plugin = plugins[i];
+                builder.AppendLine();
+                builder.AppendLine("Plugin: " + SafeLine(plugin.Label));
+                if (!plugin.Category.NullOrEmpty())
+                {
+                    builder.AppendLine("Category: " + SafeLine(plugin.Category));
+                }
+                if (!plugin.Description.NullOrEmpty())
+                {
+                    builder.AppendLine("Description: " + SafeLine(plugin.Description));
+                }
+                if (plugin.allowedTools != null && plugin.allowedTools.Count > 0)
+                {
+                    builder.AppendLine("Allowed/recommended tools: " + string.Join(", ", plugin.allowedTools.ToArray()));
+                }
+                builder.AppendLine("Instructions:");
+                builder.AppendLine(plugin.prompt.Trim());
+            }
+
+            return builder.ToString().TrimEnd();
+        }
+
+        public static string FormatPluginControllerRoutingHint()
+        {
+            List<OrcaPluginDescriptor> plugins = AllPluginDescriptors()
+                .Where(plugin => plugin.id != MoodPluginId && plugin.id != ProactivePluginId && PluginEnabled(plugin))
+                .ToList();
+            if (plugins.Count == 0)
+            {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(" Enabled plugin modules may affect routing. Plugins: ");
+            for (int i = 0; i < plugins.Count; i++)
+            {
+                OrcaPluginDescriptor plugin = plugins[i];
+                if (i > 0)
+                {
+                    builder.Append("; ");
+                }
+                builder.Append(SafeLine(plugin.Label));
+                if (plugin.triggerHints != null && plugin.triggerHints.Count > 0)
+                {
+                    builder.Append(" triggers=");
+                    builder.Append(string.Join(",", plugin.triggerHints.ToArray()));
+                }
+                if (plugin.allowedTools != null && plugin.allowedTools.Count > 0)
+                {
+                    builder.Append(" tools=");
+                    builder.Append(string.Join(",", plugin.allowedTools.ToArray()));
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string SafeLine(string value)
+        {
+            return (value ?? "").Replace("\r", " ").Replace("\n", " ").Trim();
+        }
+
+        private static string PluginSourceText(OrcaPluginDescriptor plugin)
+        {
+            string source = plugin == null ? "" : plugin.sourceMod;
+            if (source.NullOrEmpty())
+            {
+                source = "DTO_ExtensionSourceLocal".Translate().ToString();
+            }
+
+            return "DTO_ExtensionSource".Translate() + ": " + source;
         }
 
         private void DrawMcpSettings(Listing_Standard listing)
@@ -626,38 +814,28 @@ namespace DeepseekTheOrca
         {
             listing.Label("DTO_ChatPersona".Translate(), -1f, "DTO_ChatPersonaTooltip".Translate());
             OrcaChatPersonaProfile selected = OrcaChatPersonaManager.Get(Settings.chatPersonaDefName);
-            string label = selected == null ? Settings.chatPersonaDefName : selected.label;
-            string buttonLabel = label.NullOrEmpty() ? "DTO_ChatPersonaMissing".Translate().ToString() : label;
-            if (!listing.ButtonText(buttonLabel))
-            {
-            }
-            else
-            {
-                List<FloatMenuOption> options = new List<FloatMenuOption>();
-                foreach (OrcaChatPersonaProfile persona in OrcaChatPersonaManager.AllPersonas())
-                {
-                    OrcaChatPersonaProfile localPersona = persona;
-                    string optionLabel = persona.label + (persona.readOnly ? " (" + "DTO_ChatPersonaReadOnly".Translate().ToString() + ")" : "");
-                    options.Add(new FloatMenuOption(optionLabel, delegate
-                    {
-                        Settings.chatPersonaDefName = localPersona.id;
-                        OrcaStorytellerAppearance.Apply(localPersona);
-                        OrcaChatWindowManager.Session.Clear();
-                    }));
-                }
-
-                if (options.Count == 0)
-                {
-                    options.Add(new FloatMenuOption("DTO_ChatPersonaMissing".Translate(), null));
-                }
-
-                Find.WindowStack.Add(new FloatMenu(options));
-            }
+            listing.Label(PersonaSummary(selected));
 
             if (listing.ButtonText("DTO_ChatPersonaManage".Translate()))
             {
                 Find.WindowStack.Add(new OrcaPersonaManagerWindow());
             }
+        }
+
+        private static string PersonaSummary(OrcaChatPersonaProfile profile)
+        {
+            if (profile == null)
+            {
+                return "DTO_ChatPersonaMissing".Translate();
+            }
+
+            string source = profile.sourceMod;
+            if (source.NullOrEmpty())
+            {
+                source = "DTO_ExtensionSourceLocal".Translate().ToString();
+            }
+
+            return profile.label + " (" + source + ")";
         }
 
         private static void DrawModelSelector(Listing_Standard listing, TaggedString label, OrcaLlmModelRole role, string tooltip, bool allowFallback)

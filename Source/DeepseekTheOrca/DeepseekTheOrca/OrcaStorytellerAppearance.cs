@@ -40,8 +40,8 @@ namespace DeepseekTheOrca
             def.description = profile.storytellerDescription;
             def.ClearCachedData();
 
-            string largePath = TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitLargeName);
-            string tinyPath = TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitTinyName);
+            string largePath = profile.storytellerPortraitLargePath;
+            string tinyPath = profile.storytellerPortraitTinyPath;
             Texture2D large = ContentFinder<Texture2D>.Get(largePath, false);
             Texture2D tiny = ContentFinder<Texture2D>.Get(tinyPath, false);
 
@@ -72,7 +72,7 @@ namespace DeepseekTheOrca
             }
 
             OrcaChatPersonaManager.NormalizeAppearance(profile);
-            return TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitLargeName);
+            return profile.storytellerPortraitLargePath;
         }
 
         public static string TinyPortraitPath(OrcaChatPersonaProfile profile)
@@ -83,24 +83,7 @@ namespace DeepseekTheOrca
             }
 
             OrcaChatPersonaManager.NormalizeAppearance(profile);
-            return TexturePath(profile.storytellerPortraitFolder, profile.storytellerPortraitTinyName);
-        }
-
-        private static string TexturePath(string folder, string fileName)
-        {
-            folder = (folder ?? "").Trim().Trim('/');
-            fileName = (fileName ?? "").Trim().Trim('/');
-            if (folder.NullOrEmpty())
-            {
-                return fileName;
-            }
-
-            if (fileName.NullOrEmpty())
-            {
-                return folder;
-            }
-
-            return folder + "/" + fileName;
+            return profile.storytellerPortraitTinyPath;
         }
 
         private static void LogWarningOnce(string message)

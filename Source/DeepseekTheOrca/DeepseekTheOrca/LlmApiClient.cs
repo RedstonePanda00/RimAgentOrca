@@ -277,7 +277,7 @@ namespace DeepseekTheOrca
                 return LlmChatResponse.Failure("No model is selected for this role.");
             }
 
-            return await SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle, messages, tools, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl).ConfigureAwait(false);
+            return await SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle, messages, tools, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, role).ConfigureAwait(false);
         }
 
         private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages, bool includeTools, int maxTokens, float temperature)
@@ -298,7 +298,7 @@ namespace DeepseekTheOrca
                 return LlmChatResponse.Failure("No model is selected for this role.");
             }
 
-            return await SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle, messages, includeTools ? LlmToolSchemas.Build() : null, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl).ConfigureAwait(false);
+            return await SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle, messages, includeTools ? LlmToolSchemas.Build() : null, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, role).ConfigureAwait(false);
         }
 
         private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature)
@@ -322,6 +322,11 @@ namespace DeepseekTheOrca
         }
 
         private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, string baseUrl, bool includeThinkingToggle, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, string providerId, string openAiOrganization, string openAiProject, string proxyUrl)
+        {
+            return await SendChatCompletionAsync(apiKey, model, baseUrl, includeThinkingToggle, messages, tools, maxTokens, temperature, providerId, openAiOrganization, openAiProject, proxyUrl, OrcaLlmModelRole.Fallback).ConfigureAwait(false);
+        }
+
+        private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, string baseUrl, bool includeThinkingToggle, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, string providerId, string openAiOrganization, string openAiProject, string proxyUrl, OrcaLlmModelRole role)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
             {
@@ -384,6 +389,9 @@ namespace DeepseekTheOrca
 
                     LlmChatResponse parsed = ParseChatResponse(responseText);
                     parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
+                    parsed.role = role.ToString();
+                    parsed.model = model.Trim();
+                    parsed.providerId = providerId;
                     if (parsed.success)
                     {
                         LlmConnectionTester.ReportSuccessfulCall("Connection succeeded by chat completion.");
@@ -817,6 +825,9 @@ namespace DeepseekTheOrca
         public int cacheHitTokens;
         public int cacheMissTokens;
         public int elapsedMs;
+        public string role;
+        public string model;
+        public string providerId;
         public readonly List<LlmToolCall> toolCalls = new List<LlmToolCall>();
 
         public static LlmChatResponse Success()
