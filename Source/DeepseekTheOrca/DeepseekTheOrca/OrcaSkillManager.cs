@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 using Verse;
 
 namespace DeepseekTheOrca
@@ -20,8 +19,11 @@ namespace DeepseekTheOrca
         public List<string> allowedTools = new List<string>();
         public bool readOnly;
         public string filePath;
+        public string folderPath;
         public string sourceMod;
         public bool defaultEnabled = true;
+        public string format = "skill.md";
+        public string activation = "auto";
 
         public bool IsLocal
         {
@@ -32,7 +34,7 @@ namespace DeepseekTheOrca
     public static class OrcaSkillManager
     {
         public const string LocalPrefix = "local:";
-        public const string DefPrefix = "def:";
+        public const string SkillPrefix = "skill:";
         private static readonly List<OrcaSkillProfile> localSkills = new List<OrcaSkillProfile>();
         private static bool loadedLocal;
 
@@ -46,7 +48,7 @@ namespace DeepseekTheOrca
             EnsureLoaded();
             List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
             result.AddRange(localSkills);
-            result.AddRange(DefSkills());
+            result.AddRange(ModFolderSkills());
             return result.OrderBy(profile => profile.label).ToList();
         }
 
@@ -68,9 +70,12 @@ namespace DeepseekTheOrca
                 prompt = "Write the skill instructions here. Keep this focused on the skill's domain-specific behavior.",
                 allowedTools = new List<string>(),
                 readOnly = false,
-                defaultEnabled = true
+                defaultEnabled = true,
+                format = "skill.md",
+                activation = "auto"
             };
-            profile.filePath = PathFor(profile);
+            profile.folderPath = FolderPathFor(profile);
+            profile.filePath = Path.Combine(profile.folderPath, "SKILL.md");
             localSkills.Add(profile);
             Save(profile);
             OrcaChatWindowManager.Session.Clear();
@@ -90,22 +95,9 @@ namespace DeepseekTheOrca
                 profile.id = LocalPrefix + Guid.NewGuid().ToString("N");
             }
 
-            profile.filePath = profile.filePath.NullOrEmpty() ? PathFor(profile) : profile.filePath;
             Normalize(profile);
 
-            XmlDocument document = new XmlDocument();
-            XmlElement root = document.CreateElement("OrcaSkill");
-            document.AppendChild(root);
-            AppendText(document, root, "id", profile.id);
-            AppendText(document, root, "label", profile.label ?? "");
-            AppendText(document, root, "description", profile.description ?? "");
-            AppendText(document, root, "enabled", profile.enabled ? "true" : "false");
-            AppendList(document, root, "triggerHints", profile.triggerHints);
-            XmlElement prompt = document.CreateElement("prompt");
-            prompt.AppendChild(document.CreateCDataSection(profile.prompt ?? ""));
-            root.AppendChild(prompt);
-            AppendList(document, root, "allowedTools", profile.allowedTools);
-            document.Save(profile.filePath);
+            SaveSkillMarkdown(profile);
         }
 
         public static void Delete(OrcaSkillProfile profile)
@@ -117,9 +109,9 @@ namespace DeepseekTheOrca
 
             EnsureLoaded();
             localSkills.RemoveAll(item => item.id == profile.id);
-            if (!profile.filePath.NullOrEmpty() && File.Exists(profile.filePath))
+            if (!profile.folderPath.NullOrEmpty() && Directory.Exists(profile.folderPath))
             {
-                File.Delete(profile.filePath);
+                Directory.Delete(profile.folderPath, true);
             }
 
             OrcaChatWindowManager.Session.Clear();
@@ -132,12 +124,12 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            if (profile.id != null && profile.id.StartsWith(DefPrefix, StringComparison.Ordinal))
+            if (profile.readOnly)
             {
                 DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
                 if (settings != null)
                 {
-                    settings.SetDefSkillEnabled(profile.id.Substring(DefPrefix.Length), enabled, profile.defaultEnabled);
+                    settings.SetExternalSkillEnabled(profile.id, enabled, profile.defaultEnabled);
                 }
             }
             else
@@ -159,15 +151,35 @@ namespace DeepseekTheOrca
 
         public static string FormatEnabledSkillPrompt()
         {
-            List<OrcaSkillProfile> skills = EnabledSkills();
+            return FormatSkillPrompt(EnabledSkills(), "Enabled skill modules:");
+        }
+
+        public static string FormatActiveSkillPrompt(string turnText)
+        {
+            return FormatSkillPrompt(ActiveSkillsFor(turnText), "Active skill context for this turn:");
+        }
+
+        public static List<OrcaSkillProfile> ActiveSkillsFor(string turnText)
+        {
+            List<OrcaSkillProfile> enabled = EnabledSkills();
+            if (turnText.NullOrEmpty())
+            {
+                return new List<OrcaSkillProfile>();
+            }
+
+            return enabled.Where(skill => SkillMatchesTurn(skill, turnText)).OrderBy(skill => skill.label).ToList();
+        }
+
+        private static string FormatSkillPrompt(List<OrcaSkillProfile> skills, string header)
+        {
             if (skills.Count == 0)
             {
                 return "";
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Enabled skill modules:");
-            builder.AppendLine("Skills are optional, domain-specific behavior modules. Use a skill only when it is relevant to the latest player message, proactive trigger, or tool results. A skill prompt changes how you reason in that domain; it is not a persona.");
+            builder.AppendLine(header);
+            builder.AppendLine("Agent skills are lightweight capability folders with metadata and instructions. Use a skill when it is relevant to the latest player message, proactive trigger, tool results, or when its activation is always. A skill changes how you perform that task; it is not a persona.");
             builder.AppendLine("If a skill lists allowed tools, prefer those tools while handling that skill and avoid unrelated execution tools unless the player explicitly asks or the story context clearly requires them.");
             for (int i = 0; i < skills.Count; i++)
             {
@@ -186,10 +198,18 @@ namespace DeepseekTheOrca
                 {
                     builder.AppendLine("Allowed/recommended tools: " + string.Join(", ", skill.allowedTools.ToArray()));
                 }
+                if (!skill.activation.NullOrEmpty() && skill.activation != "auto")
+                {
+                    builder.AppendLine("Activation: " + SafeLine(skill.activation));
+                }
                 if (!skill.prompt.NullOrEmpty())
                 {
                     builder.AppendLine("Instructions:");
                     builder.AppendLine(skill.prompt.Trim());
+                }
+                if (!skill.folderPath.NullOrEmpty())
+                {
+                    builder.AppendLine("Skill folder: " + SafeLine(skill.folderPath));
                 }
             }
 
@@ -224,6 +244,11 @@ namespace DeepseekTheOrca
                     builder.Append(" tools=");
                     builder.Append(string.Join(",", skill.allowedTools.ToArray()));
                 }
+                if (!skill.activation.NullOrEmpty() && skill.activation != "auto")
+                {
+                    builder.Append(" activation=");
+                    builder.Append(SafeLine(skill.activation));
+                }
             }
 
             return builder.ToString();
@@ -239,9 +264,9 @@ namespace DeepseekTheOrca
             loadedLocal = true;
             localSkills.Clear();
             EnsureDirectory();
-            foreach (string file in Directory.GetFiles(SkillFolderPath, "*.xml"))
+            foreach (string directory in Directory.GetDirectories(SkillFolderPath))
             {
-                OrcaSkillProfile profile = LoadFile(file);
+                OrcaSkillProfile profile = LoadSkillFolder(directory, readOnly: false, sourceMod: "");
                 if (profile != null)
                 {
                     localSkills.Add(profile);
@@ -249,82 +274,48 @@ namespace DeepseekTheOrca
             }
         }
 
-        private static List<OrcaSkillProfile> DefSkills()
+        private static List<OrcaSkillProfile> ModFolderSkills()
         {
             List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
-            List<OrcaSkillDef> defs = DefDatabase<OrcaSkillDef>.AllDefsListForReading;
-            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            for (int i = 0; i < defs.Count; i++)
+            List<ModContentPack> mods = LoadedModManager.RunningModsListForReading;
+            if (mods == null)
             {
-                OrcaSkillDef def = defs[i];
-                if (def == null || def.defName.NullOrEmpty())
+                return result;
+            }
+
+            for (int i = 0; i < mods.Count; i++)
+            {
+                ModContentPack mod = mods[i];
+                if (mod == null || mod.RootDir.NullOrEmpty())
                 {
                     continue;
                 }
 
-                bool enabled = settings == null ? def.defaultEnabled : settings.IsDefSkillEnabled(def.defName, def.defaultEnabled);
-                OrcaSkillProfile profile = new OrcaSkillProfile
-                {
-                    id = DefPrefix + def.defName,
-                    label = def.label.NullOrEmpty() ? def.defName : def.LabelCap.ToString(),
-                    description = def.description ?? "",
-                    enabled = enabled,
-                    triggerHints = CleanList(def.triggerHints),
-                    prompt = def.prompt ?? "",
-                    allowedTools = CleanList(def.allowedTools),
-                    readOnly = true,
-                    filePath = "",
-                    sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name,
-                    defaultEnabled = def.defaultEnabled
-                };
-                Normalize(profile);
-                result.Add(profile);
+                LoadModSkillRoot(result, mod, Path.Combine(mod.RootDir, "OrcaSkills"));
+                LoadModSkillRoot(result, mod, Path.Combine(mod.RootDir, "Skills"));
             }
 
             return result;
         }
 
-        private static OrcaSkillProfile LoadFile(string file)
+        private static void LoadModSkillRoot(List<OrcaSkillProfile> result, ModContentPack mod, string root)
         {
-            try
+            if (result == null || mod == null || root.NullOrEmpty() || !Directory.Exists(root))
             {
-                XmlDocument document = new XmlDocument();
-                document.Load(file);
-                XmlElement root = document.DocumentElement;
-                if (root == null || root.Name != "OrcaSkill")
-                {
-                    return null;
-                }
-
-                string id = ReadText(root, "id");
-                if (id.NullOrEmpty())
-                {
-                    id = LocalPrefix + Path.GetFileNameWithoutExtension(file);
-                }
-                if (!id.StartsWith(LocalPrefix, StringComparison.Ordinal))
-                {
-                    id = LocalPrefix + id;
-                }
-
-                OrcaSkillProfile profile = new OrcaSkillProfile
-                {
-                    id = id,
-                    label = ReadText(root, "label").NullOrEmpty() ? Path.GetFileNameWithoutExtension(file) : ReadText(root, "label"),
-                    description = ReadText(root, "description"),
-                    enabled = ReadBool(root, "enabled", true),
-                    triggerHints = ReadList(root, "triggerHints"),
-                    prompt = ReadText(root, "prompt"),
-                    allowedTools = ReadList(root, "allowedTools"),
-                    readOnly = false,
-                    filePath = file
-                };
-                Normalize(profile);
-                return profile;
+                return;
             }
-            catch (Exception ex)
+
+            foreach (string directory in Directory.GetDirectories(root))
             {
-                Log.Warning("[Deepseek The Orca] Failed to load skill file " + file + ": " + ex.Message);
-                return null;
+                OrcaSkillProfile profile = LoadSkillFolder(directory, readOnly: true, sourceMod: SourceNameFor(mod));
+                if (profile != null)
+                {
+                    string packageId = mod.PackageIdPlayerFacing.NullOrEmpty() ? mod.PackageId : mod.PackageIdPlayerFacing;
+                    profile.id = SkillPrefix + packageId + ":" + Path.GetFileName(directory);
+                    DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+                    profile.enabled = settings == null ? profile.defaultEnabled : settings.IsExternalSkillEnabled(profile.id, profile.defaultEnabled);
+                    result.Add(profile);
+                }
             }
         }
 
@@ -343,6 +334,11 @@ namespace DeepseekTheOrca
             profile.prompt = profile.prompt ?? "";
             profile.triggerHints = CleanList(profile.triggerHints);
             profile.allowedTools = CleanList(profile.allowedTools);
+            if (profile.format.NullOrEmpty())
+            {
+                profile.format = "skill.md";
+            }
+            profile.activation = NormalizeActivation(profile.activation);
         }
 
         private static List<string> CleanList(List<string> values)
@@ -363,67 +359,258 @@ namespace DeepseekTheOrca
             Directory.CreateDirectory(SkillFolderPath);
         }
 
-        private static string PathFor(OrcaSkillProfile profile)
+        private static string FolderPathFor(OrcaSkillProfile profile)
         {
             string name = profile.id == null ? Guid.NewGuid().ToString("N") : profile.id.Replace(LocalPrefix, "");
             name = Regex.Replace(name, "[^A-Za-z0-9_.-]", "_");
-            return Path.Combine(SkillFolderPath, name + ".xml");
+            return Path.Combine(SkillFolderPath, name);
         }
 
-        private static void AppendText(XmlDocument document, XmlElement root, string name, string value)
+        private static OrcaSkillProfile LoadSkillFolder(string directory, bool readOnly, string sourceMod)
         {
-            XmlElement element = document.CreateElement(name);
-            element.InnerText = value ?? "";
-            root.AppendChild(element);
-        }
-
-        private static void AppendList(XmlDocument document, XmlElement root, string name, List<string> values)
-        {
-            XmlElement list = document.CreateElement(name);
-            foreach (string value in CleanList(values))
+            string skillFile = Path.Combine(directory, "SKILL.md");
+            if (!File.Exists(skillFile))
             {
-                XmlElement item = document.CreateElement("li");
-                item.InnerText = value;
-                list.AppendChild(item);
-            }
-            root.AppendChild(list);
-        }
-
-        private static string ReadText(XmlElement root, string name)
-        {
-            XmlNode node = root.SelectSingleNode(name);
-            return node == null ? "" : node.InnerText;
-        }
-
-        private static bool ReadBool(XmlElement root, string name, bool defaultValue)
-        {
-            string text = ReadText(root, name);
-            bool parsed;
-            return bool.TryParse(text, out parsed) ? parsed : defaultValue;
-        }
-
-        private static List<string> ReadList(XmlElement root, string name)
-        {
-            XmlNode parent = root.SelectSingleNode(name);
-            List<string> values = new List<string>();
-            if (parent == null)
-            {
-                return values;
+                return null;
             }
 
-            foreach (XmlNode node in parent.SelectNodes("li"))
+            try
             {
-                if (node != null && !node.InnerText.NullOrEmpty())
+                SkillMarkdown markdown = ParseSkillMarkdown(File.ReadAllText(skillFile));
+                string folderName = Path.GetFileName(directory);
+                OrcaSkillProfile profile = new OrcaSkillProfile
                 {
-                    values.Add(node.InnerText);
+                    id = readOnly ? SkillPrefix + folderName : LocalPrefix + folderName,
+                    label = markdown.name.NullOrEmpty() ? folderName : markdown.name,
+                    description = markdown.description,
+                    enabled = markdown.enabled,
+                    triggerHints = markdown.triggerHints,
+                    prompt = markdown.instructions,
+                    allowedTools = markdown.allowedTools,
+                    readOnly = readOnly,
+                    filePath = skillFile,
+                    folderPath = directory,
+                    sourceMod = sourceMod,
+                    defaultEnabled = markdown.enabled,
+                    format = "skill.md",
+                    activation = markdown.activation
+                };
+                Normalize(profile);
+                return profile;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("[Deepseek The Orca] Failed to load skill folder " + directory + ": " + ex.Message);
+                return null;
+            }
+        }
+
+        private static void SaveSkillMarkdown(OrcaSkillProfile profile)
+        {
+            profile.folderPath = profile.folderPath.NullOrEmpty() ? FolderPathFor(profile) : profile.folderPath;
+            profile.filePath = Path.Combine(profile.folderPath, "SKILL.md");
+            Directory.CreateDirectory(profile.folderPath);
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("---");
+            builder.AppendLine("name: " + (profile.label ?? ""));
+            builder.AppendLine("description: " + (profile.description ?? ""));
+            builder.AppendLine("enabled: " + (profile.enabled ? "true" : "false"));
+            if (!profile.activation.NullOrEmpty() && profile.activation != "auto")
+            {
+                builder.AppendLine("activation: " + profile.activation);
+            }
+            AppendMarkdownList(builder, "triggerHints", profile.triggerHints);
+            AppendMarkdownList(builder, "allowedTools", profile.allowedTools);
+            builder.AppendLine("---");
+            builder.AppendLine();
+            builder.AppendLine(profile.prompt ?? "");
+            File.WriteAllText(profile.filePath, builder.ToString());
+        }
+
+        private static void AppendMarkdownList(StringBuilder builder, string name, List<string> values)
+        {
+            values = CleanList(values);
+            if (values.Count == 0)
+            {
+                return;
+            }
+
+            builder.AppendLine(name + ":");
+            for (int i = 0; i < values.Count; i++)
+            {
+                builder.AppendLine("- " + values[i]);
+            }
+        }
+
+        private sealed class SkillMarkdown
+        {
+            public string name = "";
+            public string description = "";
+            public bool enabled = true;
+            public string activation = "auto";
+            public List<string> triggerHints = new List<string>();
+            public List<string> allowedTools = new List<string>();
+            public string instructions = "";
+        }
+
+        private static SkillMarkdown ParseSkillMarkdown(string text)
+        {
+            SkillMarkdown result = new SkillMarkdown();
+            text = text ?? "";
+            string metadata = "";
+            string instructions = text;
+            if (text.StartsWith("---"))
+            {
+                int start = text.IndexOf('\n');
+                int end = start < 0 ? -1 : text.IndexOf("\n---", start + 1, StringComparison.Ordinal);
+                if (end >= 0)
+                {
+                    metadata = text.Substring(start + 1, end - start - 1);
+                    int instructionStart = end + 4;
+                    instructions = instructionStart >= text.Length ? "" : text.Substring(instructionStart).TrimStart('\r', '\n');
                 }
             }
-            return CleanList(values);
+
+            ParseMetadata(metadata, result);
+            result.instructions = instructions.Trim();
+            return result;
+        }
+
+        private static void ParseMetadata(string metadata, SkillMarkdown result)
+        {
+            if (metadata.NullOrEmpty() || result == null)
+            {
+                return;
+            }
+
+            string currentList = "";
+            string[] lines = metadata.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.NullOrEmpty())
+                {
+                    continue;
+                }
+
+                if (line.StartsWith("- "))
+                {
+                    AddMetadataListValue(result, currentList, line.Substring(2).Trim());
+                    continue;
+                }
+
+                int separator = line.IndexOf(':');
+                if (separator < 0)
+                {
+                    continue;
+                }
+
+                string key = line.Substring(0, separator).Trim();
+                string value = line.Substring(separator + 1).Trim().Trim('"');
+                currentList = "";
+                switch (key)
+                {
+                    case "name":
+                        result.name = value;
+                        break;
+                    case "description":
+                        result.description = value;
+                        break;
+                    case "enabled":
+                    case "defaultEnabled":
+                        bool enabled;
+                        result.enabled = !bool.TryParse(value, out enabled) || enabled;
+                        break;
+                    case "activation":
+                        result.activation = NormalizeActivation(value);
+                        break;
+                    case "triggerHints":
+                    case "allowedTools":
+                        currentList = key;
+                        if (!value.NullOrEmpty())
+                        {
+                            AddMetadataListValue(result, currentList, value);
+                        }
+                        break;
+                }
+            }
+        }
+
+        private static void AddMetadataListValue(SkillMarkdown result, string listName, string value)
+        {
+            value = value == null ? "" : value.Trim().Trim('"');
+            if (value.NullOrEmpty())
+            {
+                return;
+            }
+
+            if (listName == "triggerHints")
+            {
+                result.triggerHints.Add(value);
+            }
+            else if (listName == "allowedTools")
+            {
+                result.allowedTools.Add(value);
+            }
+        }
+
+        private static bool SkillMatchesTurn(OrcaSkillProfile skill, string turnText)
+        {
+            if (skill == null || turnText.NullOrEmpty())
+            {
+                return skill != null && skill.activation == "always";
+            }
+
+            if (skill.activation == "always")
+            {
+                return true;
+            }
+
+            string text = turnText.ToLowerInvariant();
+            if (TextContains(text, skill.label) || TextContains(text, skill.description))
+            {
+                return true;
+            }
+
+            if (skill.triggerHints != null && skill.triggerHints.Any(value => TextContains(text, value)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TextContains(string haystackLower, string value)
+        {
+            if (haystackLower.NullOrEmpty() || value.NullOrEmpty())
+            {
+                return false;
+            }
+
+            return haystackLower.Contains(value.Trim().ToLowerInvariant());
         }
 
         private static string SafeLine(string value)
         {
             return (value ?? "").Replace("\r", " ").Replace("\n", " ").Trim();
+        }
+
+        private static string NormalizeActivation(string activation)
+        {
+            activation = activation == null ? "" : activation.Trim().ToLowerInvariant();
+            return activation == "always" ? "always" : "auto";
+        }
+
+        private static string SourceNameFor(ModContentPack mod)
+        {
+            if (mod == null)
+            {
+                return "";
+            }
+
+            string packageId = mod.PackageIdPlayerFacing.NullOrEmpty() ? mod.PackageId : mod.PackageIdPlayerFacing;
+            return string.Equals(packageId, "RedstonePanda.Orca", StringComparison.OrdinalIgnoreCase) ? "Core" : mod.Name;
         }
     }
 }

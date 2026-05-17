@@ -3,14 +3,6 @@ using Verse;
 
 namespace DeepseekTheOrca
 {
-    public class OrcaSkillDef : Def
-    {
-        public bool defaultEnabled = true;
-        public List<string> triggerHints = new List<string>();
-        public string prompt = "";
-        public List<string> allowedTools = new List<string>();
-    }
-
     public class OrcaChatPersonaDef : Def
     {
         public string prompt = "";

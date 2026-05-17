@@ -119,7 +119,7 @@
   <DTO_SkillNew>New skill</DTO_SkillNew>
   <DTO_SkillReload>Reload files</DTO_SkillReload>
   <DTO_SkillFolder>Skill folder</DTO_SkillFolder>
-  <DTO_SkillFormatNote>Local skill files use XML and include name, description, enabled state, trigger hints, prompt, and allowed or recommended tools.</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>Local skills are folders containing SKILL.md. Submods can provide Skills/*/SKILL.md or OrcaSkills/*/SKILL.md folders.</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>Enabled skills: {0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>No skills are currently enabled.</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>No skills created.</DTO_SkillNoSkills>

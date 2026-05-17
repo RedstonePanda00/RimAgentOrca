@@ -119,7 +119,7 @@
   <DTO_SkillNew>新建技能</DTO_SkillNew>
   <DTO_SkillReload>重新加载文件</DTO_SkillReload>
   <DTO_SkillFolder>技能文件夹</DTO_SkillFolder>
-  <DTO_SkillFormatNote>本地 skill 文件使用 XML，包含名称、描述、启用状态、触发线索、提示词，以及允许或推荐的工具。</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>本地 skill 是包含 SKILL.md 的文件夹。子 mod 可以提供 Skills/*/SKILL.md 或 OrcaSkills/*/SKILL.md 文件夹。</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>已启用 skill：{0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>当前没有启用的 skill。</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>尚未创建 skill。</DTO_SkillNoSkills>

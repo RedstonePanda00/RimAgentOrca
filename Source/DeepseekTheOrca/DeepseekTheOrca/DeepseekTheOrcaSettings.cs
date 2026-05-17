@@ -164,8 +164,8 @@ namespace DeepseekTheOrca
         public string httpMcpBearerToken = "";
         public int httpMcpMaxResultChars = 6000;
         public List<OrcaHttpMcpServerSettings> httpMcpServers = new List<OrcaHttpMcpServerSettings>();
-        public List<string> enabledDefSkills = new List<string>();
-        public List<string> disabledDefSkills = new List<string>();
+        public List<string> enabledExternalSkills = new List<string>();
+        public List<string> disabledExternalSkills = new List<string>();
         public List<string> enabledDefPlugins = new List<string>();
         public List<string> disabledDefPlugins = new List<string>();
         public string apiProvider = LlmProviderConfig.DeepSeek;
@@ -359,14 +359,14 @@ namespace DeepseekTheOrca
             return options;
         }
 
-        public bool IsDefSkillEnabled(string defName, bool defaultEnabled)
+        public bool IsExternalSkillEnabled(string skillId, bool defaultEnabled)
         {
-            return IsDefToggleEnabled(defName, defaultEnabled, enabledDefSkills, disabledDefSkills);
+            return IsDefToggleEnabled(skillId, defaultEnabled, enabledExternalSkills, disabledExternalSkills);
         }
 
-        public void SetDefSkillEnabled(string defName, bool enabled, bool defaultEnabled)
+        public void SetExternalSkillEnabled(string skillId, bool enabled, bool defaultEnabled)
         {
-            SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefSkills, ref disabledDefSkills);
+            SetDefToggleEnabled(skillId, enabled, defaultEnabled, ref enabledExternalSkills, ref disabledExternalSkills);
         }
 
         public bool IsDefPluginEnabled(string defName, bool defaultEnabled)
@@ -637,8 +637,8 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref httpMcpBearerToken, "httpMcpBearerToken", "");
             Scribe_Values.Look(ref httpMcpMaxResultChars, "httpMcpMaxResultChars", 6000);
             Scribe_Collections.Look(ref httpMcpServers, "httpMcpServers", LookMode.Deep);
-            Scribe_Collections.Look(ref enabledDefSkills, "enabledDefSkills", LookMode.Value);
-            Scribe_Collections.Look(ref disabledDefSkills, "disabledDefSkills", LookMode.Value);
+            Scribe_Collections.Look(ref enabledExternalSkills, "enabledExternalSkills", LookMode.Value);
+            Scribe_Collections.Look(ref disabledExternalSkills, "disabledExternalSkills", LookMode.Value);
             Scribe_Collections.Look(ref enabledDefPlugins, "enabledDefPlugins", LookMode.Value);
             Scribe_Collections.Look(ref disabledDefPlugins, "disabledDefPlugins", LookMode.Value);
             Scribe_Values.Look(ref apiProvider, "apiProvider", LlmProviderConfig.DeepSeek);
@@ -669,13 +669,13 @@ namespace DeepseekTheOrca
             {
                 httpMcpServers = new List<OrcaHttpMcpServerSettings>();
             }
-            if (enabledDefSkills == null)
+            if (enabledExternalSkills == null)
             {
-                enabledDefSkills = new List<string>();
+                enabledExternalSkills = new List<string>();
             }
-            if (disabledDefSkills == null)
+            if (disabledExternalSkills == null)
             {
-                disabledDefSkills = new List<string>();
+                disabledExternalSkills = new List<string>();
             }
             if (enabledDefPlugins == null)
             {

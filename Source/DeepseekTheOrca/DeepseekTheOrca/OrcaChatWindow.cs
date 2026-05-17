@@ -859,6 +859,7 @@ namespace DeepseekTheOrca
             }
             builder.AppendLine("Player SteamPersonaName: " + playerName);
             AppendMemoryContext(builder);
+            AppendActiveSkillContext(builder, userText);
             builder.AppendLine("Player message:");
             builder.Append(userText);
             return builder.ToString();
@@ -875,10 +876,23 @@ namespace DeepseekTheOrca
             builder.AppendLine("System proactive trigger source: " + request.source);
             builder.AppendLine("Trigger title: " + request.title);
             AppendMemoryContext(builder);
+            AppendActiveSkillContext(builder, request.source + "\n" + request.title + "\n" + request.body);
             builder.AppendLine("Trigger details:");
             builder.AppendLine(request.body);
             builder.Append("This is not a player request. Speak proactively to the player in character. Reply in the current game language, even if the trigger details use English field labels. Do not call event execution tools for this trigger; the event has already been scheduled or observed.");
             return builder.ToString();
+        }
+
+        private static void AppendActiveSkillContext(StringBuilder builder, string turnText)
+        {
+            string skillPrompt = OrcaSkillManager.FormatActiveSkillPrompt(turnText);
+            if (skillPrompt.NullOrEmpty())
+            {
+                return;
+            }
+
+            builder.AppendLine("Skill harness:");
+            builder.AppendLine(skillPrompt);
         }
 
         private static void AppendMemoryContext(StringBuilder builder)
@@ -925,13 +939,6 @@ namespace DeepseekTheOrca
             if (!personaPrompt.NullOrEmpty())
             {
                 builder.AppendLine(personaPrompt.Trim());
-                builder.AppendLine();
-            }
-
-            string skillPrompt = OrcaSkillManager.FormatEnabledSkillPrompt();
-            if (!skillPrompt.NullOrEmpty())
-            {
-                builder.AppendLine(skillPrompt);
                 builder.AppendLine();
             }
 
