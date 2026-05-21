@@ -93,8 +93,7 @@ namespace DeepseekTheOrca
 
         public static void EnqueueAmbientBeat(OrcaNarrativeBeat beat, float chance)
         {
-            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings != null && !settings.enableAmbientProactiveDialogue)
+            if (!OrcaProactiveConversationManager.AmbientEnabled)
             {
                 Debug("Ambient proactive beat skipped because ambient proactive dialogue is disabled: " + (beat == null ? "<null>" : beat.source + " | " + beat.title));
                 return;

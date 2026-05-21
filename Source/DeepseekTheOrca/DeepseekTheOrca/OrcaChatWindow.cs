@@ -74,7 +74,11 @@ namespace DeepseekTheOrca
 
         public override Vector2 InitialSize
         {
-            get { return new Vector2(560f, 260f); }
+            get
+            {
+                OrcaChatWindowContext context = new OrcaChatWindowContext(OrcaChatWindowManager.Session, Rect.zero, Rect.zero, Rect.zero, 1f);
+                return new Vector2(560f + OrcaExtensionManager.RequestedExtraWidth(context), 260f);
+            }
         }
 
         protected override void SetInitialSizeAndPosition()
@@ -97,9 +101,23 @@ namespace DeepseekTheOrca
             shadowAlpha = alpha;
             Widgets.DrawBoxSolid(inRect, new Color(0f, 0f, 0f, alpha));
             DrawFixedBorder(inRect);
-            DrawCloseButton(inRect);
 
-            Rect contentRect = inRect.ContractedBy(10f);
+            OrcaChatWindowContext measureContext = new OrcaChatWindowContext(OrcaChatWindowManager.Session, inRect, inRect, Rect.zero, alpha);
+            float extensionWidth = Mathf.Min(
+                OrcaExtensionManager.RequestedExtraWidth(measureContext),
+                Mathf.Max(0f, inRect.width - 360f));
+            float extensionGap = extensionWidth > 0f ? 8f : 0f;
+            Rect chatRect = new Rect(inRect.x, inRect.y, inRect.width - extensionWidth - extensionGap, inRect.height);
+            Rect extensionRect = extensionWidth > 0f
+                ? new Rect(chatRect.xMax + extensionGap, inRect.y, extensionWidth, inRect.height)
+                : Rect.zero;
+
+            if (extensionWidth > 0f)
+            {
+                Widgets.DrawBoxSolid(new Rect(chatRect.xMax + extensionGap * 0.5f, inRect.y + 8f, 1f, inRect.height - 16f), new Color(0.55f, 0.55f, 0.55f, 0.75f));
+            }
+
+            Rect contentRect = chatRect.ContractedBy(10f);
             float y = 0f;
 
             Text.Font = GameFont.Small;
@@ -112,6 +130,14 @@ namespace DeepseekTheOrca
             GUI.SetNextControlName(InputControlName);
             inputBuffer = Widgets.TextArea(inputRect, inputBuffer);
             y += 70f;
+
+            OrcaChatWindowContext drawContext = new OrcaChatWindowContext(OrcaChatWindowManager.Session, inRect, chatRect, extensionRect, alpha);
+            if (extensionWidth > 0f)
+            {
+                OrcaExtensionManager.DrawRightExtensions(extensionRect.ContractedBy(8f), drawContext);
+            }
+            OrcaExtensionManager.DrawOverlays(inRect, drawContext);
+            DrawCloseButton(inRect);
 
             OrcaChatWindowManager.Session.Tick();
         }
@@ -219,22 +245,6 @@ namespace DeepseekTheOrca
             Controller
         }
 
-        private static readonly HashSet<string> AllowedChatTools = new HashSet<string>
-        {
-            "get_colony_summary",
-            "get_recent_letters",
-            "list_map_pawns",
-            "get_pawn_details",
-            "list_available_incidents",
-            "can_fire_incident",
-            "propose_incident",
-            "schedule_incident",
-            "trigger_raid",
-            "spawn_pawns",
-            "web_search",
-            "get_rimtalk_chat_history"
-        };
-
         private readonly LlmApiClient client = new LlmApiClient();
         private readonly List<LlmChatMessage> messages = new List<LlmChatMessage>();
         private readonly List<OrcaChatLine> displayLines = new List<OrcaChatLine>();
@@ -262,6 +272,8 @@ namespace DeepseekTheOrca
         private int failedToolCalls;
         private string lastToolName = "";
         private string lastToolResult = "";
+        private OrcaReplyDisplayController replyDisplayController;
+        private OrcaChatLine replyDisplayLine;
 
         public bool IsWaiting
         {
@@ -368,6 +380,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            FinishActiveReplyDisplay();
             userText = userText == null ? "" : userText.TrimEnd('\r', '\n');
             if (userText.NullOrEmpty())
             {
@@ -410,6 +423,7 @@ namespace DeepseekTheOrca
                 return false;
             }
 
+            FinishActiveReplyDisplay();
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !HasAnyChatModel(settings))
             {
@@ -442,6 +456,8 @@ namespace DeepseekTheOrca
 
         public void Tick()
         {
+            TickReplyDisplay();
+
             if (pendingRequest == null || !pendingRequest.IsCompleted)
             {
                 return;
@@ -502,7 +518,7 @@ namespace DeepseekTheOrca
             }
 
             messages.Add(LlmChatMessage.Assistant(parsed.HistoryContent(content), null));
-            displayLines.Add(new OrcaChatLine("DTO_OrcaChatSpeakerOrca".Translate(), parsed.reply));
+            AddAssistantDisplayReply(parsed.reply);
             OrcaSessionMemory.Add("orca_reply", OrcaMoodPlugin.Enabled ? parsed.reply + " moodDelta=" + parsed.moodDelta + " moodNow=" + mood : parsed.reply);
             lastReplyText = parsed.reply;
             if (currentTurn != null)
@@ -514,6 +530,59 @@ namespace DeepseekTheOrca
             statusText = "DTO_OrcaChatReady".Translate();
         }
 
+        private void AddAssistantDisplayReply(string reply)
+        {
+            FinishActiveReplyDisplay();
+            OrcaChatLine line = new OrcaChatLine("DTO_OrcaChatSpeakerOrca".Translate(), reply ?? "");
+            OrcaReplyDisplayController controller = OrcaExtensionManager.CreateReplyDisplayController(reply ?? "", this);
+            if (controller != null)
+            {
+                line.Text = controller.VisibleText ?? "";
+                replyDisplayController = controller;
+                replyDisplayLine = line;
+            }
+
+            displayLines.Add(line);
+        }
+
+        private void TickReplyDisplay()
+        {
+            if (replyDisplayController == null || replyDisplayLine == null)
+            {
+                return;
+            }
+
+            string before = replyDisplayLine.Text ?? "";
+            replyDisplayController.Tick();
+            string after = replyDisplayController.VisibleText ?? "";
+            if (after != before)
+            {
+                replyDisplayLine.Text = after;
+                conversationVersion++;
+            }
+
+            if (replyDisplayController.IsComplete)
+            {
+                replyDisplayLine.Text = after;
+                replyDisplayController = null;
+                replyDisplayLine = null;
+            }
+        }
+
+        private void FinishActiveReplyDisplay()
+        {
+            if (replyDisplayController == null || replyDisplayLine == null)
+            {
+                return;
+            }
+
+            replyDisplayController.Finish();
+            replyDisplayLine.Text = replyDisplayController.VisibleText ?? "";
+            replyDisplayController = null;
+            replyDisplayLine = null;
+            conversationVersion++;
+        }
+
         public void Clear()
         {
             messages.Clear();
@@ -521,6 +590,8 @@ namespace DeepseekTheOrca
             statusText = "";
             pendingRequest = null;
             pendingStage = OrcaChatRequestStage.Chat;
+            replyDisplayController = null;
+            replyDisplayLine = null;
             mood = 60;
             lastMoodDelta = 0;
             toolRoundsUsed = 0;
@@ -697,13 +768,13 @@ namespace DeepseekTheOrca
                 {
                     result = AiToolResult.Fail("web search is disabled in mod settings");
                 }
-                else if (Find.CurrentMap == null && toolCall.name != "web_search" && !OrcaHttpMcpClient.IsExposedTool(toolCall.name))
+                else if (Find.CurrentMap == null && ToolRequiresCurrentMap(toolCall.name))
                 {
                     result = AiToolResult.Fail("no current map");
                 }
-                else if (!allowExecutionToolsThisTurn && IsExecutionTool(toolCall.name))
+                else if (!allowExecutionToolsThisTurn && !ToolAllowsDuringProactive(toolCall.name))
                 {
-                    result = AiToolResult.Fail("execution tools are disabled for proactive trigger turns");
+                    result = AiToolResult.Fail("tool is disabled for proactive trigger turns");
                 }
                 else if (toolCall.name == "schedule_incident")
                 {
@@ -914,7 +985,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            if (!IsExecutionTool(toolName) && toolName != "get_colony_summary" && toolName != "get_recent_letters" && toolName != "get_pawn_details" && toolName != "web_search" && !OrcaHttpMcpClient.IsExposedTool(toolName))
+            if (!IsToolExposedToChat(toolName))
             {
                 return;
             }
@@ -951,7 +1022,6 @@ namespace DeepseekTheOrca
 
             builder.AppendLine("Common chat runtime rules:");
             builder.AppendLine("A memory context may be included in user messages. It is process-level memory for the current RimWorld launch, shared across saves, and reset when the game process restarts. Treat it as soft memory: useful for continuity, but less authoritative than current game data from tools.");
-            OrcaMoodPlugin.AppendPrompt(builder);
             builder.AppendLine("Never mention hidden rolls, willingness chance, percentages, dice rolls, random rolls, validation, tool calls, JSON, internal state, or tool result internals to the player.");
             builder.AppendLine("You may inspect game data through tools when it would help you answer naturally: colony summary, recent letters, map pawns, pawn details, available incidents, and RimTalk chat history if available.");
             builder.AppendLine("If web search is available, you may use it for current external information outside the game. Do not use web search for current RimWorld colony state; use game tools for that. Treat web results as imperfect and summarize them naturally.");
@@ -1091,12 +1161,27 @@ namespace DeepseekTheOrca
 
         private static bool IsExecutionTool(string toolName)
         {
-            return toolName == "schedule_incident" || toolName == "trigger_raid" || toolName == "spawn_pawns";
+            return AiStoryToolRegistry.IsExecutionTool(toolName);
         }
 
         private static bool IsToolExposedToChat(string toolName)
         {
-            return AllowedChatTools.Contains(toolName) || OrcaHttpMcpClient.IsExposedTool(toolName);
+            if (toolName == "web_search" && (DeepseekTheOrcaMod.Settings == null || !DeepseekTheOrcaMod.Settings.UsesLocalWebSearchTool))
+            {
+                return false;
+            }
+
+            return AiStoryToolRegistry.IsExposedToChat(toolName) || OrcaHttpMcpClient.IsExposedTool(toolName);
+        }
+
+        private static bool ToolAllowsDuringProactive(string toolName)
+        {
+            return OrcaHttpMcpClient.IsExposedTool(toolName) || AiStoryToolRegistry.AllowsDuringProactive(toolName);
+        }
+
+        private static bool ToolRequiresCurrentMap(string toolName)
+        {
+            return !OrcaHttpMcpClient.IsExposedTool(toolName) && AiStoryToolRegistry.RequiresCurrentMap(toolName);
         }
 
         private float HelpfulWillingnessChance()
@@ -1431,7 +1516,7 @@ namespace DeepseekTheOrca
     public sealed class OrcaChatLine
     {
         public readonly string Speaker;
-        public readonly string Text;
+        public string Text;
 
         public OrcaChatLine(string speaker, string text)
         {

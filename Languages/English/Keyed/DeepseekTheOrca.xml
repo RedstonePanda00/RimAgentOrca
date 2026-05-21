@@ -119,7 +119,7 @@
   <DTO_SkillNew>New skill</DTO_SkillNew>
   <DTO_SkillReload>Reload files</DTO_SkillReload>
   <DTO_SkillFolder>Skill folder</DTO_SkillFolder>
-  <DTO_SkillFormatNote>Local skills are folders containing SKILL.md. Submods can provide Skills/*/SKILL.md or OrcaSkills/*/SKILL.md folders.</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>Local skills are folders containing SKILL.md. Submods can provide Skills/*/SKILL.md or OrcaSkills/*/SKILL.md folders. Text files under references/ are searched and injected only when relevant.</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>Enabled skills: {0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>No skills are currently enabled.</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>No skills created.</DTO_SkillNoSkills>
@@ -146,6 +146,7 @@
   <DTO_PluginCategory>Category</DTO_PluginCategory>
   <DTO_PluginStateEnabled>Enabled</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>Disabled</DTO_PluginStateDisabled>
+  <DTO_EnableExtension>Enable {0}</DTO_EnableExtension>
   <DTO_MoodPluginName>Orca mood</DTO_MoodPluginName>
   <DTO_MoodPluginCategory>Dialogue state</DTO_MoodPluginCategory>
   <DTO_MoodPluginDescription>Adds an internal mood value to Orca dialogue and lets the model return moodDelta with each reply.</DTO_MoodPluginDescription>
@@ -166,6 +167,15 @@
   <DTO_RimtalkProactiveMissBonus>RimTalk miss bonus (0-1)</DTO_RimtalkProactiveMissBonus>
   <DTO_RimtalkProactiveForceAfterMisses>RimTalk force after misses</DTO_RimtalkProactiveForceAfterMisses>
   <DTO_ProactivePluginSettingsNote>Defaults: colony observations 0.25, RimTalk 0.15 plus 0.05 per miss, forced after 8 misses.</DTO_ProactivePluginSettingsNote>
+  <DTO_ColonyObservationProactiveSettingsNote>Default: colony observations 0.25.</DTO_ColonyObservationProactiveSettingsNote>
+  <DTO_RimtalkProactiveUnavailable>RimTalk is not active, so RimTalk proactive trigger settings are hidden.</DTO_RimtalkProactiveUnavailable>
+  <DTO_StreamingOutputPluginName>Streaming output</DTO_StreamingOutputPluginName>
+  <DTO_StreamingOutputPluginCategory>Chat display</DTO_StreamingOutputPluginCategory>
+  <DTO_StreamingOutputPluginDescription>Displays Orca's final reply with a typewriter-style reveal after the model response is received.</DTO_StreamingOutputPluginDescription>
+  <DTO_StreamingOutputPluginDetails>This is a UI display plugin. It does not change the LLM request, tool calling, mood parsing, memory, or prompt format. Sending a new message completes the current reveal first.</DTO_StreamingOutputPluginDetails>
+  <DTO_StreamingOutputSettings>Display speed</DTO_StreamingOutputSettings>
+  <DTO_StreamingOutputCharsPerSecond>Characters per second</DTO_StreamingOutputCharsPerSecond>
+  <DTO_StreamingOutputSettingsNote>Only the visible chat line is streamed; history and memory still receive the complete parsed reply.</DTO_StreamingOutputSettingsNote>
   <DTO_TestConnection>Test LLM connection</DTO_TestConnection>
   <DTO_TestConnectionRunning>Testing connection...</DTO_TestConnectionRunning>
   <DTO_ConnectionStatus>Connection status</DTO_ConnectionStatus>
@@ -192,6 +202,7 @@
   <DTO_DebugSelectTool>Select tool</DTO_DebugSelectTool>
   <DTO_DebugRunSingleTool>Run selected tool</DTO_DebugRunSingleTool>
   <DTO_DebugNoArguments>No arguments.</DTO_DebugNoArguments>
+  <DTO_DebugNoTools>No registered tools.</DTO_DebugNoTools>
   <DTO_MaxToolCalls>Max tool calls</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>Planner MTB days</DTO_PlanningMtbDays>
   <DTO_OrcaChatTab>Orca chat</DTO_OrcaChatTab>

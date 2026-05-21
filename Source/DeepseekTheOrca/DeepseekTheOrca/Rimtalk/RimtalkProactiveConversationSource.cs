@@ -88,8 +88,7 @@ namespace DeepseekTheOrca.Rimtalk
 
         private bool ShouldTrigger(RimtalkHistorySnapshot record, int ticksGame)
         {
-            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings != null && !settings.enableAmbientProactiveDialogue)
+            if (!OrcaProactiveConversationManager.AmbientEnabled)
             {
                 Debug("RimTalk proactive skipped because ambient proactive dialogue is disabled: " + Describe(record) + ".");
                 return false;
@@ -113,6 +112,7 @@ namespace DeepseekTheOrca.Rimtalk
                 return false;
             }
 
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             float baseChance = settings == null ? DefaultPlayerInitiatedTriggerChance : settings.rimtalkProactiveBaseChance;
             float missedBonus = settings == null ? DefaultMissedRecordChanceBonus : settings.rimtalkProactiveMissBonus;
             int forceAfterMisses = settings == null ? DefaultForceTriggerAfterMisses : settings.rimtalkProactiveForceAfterMisses;

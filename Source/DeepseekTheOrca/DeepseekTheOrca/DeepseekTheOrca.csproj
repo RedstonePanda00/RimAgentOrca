@@ -76,6 +76,7 @@
         <Compile Include="OrcaExtensionDefs.cs" />
         <Compile Include="OrcaDecisionProvider.cs" />
         <Compile Include="OrcaChatWindow.cs" />
+        <Compile Include="OrcaExtensionManager.cs" />
         <Compile Include="OrcaIncidentDefCache.cs" />
         <Compile Include="OrcaIncidentValidator.cs" />
         <Compile Include="OrcaLanguageUtility.cs" />
@@ -87,6 +88,7 @@
         <Compile Include="OrcaPersonaManagerWindow.cs" />
         <Compile Include="OrcaSkillManager.cs" />
         <Compile Include="OrcaSkillManagerWindow.cs" />
+        <Compile Include="OrcaStreamingOutputExtension.cs" />
         <Compile Include="OrcaNarrativeDirector.cs" />
         <Compile Include="OrcaPawnSpawnUtility.cs" />
         <Compile Include="OrcaProactiveConversation.cs" />

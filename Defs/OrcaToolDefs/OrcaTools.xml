@@ -1,0 +1,340 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetColonySummary</defName>
+    <toolName>get_colony_summary</toolName>
+    <label>Get colony summary</label>
+    <description>Read a compact storyteller-safe summary of the current incident target.</description>
+    <workerClass>DeepseekTheOrca.GetColonySummaryTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetRecentLetters</defName>
+    <toolName>get_recent_letters</toolName>
+    <label>Get recent letters</label>
+    <description>Read recent letters from the game archive, falling back to the visible LetterStack.</description>
+    <workerClass>DeepseekTheOrca.GetRecentLettersTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>count</name>
+        <type>integer</type>
+        <description>Maximum number of recent letters to return. Range 1 to 10. Defaults to 5.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_ListMapPawns</defName>
+    <toolName>list_map_pawns</toolName>
+    <label>List map pawns</label>
+    <description>List spawned pawns on the current map and return pawnId values for follow-up detail queries.</description>
+    <workerClass>DeepseekTheOrca.ListMapPawnsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>filter</name>
+        <type>string</type>
+        <description>Optional pawn filter. Defaults to all.</description>
+        <enumValues>
+          <li>all</li>
+          <li>player</li>
+          <li>colonist</li>
+          <li>free_colonist</li>
+          <li>humanlike</li>
+          <li>animal</li>
+          <li>hostile</li>
+          <li>prisoner</li>
+          <li>slave</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>count</name>
+        <type>integer</type>
+        <description>Maximum number of pawns to return. Range 1 to 100. Defaults to 50.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnDetails</defName>
+    <toolName>get_pawn_details</toolName>
+    <label>Get pawn details</label>
+    <description>Read detailed information about one spawned pawn by pawnId or name.</description>
+    <workerClass>DeepseekTheOrca.GetPawnDetailsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by list_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_ListAvailableIncidents</defName>
+    <toolName>list_available_incidents</toolName>
+    <label>List available incidents</label>
+    <description>List cached incidents that target the current map/world and can fire now.</description>
+    <workerClass>DeepseekTheOrca.ListAvailableIncidentsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_CanFireIncident</defName>
+    <toolName>can_fire_incident</toolName>
+    <label>Can fire incident</label>
+    <description>Validate one cached incident def against the current target and storyteller settings.</description>
+    <workerClass>DeepseekTheOrca.CanFireIncidentTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>incidentDef</name>
+        <type>string</type>
+        <description>RimWorld IncidentDef defName from list_available_incidents.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>pointsFactor</name>
+        <type>number</type>
+        <description>Threat point multiplier. Defaults to 1.0.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_ProposeIncident</defName>
+    <toolName>propose_incident</toolName>
+    <label>Propose incident</label>
+    <description>Create a structured incident proposal without executing it.</description>
+    <workerClass>DeepseekTheOrca.ProposeIncidentTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>incidentDef</name>
+        <type>string</type>
+        <description>RimWorld IncidentDef defName from list_available_incidents.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>pointsFactor</name>
+        <type>number</type>
+        <description>Threat point multiplier. Keep near 1.0 unless the story strongly justifies it.</description>
+      </li>
+      <li>
+        <name>reason</name>
+        <type>string</type>
+        <description>Short reason for the chosen story beat.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_ScheduleIncident</defName>
+    <toolName>schedule_incident</toolName>
+    <label>Schedule incident</label>
+    <description>Validate and schedule the final incident choice. Use this when ready.</description>
+    <workerClass>DeepseekTheOrca.ScheduleIncidentTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <allowDuringProactive>false</allowDuringProactive>
+    <isExecutionTool>true</isExecutionTool>
+    <parameters>
+      <li>
+        <name>incidentDef</name>
+        <type>string</type>
+        <description>RimWorld IncidentDef defName from list_available_incidents.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>pointsFactor</name>
+        <type>number</type>
+        <description>Threat point multiplier. Keep near 1.0 unless the story strongly justifies it.</description>
+      </li>
+      <li>
+        <name>reason</name>
+        <type>string</type>
+        <description>Short reason for the chosen story beat.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_TriggerRaid</defName>
+    <toolName>trigger_raid</toolName>
+    <label>Trigger raid</label>
+    <description>Validate a precise enemy raid request with optional faction, raid strategy, arrival mode, and spawn cell. Execution is owned by the caller.</description>
+    <workerClass>DeepseekTheOrca.TriggerRaidTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <allowDuringProactive>false</allowDuringProactive>
+    <isExecutionTool>true</isExecutionTool>
+    <parameters>
+      <li>
+        <name>factionDef</name>
+        <type>string</type>
+        <description>Optional hostile faction defName or faction name. Required when specifying strategy, arrival mode, or spawn cell.</description>
+      </li>
+      <li>
+        <name>raidStrategyDef</name>
+        <type>string</type>
+        <description>Optional RaidStrategyDef defName, for example ImmediateAttack, ImmediateAttackSmart, ImmediateAttackSappers, ImmediateAttackBreaching, or ImmediateAttackBreachingSmart.</description>
+      </li>
+      <li>
+        <name>raidArrivalModeDef</name>
+        <type>string</type>
+        <description>Optional PawnsArrivalModeDef defName, for example EdgeWalkIn, EdgeDrop, CenterDrop, RandomDrop, or SpecificDropDebug.</description>
+      </li>
+      <li>
+        <name>spawnCell</name>
+        <type>string</type>
+        <description>Optional map cell as x,z or x,y,z. Requires raidArrivalModeDef SpecificDropDebug; if omitted while spawnCell is set, SpecificDropDebug is assumed.</description>
+      </li>
+      <li>
+        <name>pointsFactor</name>
+        <type>number</type>
+        <description>Threat point multiplier for the raid. Defaults to 1.0.</description>
+      </li>
+      <li>
+        <name>reason</name>
+        <type>string</type>
+        <description>Short reason for the raid story beat.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_SpawnPawns</defName>
+    <toolName>spawn_pawns</toolName>
+    <label>Spawn pawns</label>
+    <description>Validate spawning a number of default faction pawns near a specified map cell. Execution is owned by the caller.</description>
+    <workerClass>DeepseekTheOrca.SpawnPawnsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <allowDuringProactive>false</allowDuringProactive>
+    <isExecutionTool>true</isExecutionTool>
+    <parameters>
+      <li>
+        <name>factionDef</name>
+        <type>string</type>
+        <description>Faction defName or faction name, for example Pirate, OutlanderCivil, TribeRough, or Mechanoid.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>count</name>
+        <type>integer</type>
+        <description>Number of pawns to spawn. Range 1 to 50.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>spawnCell</name>
+        <type>string</type>
+        <description>Target map cell as x,z or x,y,z.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>radius</name>
+        <type>integer</type>
+        <description>Optional placement radius around spawnCell. Range 0 to 30. Defaults to 5.</description>
+      </li>
+      <li>
+        <name>reason</name>
+        <type>string</type>
+        <description>Short reason for the pawn spawn request.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_WebSearch</defName>
+    <toolName>web_search</toolName>
+    <label>Web search</label>
+    <description>Search the public web through Tavily for current external information. Do not use this for current RimWorld game-state data.</description>
+    <workerClass>DeepseekTheOrca.WebSearchTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>false</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>query</name>
+        <type>string</type>
+        <description>Search query.</description>
+        <required>true</required>
+      </li>
+      <li>
+        <name>maxResults</name>
+        <type>integer</type>
+        <description>Maximum concise results to return. Range 1 to the configured Tavily cap. Defaults to the configured cap.</description>
+      </li>
+      <li>
+        <name>topic</name>
+        <type>string</type>
+        <description>Optional Tavily topic. Defaults to general.</description>
+        <enumValues>
+          <li>general</li>
+          <li>news</li>
+          <li>finance</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>timeRange</name>
+        <type>string</type>
+        <description>Optional recency filter: day, week, month, year, d, w, m, or y.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetRimtalkChatHistory</defName>
+    <toolName>get_rimtalk_chat_history</toolName>
+    <label>Get RimTalk chat history</label>
+    <description>Read recent RimTalk chat records. Each entry includes origin=player_initiated or ai_auto_generated so Orca can tell whether dialogue was player-started or generated automatically by RimTalk.</description>
+    <workerClass>DeepseekTheOrca.Rimtalk.GetRimtalkChatHistoryTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>false</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>count</name>
+        <type>integer</type>
+        <description>Maximum number of recent RimTalk records to return. Range 1 to 30. Defaults to 10.</description>
+      </li>
+      <li>
+        <name>origin</name>
+        <type>string</type>
+        <description>Optional filter. Defaults to all.</description>
+        <enumValues>
+          <li>all</li>
+          <li>player_initiated</li>
+          <li>ai_auto_generated</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>maxChars</name>
+        <type>integer</type>
+        <description>Maximum characters per prompt or response field. Range 80 to 2000. Defaults to 500.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+</Defs>
+

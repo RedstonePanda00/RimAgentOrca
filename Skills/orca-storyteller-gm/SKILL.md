@@ -1,5 +1,6 @@
 ---
 name: orca-storyteller-gm
+displayName: Orca Storyteller GM
 description: Frame RimWorld colony events with tabletop game-master narration, pressure, consequence, gifts, danger, and story rhythm.
 enabled: true
 activation: always

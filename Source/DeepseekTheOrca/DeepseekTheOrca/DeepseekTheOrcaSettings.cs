@@ -148,8 +148,6 @@ namespace DeepseekTheOrca
         public bool enableAiPlanning;
         public bool debugLogging;
         public bool enableWebSearch;
-        public bool enableMoodPlugin = true;
-        public bool enableAmbientProactiveDialogue = true;
         public float colonyObservationProactiveChance = 0.25f;
         public float rimtalkProactiveBaseChance = 0.15f;
         public float rimtalkProactiveMissBonus = 0.05f;
@@ -166,8 +164,10 @@ namespace DeepseekTheOrca
         public List<OrcaHttpMcpServerSettings> httpMcpServers = new List<OrcaHttpMcpServerSettings>();
         public List<string> enabledExternalSkills = new List<string>();
         public List<string> disabledExternalSkills = new List<string>();
-        public List<string> enabledDefPlugins = new List<string>();
-        public List<string> disabledDefPlugins = new List<string>();
+        public List<string> enabledExtensions = new List<string>();
+        public List<string> disabledExtensions = new List<string>();
+        public List<string> enabledDefTools = new List<string>();
+        public List<string> disabledDefTools = new List<string>();
         public string apiProvider = LlmProviderConfig.DeepSeek;
         public string customBaseUrl = "";
         public string apiKey = "";
@@ -182,6 +182,7 @@ namespace DeepseekTheOrca
         public int maxToolCalls = 8;
         public float planningMtbDays = 4.8f;
         public float chatWindowAlpha = 0.82f;
+        public float streamingOutputCharsPerSecond = 45f;
 
         public bool HasConfiguredLlm
         {
@@ -369,14 +370,25 @@ namespace DeepseekTheOrca
             SetDefToggleEnabled(skillId, enabled, defaultEnabled, ref enabledExternalSkills, ref disabledExternalSkills);
         }
 
-        public bool IsDefPluginEnabled(string defName, bool defaultEnabled)
+        public bool IsExtensionEnabled(string extensionId, bool defaultEnabled)
         {
-            return IsDefToggleEnabled(defName, defaultEnabled, enabledDefPlugins, disabledDefPlugins);
+            return IsDefToggleEnabled(extensionId, defaultEnabled, enabledExtensions, disabledExtensions);
         }
 
-        public void SetDefPluginEnabled(string defName, bool enabled, bool defaultEnabled)
+        public void SetExtensionEnabled(string extensionId, bool enabled, bool defaultEnabled)
         {
-            SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefPlugins, ref disabledDefPlugins);
+            SetDefToggleEnabled(extensionId, enabled, defaultEnabled, ref enabledExtensions, ref disabledExtensions);
+        }
+
+        public bool IsDefToolEnabled(string defName, bool defaultEnabled)
+        {
+            return IsDefToggleEnabled(defName, defaultEnabled, enabledDefTools, disabledDefTools);
+        }
+
+        public void SetDefToolEnabled(string defName, bool enabled, bool defaultEnabled)
+        {
+            SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefTools, ref disabledDefTools);
+            AiStoryToolRegistry.Reset();
         }
 
         private static bool IsDefToggleEnabled(string defName, bool defaultEnabled, List<string> enabledOverrides, List<string> disabledOverrides)
@@ -602,8 +614,6 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref enableAiPlanning, "enableAiPlanning", defaultValue: false);
             Scribe_Values.Look(ref debugLogging, "debugLogging", defaultValue: false);
             Scribe_Values.Look(ref enableWebSearch, "enableWebSearch", defaultValue: false);
-            Scribe_Values.Look(ref enableMoodPlugin, "enableMoodPlugin", defaultValue: true);
-            Scribe_Values.Look(ref enableAmbientProactiveDialogue, "enableAmbientProactiveDialogue", defaultValue: true);
             Scribe_Values.Look(ref colonyObservationProactiveChance, "colonyObservationProactiveChance", 0.25f);
             float legacyRecentLetterChance = -1f;
             float legacyColonyStateChance = -1f;
@@ -639,8 +649,10 @@ namespace DeepseekTheOrca
             Scribe_Collections.Look(ref httpMcpServers, "httpMcpServers", LookMode.Deep);
             Scribe_Collections.Look(ref enabledExternalSkills, "enabledExternalSkills", LookMode.Value);
             Scribe_Collections.Look(ref disabledExternalSkills, "disabledExternalSkills", LookMode.Value);
-            Scribe_Collections.Look(ref enabledDefPlugins, "enabledDefPlugins", LookMode.Value);
-            Scribe_Collections.Look(ref disabledDefPlugins, "disabledDefPlugins", LookMode.Value);
+            Scribe_Collections.Look(ref enabledExtensions, "enabledExtensions", LookMode.Value);
+            Scribe_Collections.Look(ref disabledExtensions, "disabledExtensions", LookMode.Value);
+            Scribe_Collections.Look(ref enabledDefTools, "enabledDefTools", LookMode.Value);
+            Scribe_Collections.Look(ref disabledDefTools, "disabledDefTools", LookMode.Value);
             Scribe_Values.Look(ref apiProvider, "apiProvider", LlmProviderConfig.DeepSeek);
             Scribe_Values.Look(ref customBaseUrl, "customBaseUrl", "");
             Scribe_Values.Look(ref apiKey, "apiKey", "");
@@ -655,7 +667,9 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref maxToolCalls, "maxToolCalls", 8);
             Scribe_Values.Look(ref planningMtbDays, "planningMtbDays", 4.8f);
             Scribe_Values.Look(ref chatWindowAlpha, "chatWindowAlpha", 0.82f);
+            Scribe_Values.Look(ref streamingOutputCharsPerSecond, "streamingOutputCharsPerSecond", 45f);
             chatWindowAlpha = UnityEngine.Mathf.Clamp01(chatWindowAlpha);
+            streamingOutputCharsPerSecond = UnityEngine.Mathf.Clamp(streamingOutputCharsPerSecond, 5f, 200f);
             if (webSearchMode.NullOrEmpty())
             {
                 webSearchMode = "tavily";
@@ -677,13 +691,21 @@ namespace DeepseekTheOrca
             {
                 disabledExternalSkills = new List<string>();
             }
-            if (enabledDefPlugins == null)
+            if (enabledExtensions == null)
             {
-                enabledDefPlugins = new List<string>();
+                enabledExtensions = new List<string>();
             }
-            if (disabledDefPlugins == null)
+            if (disabledExtensions == null)
             {
-                disabledDefPlugins = new List<string>();
+                disabledExtensions = new List<string>();
+            }
+            if (enabledDefTools == null)
+            {
+                enabledDefTools = new List<string>();
+            }
+            if (disabledDefTools == null)
+            {
+                disabledDefTools = new List<string>();
             }
 
             if (httpMcpServers.Count == 0 && !httpMcpUrl.NullOrEmpty())

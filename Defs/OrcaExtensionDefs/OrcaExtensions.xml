@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <DeepseekTheOrca.OrcaExtensionDef>
+    <defName>DTO_Extension_Mood</defName>
+    <label>DTO_MoodPluginName</label>
+    <description>DTO_MoodPluginDescription</description>
+    <category>DTO_MoodPluginCategory</category>
+    <details>DTO_MoodPluginDetails</details>
+    <workerClass>DeepseekTheOrca.OrcaMoodExtensionWorker</workerClass>
+    <defaultEnabled>true</defaultEnabled>
+    <order>10</order>
+  </DeepseekTheOrca.OrcaExtensionDef>
+
+  <DeepseekTheOrca.OrcaExtensionDef>
+    <defName>DTO_Extension_AmbientProactiveDialogue</defName>
+    <label>DTO_ProactivePluginName</label>
+    <description>DTO_ProactivePluginDescription</description>
+    <category>DTO_ProactivePluginCategory</category>
+    <details>DTO_ProactivePluginDetails</details>
+    <workerClass>DeepseekTheOrca.OrcaProactiveConversationExtensionWorker</workerClass>
+    <defaultEnabled>true</defaultEnabled>
+    <order>20</order>
+  </DeepseekTheOrca.OrcaExtensionDef>
+
+  <DeepseekTheOrca.OrcaExtensionDef>
+    <defName>DTO_Extension_StreamingOutput</defName>
+    <label>DTO_StreamingOutputPluginName</label>
+    <description>DTO_StreamingOutputPluginDescription</description>
+    <category>DTO_StreamingOutputPluginCategory</category>
+    <details>DTO_StreamingOutputPluginDetails</details>
+    <workerClass>DeepseekTheOrca.OrcaStreamingOutputExtensionWorker</workerClass>
+    <defaultEnabled>true</defaultEnabled>
+    <order>30</order>
+  </DeepseekTheOrca.OrcaExtensionDef>
+</Defs>
+

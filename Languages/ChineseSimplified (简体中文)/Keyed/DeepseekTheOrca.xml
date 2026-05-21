@@ -119,7 +119,7 @@
   <DTO_SkillNew>新建技能</DTO_SkillNew>
   <DTO_SkillReload>重新加载文件</DTO_SkillReload>
   <DTO_SkillFolder>技能文件夹</DTO_SkillFolder>
-  <DTO_SkillFormatNote>本地 skill 是包含 SKILL.md 的文件夹。子 mod 可以提供 Skills/*/SKILL.md 或 OrcaSkills/*/SKILL.md 文件夹。</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>本地 skill 是包含 SKILL.md 的文件夹。子 mod 可以提供 Skills/*/SKILL.md 或 OrcaSkills/*/SKILL.md 文件夹。references/ 下的文本文件会在相关时被检索并注入。</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>已启用 skill：{0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>当前没有启用的 skill。</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>尚未创建 skill。</DTO_SkillNoSkills>
@@ -146,6 +146,7 @@
   <DTO_PluginCategory>分类</DTO_PluginCategory>
   <DTO_PluginStateEnabled>已启用</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>已关闭</DTO_PluginStateDisabled>
+  <DTO_EnableExtension>启用 {0}</DTO_EnableExtension>
   <DTO_MoodPluginName>奥卡心情</DTO_MoodPluginName>
   <DTO_MoodPluginCategory>对话状态</DTO_MoodPluginCategory>
   <DTO_MoodPluginDescription>为奥卡对话添加内部心情值，并允许模型在每次回复中返回 moodDelta。</DTO_MoodPluginDescription>
@@ -166,6 +167,15 @@
   <DTO_RimtalkProactiveMissBonus>RimTalk 未触发递增 (0-1)</DTO_RimtalkProactiveMissBonus>
   <DTO_RimtalkProactiveForceAfterMisses>RimTalk 几次未触发后强制触发</DTO_RimtalkProactiveForceAfterMisses>
   <DTO_ProactivePluginSettingsNote>默认值：殖民地观察 0.25，RimTalk 0.15，每次未触发 +0.05，连续 8 次未触发后强制触发。</DTO_ProactivePluginSettingsNote>
+  <DTO_ColonyObservationProactiveSettingsNote>默认值：殖民地观察 0.25。</DTO_ColonyObservationProactiveSettingsNote>
+  <DTO_RimtalkProactiveUnavailable>RimTalk 未启用，因此隐藏 RimTalk 主动触发相关设置。</DTO_RimtalkProactiveUnavailable>
+  <DTO_StreamingOutputPluginName>流式输出</DTO_StreamingOutputPluginName>
+  <DTO_StreamingOutputPluginCategory>聊天显示</DTO_StreamingOutputPluginCategory>
+  <DTO_StreamingOutputPluginDescription>模型回复完成后，以打字机效果逐字显示奥卡的最终回复。</DTO_StreamingOutputPluginDescription>
+  <DTO_StreamingOutputPluginDetails>这是一个 UI 显示插件。它不会改变 LLM 请求、工具调用、心情解析、记忆或提示词格式。发送新消息前会先补全当前显示。</DTO_StreamingOutputPluginDetails>
+  <DTO_StreamingOutputSettings>显示速度</DTO_StreamingOutputSettings>
+  <DTO_StreamingOutputCharsPerSecond>每秒字符数</DTO_StreamingOutputCharsPerSecond>
+  <DTO_StreamingOutputSettingsNote>只有聊天窗里的可见文本会逐字显示；历史记录和记忆仍会接收完整解析后的回复。</DTO_StreamingOutputSettingsNote>
   <DTO_TestConnection>检测 DeepSeek 连接</DTO_TestConnection>
   <DTO_TestConnectionRunning>正在检测连接...</DTO_TestConnectionRunning>
   <DTO_ConnectionStatus>连接状态</DTO_ConnectionStatus>
@@ -192,6 +202,7 @@
   <DTO_DebugSelectTool>选择工具</DTO_DebugSelectTool>
   <DTO_DebugRunSingleTool>运行选中工具</DTO_DebugRunSingleTool>
   <DTO_DebugNoArguments>无参数。</DTO_DebugNoArguments>
+  <DTO_DebugNoTools>没有已注册工具。</DTO_DebugNoTools>
   <DTO_MaxToolCalls>最大工具调用次数</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>规划器 MTB 天数</DTO_PlanningMtbDays>
   <DTO_OfflineNote>离线行为：AI 决策层直接返回。直到 LLM 提供方连接前，故事事件只由 XML 中定义的原版叙事者组件生成。</DTO_OfflineNote>

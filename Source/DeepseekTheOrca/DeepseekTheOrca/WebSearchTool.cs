@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -9,7 +9,7 @@ using Verse;
 
 namespace DeepseekTheOrca
 {
-    public sealed class WebSearchTool : IAiStoryTool
+    public sealed class WebSearchTool : OrcaToolWorker
     {
         private const string TavilySearchUrl = "https://api.tavily.com/search";
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(12);
@@ -24,7 +24,7 @@ namespace DeepseekTheOrca
             get { return "Search the public web for current external information. This is not for RimWorld game-state data."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.enableWebSearch)
@@ -300,3 +300,4 @@ namespace DeepseekTheOrca
         }
     }
 }
+

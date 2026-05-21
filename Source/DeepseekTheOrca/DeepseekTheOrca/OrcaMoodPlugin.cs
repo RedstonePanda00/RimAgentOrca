@@ -6,9 +6,11 @@ namespace DeepseekTheOrca
 {
     public static class OrcaMoodPlugin
     {
+        public const string ExtensionDefName = "DTO_Extension_Mood";
+
         public static bool Enabled
         {
-            get { return DeepseekTheOrcaMod.Settings == null || DeepseekTheOrcaMod.Settings.enableMoodPlugin; }
+            get { return OrcaExtensionManager.ExtensionEnabled(ExtensionDefName); }
         }
 
         public static void AppendPrompt(StringBuilder builder)
@@ -42,6 +44,14 @@ namespace DeepseekTheOrca
             Widgets.Label(new Rect(0f, y, inRect.width, 24f), "DTO_OrcaChatMood".Translate() + ": " + mood + " (" + deltaText + ")");
             y += 34f;
             return true;
+        }
+    }
+
+    public sealed class OrcaMoodExtensionWorker : OrcaExtensionWorker
+    {
+        public override void AppendSystemPrompt(StringBuilder builder)
+        {
+            OrcaMoodPlugin.AppendPrompt(builder);
         }
     }
 }

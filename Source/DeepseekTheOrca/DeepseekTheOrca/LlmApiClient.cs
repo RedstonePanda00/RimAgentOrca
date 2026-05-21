@@ -846,37 +846,24 @@ namespace DeepseekTheOrca
         public static List<Dictionary<string, object>> Build()
         {
             List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
-            tools.Add(Function("get_colony_summary", "Read a compact storyteller-safe summary of the current incident target.", EmptyParameters()));
-            tools.Add(Function("get_recent_letters", "Read recent letters from the game archive, falling back to the visible LetterStack.", CountParameters()));
-            tools.Add(Function("list_map_pawns", "List spawned pawns on the current map and return pawnId values.", MapPawnListParameters()));
-            tools.Add(Function("get_pawn_details", "Read detailed information about one spawned pawn by pawnId or name.", PawnDetailsParameters()));
-            tools.Add(Function("list_available_incidents", "List cached incidents that can currently fire, including modded IncidentDefs.", EmptyParameters()));
-            tools.Add(Function("can_fire_incident", "Validate one cached incident def against the current target.", IncidentDefParameters(includeReason: false, includePointsFactor: false)));
-            tools.Add(Function("propose_incident", "Create a structured incident proposal without executing it.", IncidentDefParameters(includeReason: true, includePointsFactor: true)));
-            tools.Add(Function("schedule_incident", "Validate and schedule the final incident choice. Use this when ready.", IncidentDefParameters(includeReason: true, includePointsFactor: true)));
+            foreach (AiToolDefinition definition in AiStoryToolRegistry.StorytellerPlanningDefinitions)
+            {
+                tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
+            }
             return tools;
         }
 
         public static List<Dictionary<string, object>> BuildChatTools()
         {
             List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
-            tools.Add(Function("get_colony_summary", "Read a compact summary of the current colony/map for conversation.", EmptyParameters()));
-            tools.Add(Function("get_recent_letters", "Read recent letters from the game archive for conversation, falling back to the visible LetterStack.", CountParameters()));
-            tools.Add(Function("list_map_pawns", "List spawned pawns on the current map and return pawnId values for conversation.", MapPawnListParameters()));
-            tools.Add(Function("get_pawn_details", "Read one spawned pawn's name, traits, skills, relations, needs, and health by pawnId or name.", PawnDetailsParameters()));
-            tools.Add(Function("list_available_incidents", "List cached incidents that can currently fire.", EmptyParameters()));
-            tools.Add(Function("can_fire_incident", "Validate whether one cached incident def can currently fire.", IncidentDefParameters(includeReason: false, includePointsFactor: false)));
-            tools.Add(Function("propose_incident", "Create a structured incident proposal without executing it.", IncidentDefParameters(includeReason: true, includePointsFactor: true)));
-            tools.Add(Function("schedule_incident", "Ask Orca to actually fire an incident now. This is gated by local willingness and may fail even when the incident is valid.", IncidentDefParameters(includeReason: true, includePointsFactor: true)));
-            tools.Add(Function("trigger_raid", "Ask Orca to fire a precise enemy raid now. Optional fields can constrain faction, strategy, arrival mode, and spawn cell. This is gated by local willingness.", RaidParameters()));
-            tools.Add(Function("spawn_pawns", "Ask Orca to spawn default faction pawns near a specified map cell. This is gated by local willingness.", SpawnPawnsParameters()));
-            if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.UsesLocalWebSearchTool)
+            foreach (AiToolDefinition definition in AiStoryToolRegistry.ChatDefinitions)
             {
-                tools.Add(Function("web_search", "Search the public web through Tavily for current external information. Do not use this for current RimWorld game-state data.", WebSearchParameters()));
-            }
-            if (Rimtalk.RimtalkIntegration.IsAvailable)
-            {
-                tools.Add(Function("get_rimtalk_chat_history", "Read recent RimTalk chat records. Each entry includes origin=player_initiated or ai_auto_generated so Orca can tell whether dialogue was player-started or generated automatically by RimTalk.", RimtalkChatHistoryParameters()));
+                if (definition.Name == "web_search" && (DeepseekTheOrcaMod.Settings == null || !DeepseekTheOrcaMod.Settings.UsesLocalWebSearchTool))
+                {
+                    continue;
+                }
+
+                tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
             }
             AppendHttpMcpTools(tools);
             return tools;
@@ -907,7 +894,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> EmptyParameters()
+        public static Dictionary<string, object> EmptyParameters()
         {
             return new Dictionary<string, object>
             {
@@ -916,7 +903,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> CountParameters()
+        public static Dictionary<string, object> CountParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["count"] = new Dictionary<string, object>
@@ -932,7 +919,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> RimtalkChatHistoryParameters()
+        public static Dictionary<string, object> RimtalkChatHistoryParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["count"] = new Dictionary<string, object>
@@ -958,7 +945,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> MapPawnListParameters()
+        public static Dictionary<string, object> MapPawnListParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["filter"] = new Dictionary<string, object>
@@ -979,7 +966,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> PawnDetailsParameters()
+        public static Dictionary<string, object> PawnDetailsParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["pawnId"] = new Dictionary<string, object>
@@ -996,7 +983,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> RaidParameters()
+        public static Dictionary<string, object> RaidParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["factionDef"] = new Dictionary<string, object>
@@ -1037,7 +1024,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> SpawnPawnsParameters()
+        public static Dictionary<string, object> SpawnPawnsParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["factionDef"] = new Dictionary<string, object>
@@ -1074,7 +1061,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> WebSearchParameters()
+        public static Dictionary<string, object> WebSearchParameters()
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["query"] = new Dictionary<string, object>
@@ -1106,7 +1093,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static Dictionary<string, object> IncidentDefParameters(bool includeReason, bool includePointsFactor)
+        public static Dictionary<string, object> IncidentDefParameters(bool includeReason, bool includePointsFactor)
         {
             Dictionary<string, object> properties = new Dictionary<string, object>();
             properties["incidentDef"] = new Dictionary<string, object>

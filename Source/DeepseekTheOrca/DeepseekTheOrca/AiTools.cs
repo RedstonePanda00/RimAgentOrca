@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -6,7 +6,7 @@ using Verse;
 
 namespace DeepseekTheOrca
 {
-    public sealed class GetColonySummaryTool : IAiStoryTool
+    public sealed class GetColonySummaryTool : OrcaToolWorker
     {
         public string Name
         {
@@ -18,7 +18,7 @@ namespace DeepseekTheOrca
             get { return "Read a compact storyteller-safe summary of the current incident target."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             ColonySnapshot snapshot = ColonySnapshot.Capture(context.target);
             return AiToolResult.Ok("colony summary captured")
@@ -33,7 +33,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class ListAvailableIncidentsTool : IAiStoryTool
+    public sealed class ListAvailableIncidentsTool : OrcaToolWorker
     {
         public string Name
         {
@@ -45,7 +45,7 @@ namespace DeepseekTheOrca
             get { return "List cached incidents that target the current map/world and can fire now."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             List<CachedIncidentDef> available = OrcaIncidentDefCache.AvailableFor(context).ToList();
             List<string> summaries = available.Select(incident => incident.Summary).ToList();
@@ -55,7 +55,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class GetRecentLettersTool : IAiStoryTool
+    public sealed class GetRecentLettersTool : OrcaToolWorker
     {
         public string Name
         {
@@ -67,7 +67,7 @@ namespace DeepseekTheOrca
             get { return "Read recent letters from the game archive, falling back to the visible LetterStack."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             int count = ParseCount(arguments);
             List<Letter> letters = RecentArchivedLetters(count);
@@ -190,7 +190,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class ListMapPawnsTool : IAiStoryTool
+    public sealed class ListMapPawnsTool : OrcaToolWorker
     {
         public string Name
         {
@@ -202,7 +202,7 @@ namespace DeepseekTheOrca
             get { return "List spawned pawns on the current map and return pawnId values for follow-up detail queries."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             Map map = context == null ? null : context.Map;
             if (map == null || map.mapPawns == null)
@@ -311,7 +311,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class GetPawnDetailsTool : IAiStoryTool
+    public sealed class GetPawnDetailsTool : OrcaToolWorker
     {
         public string Name
         {
@@ -323,7 +323,7 @@ namespace DeepseekTheOrca
             get { return "Read detailed information about one spawned pawn by pawnId or name."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             Map map = context == null ? null : context.Map;
             if (map == null || map.mapPawns == null)
@@ -687,7 +687,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class CanFireIncidentTool : IAiStoryTool
+    public sealed class CanFireIncidentTool : OrcaToolWorker
     {
         public string Name
         {
@@ -699,7 +699,7 @@ namespace DeepseekTheOrca
             get { return "Validate one cached incident def against the current target and storyteller settings."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             string defName;
             if (!arguments.TryGetValue("incidentDef", out defName) || defName.NullOrEmpty())
@@ -726,7 +726,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class ProposeIncidentTool : IAiStoryTool
+    public sealed class ProposeIncidentTool : OrcaToolWorker
     {
         public string Name
         {
@@ -738,7 +738,7 @@ namespace DeepseekTheOrca
             get { return "Create a structured incident proposal. This does not execute anything."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             string defName;
             if (!arguments.TryGetValue("incidentDef", out defName) || defName.NullOrEmpty())
@@ -763,7 +763,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class ScheduleIncidentTool : IAiStoryTool
+    public sealed class ScheduleIncidentTool : OrcaToolWorker
     {
         public string Name
         {
@@ -775,7 +775,7 @@ namespace DeepseekTheOrca
             get { return "Validate an incident proposal for storyteller execution. The comp still owns the actual firing."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             string defName;
             if (!arguments.TryGetValue("incidentDef", out defName) || defName.NullOrEmpty())
@@ -808,7 +808,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class TriggerRaidTool : IAiStoryTool
+    public sealed class TriggerRaidTool : OrcaToolWorker
     {
         public string Name
         {
@@ -820,7 +820,7 @@ namespace DeepseekTheOrca
             get { return "Validate a precise enemy raid request with optional faction, raid strategy, arrival mode, and spawn cell. Execution is owned by the caller."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             IncidentParms parms;
             string rejectReason;
@@ -839,7 +839,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class SpawnPawnsTool : IAiStoryTool
+    public sealed class SpawnPawnsTool : OrcaToolWorker
     {
         public string Name
         {
@@ -851,7 +851,7 @@ namespace DeepseekTheOrca
             get { return "Validate spawning a number of default faction pawns near a specified map cell. Execution is owned by the caller."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             PawnSpawnRequest request;
             string rejectReason;
@@ -868,3 +868,4 @@ namespace DeepseekTheOrca
         }
     }
 }
+

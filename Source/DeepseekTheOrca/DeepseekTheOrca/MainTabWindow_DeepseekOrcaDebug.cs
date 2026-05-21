@@ -127,27 +127,13 @@ namespace DeepseekTheOrca
         private string spawnCellBuffer = "";
         private string radiusBuffer = "5";
         private string queryBuffer = "";
+        private readonly Dictionary<string, string> dynamicArgumentBuffers = new Dictionary<string, string>();
 
         private static readonly Color WindowBackground = new Color(0.035f, 0.04f, 0.05f, 0.94f);
         private static readonly Color PanelFill = new Color(0.05f, 0.055f, 0.065f, 0.72f);
         private static readonly Color BorderColor = new Color(0.42f, 0.45f, 0.48f, 1f);
         private static readonly Color MutedTextColor = new Color(0.65f, 0.67f, 0.7f, 1f);
         private static readonly Color AccentColor = new Color(0.75f, 0.78f, 0.86f, 1f);
-
-        private static readonly DebugToolSpec[] SingleToolSpecs =
-        {
-            new DebugToolSpec("get_colony_summary", new string[0]),
-            new DebugToolSpec("get_recent_letters", new[] { "count" }),
-            new DebugToolSpec("list_map_pawns", new[] { "filter", "count" }),
-            new DebugToolSpec("get_pawn_details", new[] { "pawnId" }),
-            new DebugToolSpec("list_available_incidents", new string[0]),
-            new DebugToolSpec("can_fire_incident", new[] { "incidentDef", "pointsFactor" }),
-            new DebugToolSpec("propose_incident", new[] { "incidentDef", "pointsFactor", "reason" }),
-            new DebugToolSpec("schedule_incident", new[] { "incidentDef", "pointsFactor", "reason" }),
-            new DebugToolSpec("trigger_raid", new[] { "factionDef", "raidStrategyDef", "raidArrivalModeDef", "spawnCell", "pointsFactor", "reason" }),
-            new DebugToolSpec("spawn_pawns", new[] { "factionDef", "count", "spawnCell", "radius", "reason" }),
-            new DebugToolSpec("web_search", new[] { "query", "count" })
-        };
 
         public OrcaDebugWindow()
         {
@@ -262,7 +248,14 @@ namespace DeepseekTheOrca
 
         private void DrawSingleToolPage(Rect rect)
         {
-            DebugToolSpec spec = SelectedToolSpec();
+            List<DebugToolSpec> specs = CurrentSingleToolSpecs();
+            if (specs.Count == 0)
+            {
+                Widgets.Label(rect, "DTO_DebugNoTools".Translate());
+                return;
+            }
+
+            DebugToolSpec spec = SelectedToolSpec(specs);
             float selectorWidth = 210f;
             Rect selector = new Rect(rect.x, rect.y, selectorWidth, rect.height);
             Rect detail = new Rect(selector.xMax + 12f, rect.y, rect.width - selectorWidth - 12f, rect.height);
@@ -270,9 +263,9 @@ namespace DeepseekTheOrca
             float selectorY = selector.y;
             Widgets.Label(new Rect(selector.x, selectorY, selector.width, 24f), "DTO_DebugSelectTool".Translate());
             selectorY += 28f;
-            for (int i = 0; i < SingleToolSpecs.Length; i++)
+            for (int i = 0; i < specs.Count; i++)
             {
-                string toolName = SingleToolSpecs[i].Name;
+                string toolName = specs[i].Name;
                 Rect row = new Rect(selector.x, selectorY, selector.width, 28f);
                 if (Widgets.ButtonText(row, toolName, selectedTool == toolName))
                 {
@@ -459,6 +452,12 @@ namespace DeepseekTheOrca
             {
                 queryBuffer = Widgets.TextField(new Rect(0f, y, width, 28f), queryBuffer);
             }
+            else
+            {
+                string buffer = GenericArgumentBuffer(argumentName);
+                buffer = Widgets.TextField(new Rect(0f, y, width, 28f), buffer);
+                dynamicArgumentBuffers[argumentName] = buffer;
+            }
 
             y += 28f;
         }
@@ -537,23 +536,59 @@ namespace DeepseekTheOrca
                 {
                     arguments["query"] = queryBuffer;
                 }
+                else
+                {
+                    string value = GenericArgumentBuffer(argumentName);
+                    if (!value.NullOrEmpty())
+                    {
+                        arguments[argumentName] = value;
+                    }
+                }
             }
 
             return arguments;
         }
 
-        private DebugToolSpec SelectedToolSpec()
+        private string GenericArgumentBuffer(string argumentName)
         {
-            for (int i = 0; i < SingleToolSpecs.Length; i++)
+            string value;
+            if (!dynamicArgumentBuffers.TryGetValue(argumentName, out value))
             {
-                if (SingleToolSpecs[i].Name == selectedTool)
+                value = "";
+                dynamicArgumentBuffers[argumentName] = value;
+            }
+
+            return value;
+        }
+
+        private static List<DebugToolSpec> CurrentSingleToolSpecs()
+        {
+            List<DebugToolSpec> specs = new List<DebugToolSpec>();
+            foreach (AiToolDefinition definition in AiStoryToolRegistry.AllDefinitions)
+            {
+                if (definition == null || definition.Name.NullOrEmpty())
                 {
-                    return SingleToolSpecs[i];
+                    continue;
+                }
+
+                specs.Add(DebugToolSpec.FromDefinition(definition));
+            }
+
+            return specs.OrderBy(spec => spec.Name).ToList();
+        }
+
+        private DebugToolSpec SelectedToolSpec(List<DebugToolSpec> specs)
+        {
+            for (int i = 0; i < specs.Count; i++)
+            {
+                if (specs[i].Name == selectedTool)
+                {
+                    return specs[i];
                 }
             }
 
-            selectedTool = SingleToolSpecs[0].Name;
-            return SingleToolSpecs[0];
+            selectedTool = specs[0].Name;
+            return specs[0];
         }
 
         private void DrawScrollableLog(Rect rect, IEnumerable<string> lines)
@@ -795,6 +830,30 @@ namespace DeepseekTheOrca
             {
                 Name = name;
                 ArgumentNames = argumentNames;
+            }
+
+            public static DebugToolSpec FromDefinition(AiToolDefinition definition)
+            {
+                List<string> argumentNames = new List<string>();
+                Dictionary<string, object> properties = null;
+                object propertiesObj;
+                if (definition.parameters != null && definition.parameters.TryGetValue("properties", out propertiesObj))
+                {
+                    properties = propertiesObj as Dictionary<string, object>;
+                }
+
+                if (properties != null)
+                {
+                    foreach (string key in properties.Keys)
+                    {
+                        if (!key.NullOrEmpty())
+                        {
+                            argumentNames.Add(key);
+                        }
+                    }
+                }
+
+                return new DebugToolSpec(definition.Name, argumentNames.ToArray());
             }
         }
     }

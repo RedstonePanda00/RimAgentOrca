@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace DeepseekTheOrca.Rimtalk
 {
-    public sealed class GetRimtalkChatHistoryTool : IAiStoryTool
+    public sealed class GetRimtalkChatHistoryTool : OrcaToolWorker
     {
         public string Name
         {
@@ -14,9 +14,15 @@ namespace DeepseekTheOrca.Rimtalk
             get { return "Read recent RimTalk chat records, distinguishing player-initiated dialogue from AI auto-generated dialogue."; }
         }
 
-        public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        public override bool ShouldRegister()
+        {
+            return RimtalkIntegration.IsAvailable;
+        }
+
+        public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             return RimtalkIntegration.GetChatHistory(arguments);
         }
     }
 }
+
