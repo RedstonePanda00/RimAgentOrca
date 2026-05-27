@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Verse;
 
 namespace DeepseekTheOrca
@@ -81,6 +82,7 @@ namespace DeepseekTheOrca
         public string status = "notTested";
         public string message = "DTO_ConnectionNotTested";
         public List<string> availableModels = new List<string>();
+        public List<string> activeModels = new List<string>();
 
         public string ActiveBaseUrl
         {
@@ -106,6 +108,7 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref status, "status", "notTested");
             Scribe_Values.Look(ref message, "message", "DTO_ConnectionNotTested");
             Scribe_Collections.Look(ref availableModels, "availableModels", LookMode.Value);
+            Scribe_Collections.Look(ref activeModels, "activeModels", LookMode.Value);
             Normalize();
         }
 
@@ -126,6 +129,12 @@ namespace DeepseekTheOrca
             {
                 availableModels = new List<string>();
             }
+            if (activeModels == null)
+            {
+                activeModels = new List<string>();
+            }
+
+            activeModels = activeModels.Where(model => !model.NullOrEmpty()).Distinct().ToList();
         }
 
         public void MarkDirty()
@@ -139,6 +148,30 @@ namespace DeepseekTheOrca
             else
             {
                 availableModels.Clear();
+            }
+        }
+
+        public bool IsModelActive(string modelId)
+        {
+            return !modelId.NullOrEmpty() && activeModels != null && activeModels.Contains(modelId);
+        }
+
+        public void SetModelActive(string modelId, bool active)
+        {
+            if (modelId.NullOrEmpty())
+            {
+                return;
+            }
+
+            if (activeModels == null)
+            {
+                activeModels = new List<string>();
+            }
+
+            activeModels.RemoveAll(value => value == modelId);
+            if (active)
+            {
+                activeModels.Add(modelId);
             }
         }
     }
@@ -338,14 +371,14 @@ namespace DeepseekTheOrca
             List<OrcaModelOption> options = new List<OrcaModelOption>();
             foreach (OrcaLlmConnectionSettings connection in llmConnections)
             {
-                if (connection == null || !connection.enabled || connection.availableModels == null)
+                if (connection == null || !connection.enabled || connection.activeModels == null)
                 {
                     continue;
                 }
 
-                for (int i = 0; i < connection.availableModels.Count; i++)
+                for (int i = 0; i < connection.activeModels.Count; i++)
                 {
-                    string modelId = connection.availableModels[i];
+                    string modelId = connection.activeModels[i];
                     if (modelId.NullOrEmpty())
                     {
                         continue;
@@ -484,11 +517,13 @@ namespace DeepseekTheOrca
                     provider = apiProvider,
                     customBaseUrl = customBaseUrl ?? "",
                     apiKey = apiKey ?? "",
-                    availableModels = new List<string>()
+                    availableModels = new List<string>(),
+                    activeModels = new List<string>()
                 };
                 if (!model.NullOrEmpty())
                 {
                     migrated.availableModels.Add(model);
+                    migrated.activeModels.Add(model);
                 }
                 migrated.Normalize();
                 llmConnections.Add(migrated);

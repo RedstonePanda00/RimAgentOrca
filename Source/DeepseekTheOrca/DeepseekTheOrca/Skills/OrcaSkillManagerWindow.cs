@@ -108,7 +108,11 @@ namespace DeepseekTheOrca
                 }, destructive: true));
             }
 
-            if (profile.triggerHints != null && profile.triggerHints.Count > 0)
+            if (profile.contexts != null && profile.contexts.Count > 0)
+            {
+                Widgets.Label(new Rect(textRect.x, textRect.yMax + 30f, textRect.width, 22f), SourceText(profile) + " | " + "DTO_SkillContexts".Translate() + ": " + string.Join(", ", profile.contexts.Take(5).ToArray()));
+            }
+            else if (profile.triggerHints != null && profile.triggerHints.Count > 0)
             {
                 Widgets.Label(new Rect(textRect.x, textRect.yMax + 30f, textRect.width, 22f), SourceText(profile) + " | " + "DTO_SkillTriggerHints".Translate() + ": " + string.Join(", ", profile.triggerHints.Take(5).ToArray()));
             }
@@ -136,6 +140,7 @@ namespace DeepseekTheOrca
         private string labelBuffer;
         private string descriptionBuffer;
         private string triggerHintsBuffer;
+        private string contextsBuffer;
         private string allowedToolsBuffer;
         private string promptBuffer;
         private bool enabledBuffer;
@@ -147,6 +152,7 @@ namespace DeepseekTheOrca
             labelBuffer = profile == null ? "" : profile.label;
             descriptionBuffer = profile == null ? "" : profile.description;
             triggerHintsBuffer = profile == null || profile.triggerHints == null ? "" : string.Join("\n", profile.triggerHints.ToArray());
+            contextsBuffer = profile == null || profile.contexts == null ? "" : string.Join("\n", profile.contexts.ToArray());
             allowedToolsBuffer = profile == null || profile.allowedTools == null ? "" : string.Join("\n", profile.allowedTools.ToArray());
             promptBuffer = profile == null ? "" : profile.prompt;
             enabledBuffer = profile == null || profile.enabled;
@@ -188,12 +194,14 @@ namespace DeepseekTheOrca
             descriptionBuffer = Widgets.TextField(new Rect(inRect.x, y, inRect.width, 28f), descriptionBuffer ?? "");
             y += 36f;
 
-            float columnWidth = (inRect.width - 10f) / 2f;
+            float columnWidth = (inRect.width - 20f) / 3f;
             Widgets.Label(new Rect(inRect.x, y, columnWidth, 24f), "DTO_SkillTriggerHints".Translate());
-            Widgets.Label(new Rect(inRect.x + columnWidth + 10f, y, columnWidth, 24f), "DTO_SkillAllowedTools".Translate());
+            Widgets.Label(new Rect(inRect.x + columnWidth + 10f, y, columnWidth, 24f), "DTO_SkillContexts".Translate());
+            Widgets.Label(new Rect(inRect.x + (columnWidth + 10f) * 2f, y, columnWidth, 24f), "DTO_SkillAllowedTools".Translate());
             y += 26f;
             triggerHintsBuffer = Widgets.TextArea(new Rect(inRect.x, y, columnWidth, 82f), triggerHintsBuffer ?? "");
-            allowedToolsBuffer = Widgets.TextArea(new Rect(inRect.x + columnWidth + 10f, y, columnWidth, 82f), allowedToolsBuffer ?? "");
+            contextsBuffer = Widgets.TextArea(new Rect(inRect.x + columnWidth + 10f, y, columnWidth, 82f), contextsBuffer ?? "");
+            allowedToolsBuffer = Widgets.TextArea(new Rect(inRect.x + (columnWidth + 10f) * 2f, y, columnWidth, 82f), allowedToolsBuffer ?? "");
             y += 92f;
 
             Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_SkillPrompt".Translate());
@@ -212,6 +220,7 @@ namespace DeepseekTheOrca
                 profile.description = descriptionBuffer ?? "";
                 profile.enabled = enabledBuffer;
                 profile.triggerHints = SplitLines(triggerHintsBuffer);
+                profile.contexts = SplitLines(contextsBuffer);
                 profile.allowedTools = SplitLines(allowedToolsBuffer);
                 profile.prompt = promptBuffer ?? "";
                 OrcaSkillManager.Save(profile);

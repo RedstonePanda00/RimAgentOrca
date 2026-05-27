@@ -26,31 +26,182 @@ namespace DeepseekTheOrca
         private const string RawArgumentsKey = "__rawJson";
         private const string ProtocolVersion = "2025-03-26";
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(12);
+        private static readonly TimeSpan CacheFreshDuration = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan FailedRefreshBackoff = TimeSpan.FromSeconds(10);
         private static readonly object syncRoot = new object();
         private static readonly List<OrcaMcpToolDescriptor> cachedTools = new List<OrcaMcpToolDescriptor>();
         private static readonly Dictionary<string, string> sessionIdsByEndpoint = new Dictionary<string, string>();
         private static readonly HashSet<string> initializedEndpoints = new HashSet<string>();
+        private static Task<List<OrcaMcpToolDescriptor>> pendingDiscovery;
+        private static string pendingFingerprint = "";
         private static string cachedFingerprint = "";
         private static DateTime cacheTimeUtc = DateTime.MinValue;
+        private static DateTime lastRefreshAttemptUtc = DateTime.MinValue;
+        private static string lastRefreshAttemptFingerprint = "";
+        private static string lastDiscoveryError = "";
         private static int nextRequestId = 1;
 
         public static List<OrcaMcpToolDescriptor> DiscoverTools()
         {
+            Tick();
+            return CachedTools();
+        }
+
+        public static void Tick()
+        {
             List<OrcaHttpMcpServerSettings> servers = ActiveServers();
             if (servers.Count == 0)
             {
-                return new List<OrcaMcpToolDescriptor>();
+                ClearCacheIfNeeded();
+                return;
             }
 
             string fingerprint = Fingerprint(servers);
-            lock (syncRoot)
+            CompletePendingDiscovery(fingerprint);
+            StartDiscoveryIfNeeded(servers, fingerprint);
+        }
+
+        public static string LastDiscoveryError
+        {
+            get
             {
-                if (cachedFingerprint == fingerprint && (DateTime.UtcNow - cacheTimeUtc).TotalSeconds < 30)
+                lock (syncRoot)
                 {
-                    return CloneTools(cachedTools);
+                    return lastDiscoveryError;
                 }
             }
+        }
 
+        public static bool DiscoveryInProgress
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return pendingDiscovery != null;
+                }
+            }
+        }
+
+        private static List<OrcaMcpToolDescriptor> CachedTools()
+        {
+            lock (syncRoot)
+            {
+                return CloneTools(cachedTools);
+            }
+        }
+
+        private static void ClearCacheIfNeeded()
+        {
+            lock (syncRoot)
+            {
+                if (cachedTools.Count == 0 && cachedFingerprint.NullOrEmpty() && pendingDiscovery == null)
+                {
+                    return;
+                }
+
+                pendingDiscovery = null;
+                pendingFingerprint = "";
+                cachedFingerprint = "";
+                cacheTimeUtc = DateTime.MinValue;
+                lastRefreshAttemptFingerprint = "";
+                lastDiscoveryError = "";
+                cachedTools.Clear();
+            }
+        }
+
+        private static void CompletePendingDiscovery(string currentFingerprint)
+        {
+            Task<List<OrcaMcpToolDescriptor>> task = null;
+            string taskFingerprint = "";
+            lock (syncRoot)
+            {
+                if (pendingDiscovery == null || !pendingDiscovery.IsCompleted)
+                {
+                    return;
+                }
+
+                task = pendingDiscovery;
+                taskFingerprint = pendingFingerprint;
+                pendingDiscovery = null;
+                pendingFingerprint = "";
+            }
+
+            try
+            {
+                List<OrcaMcpToolDescriptor> discovered = task.Result ?? new List<OrcaMcpToolDescriptor>();
+                if (taskFingerprint != currentFingerprint)
+                {
+                    DebugLog("MCP tool discovery result ignored because server settings changed.");
+                    return;
+                }
+
+                lock (syncRoot)
+                {
+                    cachedFingerprint = taskFingerprint;
+                    cacheTimeUtc = DateTime.UtcNow;
+                    lastDiscoveryError = "";
+                    cachedTools.Clear();
+                    cachedTools.AddRange(discovered);
+                }
+
+                DebugLog("MCP tool discovery completed; cached " + discovered.Count + " tool(s).");
+            }
+            catch (Exception ex)
+            {
+                string message = ex.GetType().Name + ": " + ex.Message;
+                lock (syncRoot)
+                {
+                    lastDiscoveryError = message;
+                }
+
+                DebugLog("MCP tool discovery failed: " + message);
+            }
+        }
+
+        private static void StartDiscoveryIfNeeded(List<OrcaHttpMcpServerSettings> servers, string fingerprint)
+        {
+            DateTime now = DateTime.UtcNow;
+            lock (syncRoot)
+            {
+                if (pendingDiscovery != null)
+                {
+                    return;
+                }
+
+                if (cachedFingerprint == fingerprint && now - cacheTimeUtc < CacheFreshDuration)
+                {
+                    return;
+                }
+
+                if (lastRefreshAttemptFingerprint == fingerprint && now - lastRefreshAttemptUtc < FailedRefreshBackoff)
+                {
+                    return;
+                }
+
+                if (cachedFingerprint != fingerprint)
+                {
+                    cachedFingerprint = "";
+                    cacheTimeUtc = DateTime.MinValue;
+                    lastDiscoveryError = "";
+                    cachedTools.Clear();
+                }
+
+                lastRefreshAttemptUtc = now;
+                lastRefreshAttemptFingerprint = fingerprint;
+                pendingFingerprint = fingerprint;
+                List<OrcaHttpMcpServerSettings> snapshot = CloneServers(servers);
+                pendingDiscovery = Task.Run(delegate
+                {
+                    return DiscoverToolsForServers(snapshot);
+                });
+            }
+
+            DebugLog("MCP tool discovery started in background.");
+        }
+
+        private static List<OrcaMcpToolDescriptor> DiscoverToolsForServers(List<OrcaHttpMcpServerSettings> servers)
+        {
             List<OrcaMcpToolDescriptor> discovered = new List<OrcaMcpToolDescriptor>();
             HashSet<string> usedNames = new HashSet<string>();
             bool includeServerName = servers.Count > 1;
@@ -67,14 +218,7 @@ namespace DeepseekTheOrca
                 }
             }
 
-            lock (syncRoot)
-            {
-                cachedFingerprint = fingerprint;
-                cacheTimeUtc = DateTime.UtcNow;
-                cachedTools.Clear();
-                cachedTools.AddRange(discovered);
-                return CloneTools(cachedTools);
-            }
+            return discovered;
         }
 
         public static bool IsExposedTool(string toolName)
@@ -345,6 +489,29 @@ namespace DeepseekTheOrca
             return settings.httpMcpServers
                 .Where(server => server != null && server.enabled && !server.url.NullOrEmpty())
                 .ToList();
+        }
+
+        private static List<OrcaHttpMcpServerSettings> CloneServers(List<OrcaHttpMcpServerSettings> servers)
+        {
+            List<OrcaHttpMcpServerSettings> result = new List<OrcaHttpMcpServerSettings>();
+            for (int i = 0; i < servers.Count; i++)
+            {
+                OrcaHttpMcpServerSettings server = servers[i];
+                if (server == null)
+                {
+                    continue;
+                }
+
+                result.Add(new OrcaHttpMcpServerSettings
+                {
+                    name = server.name,
+                    enabled = server.enabled,
+                    url = server.url,
+                    bearerToken = server.bearerToken
+                });
+            }
+
+            return result;
         }
 
         private static string Fingerprint(List<OrcaHttpMcpServerSettings> servers)

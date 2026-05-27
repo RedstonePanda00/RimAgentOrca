@@ -1,5 +1,6 @@
 using UnityEngine;
 using Verse;
+using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -86,12 +87,44 @@ namespace DeepseekTheOrca
 
     }
 
+    public sealed class OrcaSettingsWindow : Window
+    {
+        private readonly DeepseekTheOrcaMod mod;
+
+        public OrcaSettingsWindow(DeepseekTheOrcaMod mod)
+        {
+            this.mod = mod;
+            doCloseX = true;
+            absorbInputAroundWindow = true;
+            closeOnClickedOutside = false;
+            draggable = true;
+            resizeable = true;
+            onlyOneOfTypeAllowed = true;
+        }
+
+        public override Vector2 InitialSize
+        {
+            get { return new Vector2(980f, 720f); }
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            if (mod == null)
+            {
+                Close();
+                return;
+            }
+
+            mod.DrawSettingsUi(inRect);
+        }
+    }
+
     public sealed class DeepseekTheOrcaMod : Mod
     {
         private enum SettingsPage
         {
-            ApiKeys,
-            Llm,
+            Providers,
+            AgentModels,
             Personas,
             Skills,
             Plugins,
@@ -103,13 +136,18 @@ namespace DeepseekTheOrca
         public static DeepseekTheOrcaMod Instance;
         public static DeepseekTheOrcaSettings Settings;
 
-        private SettingsPage selectedPage = SettingsPage.Llm;
+        private SettingsPage selectedPage = SettingsPage.AgentModels;
         private string maxToolCallsBuffer;
         private string planningMtbDaysBuffer;
         private string tavilyMaxResultsBuffer;
         private string httpMcpMaxResultCharsBuffer;
         private Vector2 rightScrollPosition;
         private Vector2 pluginDetailScrollPosition;
+        private Vector2 providerListScrollPosition;
+        private Vector2 providerDetailScrollPosition;
+        private string selectedProviderId = "";
+        private string providerModelFilter = "";
+        private bool providerRemoveMode;
         private string selectedPluginId = "";
 
         private static readonly Color PanelFill = new Color(0.05f, 0.055f, 0.065f, 0.72f);
@@ -134,11 +172,26 @@ namespace DeepseekTheOrca
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            if (Find.WindowStack != null && !Find.WindowStack.IsOpen(typeof(OrcaSettingsWindow)))
+            {
+                Find.WindowStack.Add(new OrcaSettingsWindow(this));
+            }
+
+            if (Find.WindowStack != null)
+            {
+                Find.WindowStack.TryRemove(typeof(Dialog_ModSettings));
+            }
+        }
+
+        internal void DrawSettingsUi(Rect inRect)
+        {
             Settings.EnsureLlmConnections();
             OrcaLlmConnectionManager.Tick(Settings);
+            OrcaHttpMcpClient.Tick();
+            EnsureSelectedProvider();
 
             float gap = 12f;
-            float leftWidth = Mathf.Max(180f, inRect.width * 0.24f);
+            float leftWidth = Mathf.Clamp(inRect.width * 0.22f, 180f, 240f);
             Rect left = new Rect(inRect.x, inRect.y, leftWidth, inRect.height);
             Rect right = new Rect(left.xMax + gap, inRect.y, inRect.width - leftWidth - gap, inRect.height);
 
@@ -152,9 +205,9 @@ namespace DeepseekTheOrca
         {
             Text.Font = GameFont.Small;
             float y = rect.y;
-            DrawPageButton(new Rect(rect.x, y, rect.width, 34f), "DTO_SettingsPageApiKeys".Translate(), SettingsPage.ApiKeys);
+            DrawPageButton(new Rect(rect.x, y, rect.width, 34f), "DTO_SettingsPageProviders".Translate(), SettingsPage.Providers);
             y += 42f;
-            DrawPageButton(new Rect(rect.x, y, rect.width, 34f), "DTO_SettingsPageLlm".Translate(), SettingsPage.Llm);
+            DrawPageButton(new Rect(rect.x, y, rect.width, 34f), "DTO_SettingsPageAgentModels".Translate(), SettingsPage.AgentModels);
             y += 42f;
             DrawPageButton(new Rect(rect.x, y, rect.width, 34f), "DTO_SettingsPagePersonas".Translate(), SettingsPage.Personas);
             y += 42f;
@@ -171,7 +224,23 @@ namespace DeepseekTheOrca
 
         private void DrawPageButton(Rect rect, string label, SettingsPage page)
         {
-            if (Widgets.ButtonText(rect, label, selectedPage == page))
+            bool selected = selectedPage == page;
+            bool hover = Mouse.IsOver(rect);
+            if (selected)
+            {
+                Widgets.DrawBoxSolid(rect, RowSelectedFill);
+                Widgets.DrawBoxSolid(new Rect(rect.x, rect.y, 3f, rect.height), new Color(0.45f, 0.68f, 0.88f, 1f));
+            }
+            else if (hover)
+            {
+                Widgets.DrawBoxSolid(rect, RowHoverFill);
+            }
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(rect.x + 10f, rect.y, rect.width - 12f, rect.height), label);
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            if (Widgets.ButtonInvisible(rect))
             {
                 selectedPage = page;
                 rightScrollPosition = Vector2.zero;
@@ -181,16 +250,19 @@ namespace DeepseekTheOrca
 
         private void DrawSelectedSettingsPage(Rect rect)
         {
-            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 920f);
+            if (selectedPage == SettingsPage.Providers)
+            {
+                DrawProviderSettings(rect);
+                return;
+            }
+
+            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 1400f);
             Widgets.BeginScrollView(rect, ref rightScrollPosition, viewRect);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(viewRect);
 
             switch (selectedPage)
             {
-                case SettingsPage.ApiKeys:
-                    DrawApiKeySettings(listing);
-                    break;
                 case SettingsPage.Tools:
                     DrawToolsSettings(listing);
                     break;
@@ -210,7 +282,7 @@ namespace DeepseekTheOrca
                     DrawDebugSettings(listing);
                     break;
                 default:
-                    DrawLlmSettings(listing);
+                    DrawAgentModelSettings(listing);
                     break;
             }
 
@@ -218,7 +290,7 @@ namespace DeepseekTheOrca
             Widgets.EndScrollView();
         }
 
-        private void DrawLlmSettings(Listing_Standard listing)
+        private void DrawAgentModelSettings(Listing_Standard listing)
         {
             listing.CheckboxLabeled("DTO_EnableAiPlanning".Translate(), ref Settings.enableAiPlanning, "DTO_EnableAiPlanningTooltip".Translate());
             listing.GapLine();
@@ -278,20 +350,52 @@ namespace DeepseekTheOrca
             listing.Label("DTO_SkillFormatNote".Translate());
         }
 
-        private void DrawApiKeySettings(Listing_Standard listing)
+        private void DrawProviderSettings(Rect rect)
         {
             Settings.EnsureLlmConnections();
-            if (listing.ButtonText("DTO_ApiKeyAddConnection".Translate()))
+            EnsureSelectedProvider();
+
+            float listWidth = Mathf.Min(260f, Mathf.Max(210f, rect.width * 0.34f));
+            Rect listRect = new Rect(rect.x, rect.y, listWidth, rect.height);
+            Rect detailRect = new Rect(listRect.xMax + 10f, rect.y, rect.width - listWidth - 10f, rect.height);
+
+            DrawPanel(listRect);
+            DrawPanel(detailRect);
+            DrawProviderList(listRect.ContractedBy(8f));
+            DrawProviderDetails(detailRect.ContractedBy(10f));
+        }
+
+        private void DrawProviderList(Rect rect)
+        {
+            Settings.EnsureLlmConnections();
+
+            Rect toolbar = new Rect(rect.x, rect.y, rect.width, 32f);
+            Rect addRect = new Rect(toolbar.x, toolbar.y, 34f, 30f);
+            Rect removeModeRect = new Rect(addRect.xMax + 6f, toolbar.y, 34f, 30f);
+            if (Widgets.ButtonText(addRect, "+"))
             {
-                Settings.AddLlmConnection();
+                OrcaLlmConnectionSettings connection = Settings.AddLlmConnection();
+                selectedProviderId = connection.id;
+                providerRemoveMode = false;
             }
+            if (Widgets.ButtonText(removeModeRect, "-", providerRemoveMode))
+            {
+                providerRemoveMode = !providerRemoveMode;
+            }
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(removeModeRect.xMax + 8f, toolbar.y, toolbar.width - 84f, 30f), providerRemoveMode ? "DTO_ProviderRemoveMode".Translate().ToString() : "DTO_ProviderListTitle".Translate().ToString());
+            Text.Anchor = TextAnchor.UpperLeft;
 
             if (Settings.llmConnections.Count == 0)
             {
-                listing.Label("DTO_ApiKeyNoConnections".Translate());
+                Widgets.Label(new Rect(rect.x, toolbar.yMax + 8f, rect.width, 40f), "DTO_ApiKeyNoConnections".Translate());
                 return;
             }
 
+            float rowHeight = 46f;
+            Rect outRect = new Rect(rect.x, toolbar.yMax + 8f, rect.width, rect.height - toolbar.height - 8f);
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, Settings.llmConnections.Count * (rowHeight + 6f));
+            Widgets.BeginScrollView(outRect, ref providerListScrollPosition, viewRect);
             for (int i = 0; i < Settings.llmConnections.Count; i++)
             {
                 OrcaLlmConnectionSettings connection = Settings.llmConnections[i];
@@ -300,25 +404,79 @@ namespace DeepseekTheOrca
                     continue;
                 }
 
-                listing.GapLine();
-                Rect headerRect = listing.GetRect(32f);
-                Widgets.Label(new Rect(headerRect.x, headerRect.y + 6f, headerRect.width - 130f, 24f), connection.name + " (" + LlmProviderConfig.Profile(connection.provider).label + ")");
-                Rect removeRect = new Rect(headerRect.xMax - 120f, headerRect.y, 120f, 30f);
-                if (Widgets.ButtonText(removeRect, "DTO_ApiKeyRemoveConnection".Translate()))
-                {
-                    Settings.llmConnections.RemoveAt(i);
-                    i--;
-                    continue;
-                }
+                Rect row = new Rect(0f, i * (rowHeight + 6f), viewRect.width, rowHeight);
+                DrawProviderListRow(row, connection);
+            }
+            Widgets.EndScrollView();
+        }
 
-                bool oldEnabled = connection.enabled;
-                listing.CheckboxLabeled("DTO_ApiKeyConnectionEnabled".Translate(), ref connection.enabled);
-                if (connection.enabled != oldEnabled)
-                {
-                    connection.MarkDirty();
-                }
+        private void DrawProviderListRow(Rect row, OrcaLlmConnectionSettings connection)
+        {
+            bool selected = selectedProviderId == connection.id;
+            bool hover = Mouse.IsOver(row);
+            if (selected)
+            {
+                Widgets.DrawBoxSolid(row, RowSelectedFill);
+                Widgets.DrawBoxSolid(new Rect(row.x, row.y, 3f, row.height), new Color(0.45f, 0.68f, 0.88f, 1f));
+            }
+            else if (hover)
+            {
+                Widgets.DrawBoxSolid(row, RowHoverFill);
+            }
 
-                listing.Label("DTO_ApiKeyConnectionName".Translate());
+            string title = providerRemoveMode ? "[-] " + connection.name : connection.name;
+            string subtitle = LlmProviderConfig.Profile(connection.provider).label + " | " + ConnectionStatusText(connection.status)
+                + " | " + (connection.activeModels == null ? 0 : connection.activeModels.Count) + "/" + (connection.availableModels == null ? 0 : connection.availableModels.Count);
+            Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(row.x + 10f, row.y + 4f, row.width - 20f, 20f), title);
+            GUI.color = new Color(0.74f, 0.78f, 0.82f, 1f);
+            Widgets.Label(new Rect(row.x + 10f, row.y + 24f, row.width - 20f, 18f), subtitle);
+            GUI.color = Color.white;
+
+            if (Widgets.ButtonInvisible(row))
+            {
+                if (providerRemoveMode)
+                {
+                    ConfirmRemoveProvider(connection);
+                }
+                else
+                {
+                    selectedProviderId = connection.id;
+                    providerDetailScrollPosition = Vector2.zero;
+                }
+            }
+        }
+
+        private void DrawProviderDetails(Rect rect)
+        {
+            OrcaLlmConnectionSettings connection = SelectedProvider();
+            if (connection == null)
+            {
+                Widgets.Label(rect, "DTO_ApiKeyNoConnections".Translate());
+                return;
+            }
+
+            List<string> filteredModels = FilteredAvailableModels(connection);
+            float viewHeight = Mathf.Max(rect.height, 520f + filteredModels.Count * 30f);
+            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, viewHeight);
+            Widgets.BeginScrollView(rect, ref providerDetailScrollPosition, viewRect);
+
+            Listing_Standard listing = new Listing_Standard();
+            listing.Begin(viewRect);
+
+            Text.Font = GameFont.Medium;
+            listing.Label(connection.name + " (" + LlmProviderConfig.Profile(connection.provider).label + ")");
+            Text.Font = GameFont.Small;
+            listing.GapLine();
+
+            bool oldEnabled = connection.enabled;
+            listing.CheckboxLabeled("DTO_ApiKeyConnectionEnabled".Translate(), ref connection.enabled);
+            if (connection.enabled != oldEnabled)
+            {
+                connection.MarkDirty();
+            }
+
+            listing.Label("DTO_ApiKeyConnectionName".Translate());
                 string oldName = connection.name;
                 connection.name = listing.TextEntry(connection.name ?? "");
                 if (connection.name != oldName)
@@ -326,70 +484,193 @@ namespace DeepseekTheOrca
                     connection.Normalize();
                 }
 
-                LlmProviderProfile profile = LlmProviderConfig.Profile(connection.provider);
-                if (listing.ButtonText("DTO_ApiProvider".Translate() + ": " + profile.label))
-                {
-                    connection.provider = LlmProviderConfig.NextProvider(connection.provider);
-                    connection.MarkDirty();
-                }
-
-                if (connection.provider == LlmProviderConfig.Custom)
-                {
-                    listing.Label("DTO_CustomBaseUrl".Translate(), -1f, "DTO_CustomBaseUrlTooltip".Translate());
-                    string oldBaseUrl = connection.customBaseUrl;
-                    connection.customBaseUrl = listing.TextEntry(connection.customBaseUrl ?? "");
-                    if (connection.customBaseUrl != oldBaseUrl)
-                    {
-                        connection.MarkDirty();
-                    }
-                }
-
-                listing.Label("DTO_ActiveBaseUrl".Translate() + ": " + (connection.ActiveBaseUrl.NullOrEmpty() ? "-" : connection.ActiveBaseUrl));
-                listing.Label("DTO_ApiKey".Translate(), -1f, "DTO_ApiKeyTooltip".Translate());
-                string oldApiKey = connection.apiKey;
-                connection.apiKey = listing.TextEntry(connection.apiKey ?? "");
-                if (connection.apiKey != oldApiKey)
-                {
-                    connection.MarkDirty();
-                }
-
-                if (connection.provider == LlmProviderConfig.OpenAI)
-                {
-                    listing.Label("DTO_OpenAiOrganization".Translate(), -1f, "DTO_OpenAiOrganizationTooltip".Translate());
-                    string oldOrganization = connection.openAiOrganization;
-                    connection.openAiOrganization = listing.TextEntry(connection.openAiOrganization ?? "");
-                    if (connection.openAiOrganization != oldOrganization)
-                    {
-                        connection.MarkDirty();
-                    }
-
-                    listing.Label("DTO_OpenAiProject".Translate(), -1f, "DTO_OpenAiProjectTooltip".Translate());
-                    string oldProject = connection.openAiProject;
-                    connection.openAiProject = listing.TextEntry(connection.openAiProject ?? "");
-                    if (connection.openAiProject != oldProject)
-                    {
-                        connection.MarkDirty();
-                    }
-                }
-
-                listing.Label("DTO_ApiProxyUrl".Translate(), -1f, "DTO_ApiProxyUrlTooltip".Translate());
-                string oldProxyUrl = connection.proxyUrl;
-                connection.proxyUrl = listing.TextEntry(connection.proxyUrl ?? "");
-                if (connection.proxyUrl != oldProxyUrl)
-                {
-                    connection.MarkDirty();
-                }
-
-                if (listing.ButtonText(OrcaLlmConnectionManager.IsTesting(connection) ? "DTO_TestConnectionRunning".Translate() : "DTO_ApiKeyRefreshModels".Translate()))
-                {
-                    connection.MarkDirty();
-                    OrcaLlmConnectionManager.Start(connection);
-                }
-
-                listing.Label("DTO_ConnectionStatus".Translate() + ": " + ConnectionStatusText(connection.status));
-                listing.Label(TranslateIfKey(connection.message));
-                listing.Label("DTO_ApiKeyAvailableModels".Translate() + ": " + AvailableModelsText(connection));
+            LlmProviderProfile profile = LlmProviderConfig.Profile(connection.provider);
+            if (listing.ButtonText("DTO_ApiProvider".Translate() + ": " + profile.label))
+            {
+                connection.provider = LlmProviderConfig.NextProvider(connection.provider);
+                connection.MarkDirty();
             }
+
+            if (connection.provider == LlmProviderConfig.Custom)
+            {
+                listing.Label("DTO_CustomBaseUrl".Translate(), -1f, "DTO_CustomBaseUrlTooltip".Translate());
+                string oldBaseUrl = connection.customBaseUrl;
+                connection.customBaseUrl = listing.TextEntry(connection.customBaseUrl ?? "");
+                if (connection.customBaseUrl != oldBaseUrl)
+                {
+                    connection.MarkDirty();
+                }
+            }
+
+            listing.Label("DTO_ActiveBaseUrl".Translate() + ": " + (connection.ActiveBaseUrl.NullOrEmpty() ? "-" : connection.ActiveBaseUrl));
+            listing.Label("DTO_ApiKey".Translate(), -1f, "DTO_ApiKeyTooltip".Translate());
+            string oldApiKey = connection.apiKey;
+            connection.apiKey = listing.TextEntry(connection.apiKey ?? "");
+            if (connection.apiKey != oldApiKey)
+            {
+                connection.MarkDirty();
+            }
+
+            if (connection.provider == LlmProviderConfig.OpenAI)
+            {
+                listing.Label("DTO_OpenAiOrganization".Translate(), -1f, "DTO_OpenAiOrganizationTooltip".Translate());
+                string oldOrganization = connection.openAiOrganization;
+                connection.openAiOrganization = listing.TextEntry(connection.openAiOrganization ?? "");
+                if (connection.openAiOrganization != oldOrganization)
+                {
+                    connection.MarkDirty();
+                }
+
+                listing.Label("DTO_OpenAiProject".Translate(), -1f, "DTO_OpenAiProjectTooltip".Translate());
+                string oldProject = connection.openAiProject;
+                connection.openAiProject = listing.TextEntry(connection.openAiProject ?? "");
+                if (connection.openAiProject != oldProject)
+                {
+                    connection.MarkDirty();
+                }
+            }
+
+            listing.Label("DTO_ApiProxyUrl".Translate(), -1f, "DTO_ApiProxyUrlTooltip".Translate());
+            string oldProxyUrl = connection.proxyUrl;
+            connection.proxyUrl = listing.TextEntry(connection.proxyUrl ?? "");
+            if (connection.proxyUrl != oldProxyUrl)
+            {
+                connection.MarkDirty();
+            }
+
+            if (listing.ButtonText(OrcaLlmConnectionManager.IsTesting(connection) ? "DTO_TestConnectionRunning".Translate() : "DTO_ApiKeyRefreshModels".Translate()))
+            {
+                connection.MarkDirty();
+                OrcaLlmConnectionManager.Start(connection);
+            }
+
+            listing.Label("DTO_ConnectionStatus".Translate() + ": " + ConnectionStatusText(connection.status));
+            listing.Label(TranslateIfKey(connection.message));
+            listing.GapLine();
+            listing.Label("DTO_ProviderActiveModels".Translate((connection.activeModels == null ? 0 : connection.activeModels.Count), (connection.availableModels == null ? 0 : connection.availableModels.Count)));
+            listing.Label("DTO_ModelFilter".Translate());
+            providerModelFilter = listing.TextEntry(providerModelFilter ?? "");
+            DrawProviderModelRows(listing, connection, filteredModels);
+
+            listing.End();
+            Widgets.EndScrollView();
+        }
+
+        private void DrawProviderModelRows(Listing_Standard listing, OrcaLlmConnectionSettings connection, List<string> models)
+        {
+            if (connection.availableModels == null || connection.availableModels.Count == 0)
+            {
+                listing.Label("DTO_ModelNoDiscoveredModels".Translate());
+                return;
+            }
+
+            if (models.Count == 0)
+            {
+                listing.Label("DTO_ModelNoMatchingModels".Translate());
+                return;
+            }
+
+            for (int i = 0; i < models.Count; i++)
+            {
+                string modelId = models[i];
+                bool active = connection.IsModelActive(modelId);
+                Rect row = listing.GetRect(28f);
+                if (active)
+                {
+                    Widgets.DrawBoxSolid(row, RowSelectedFill);
+                }
+                else if (Mouse.IsOver(row))
+                {
+                    Widgets.DrawBoxSolid(row, RowHoverFill);
+                }
+
+                Widgets.Label(new Rect(row.x + 8f, row.y + 4f, row.width - 16f, 22f), (active ? "[x] " : "[ ] ") + modelId);
+                if (Widgets.ButtonInvisible(row))
+                {
+                    connection.SetModelActive(modelId, !active);
+                }
+            }
+        }
+
+        private void EnsureSelectedProvider()
+        {
+            if (Settings == null)
+            {
+                return;
+            }
+
+            Settings.EnsureLlmConnections();
+            if (SelectedProvider() != null)
+            {
+                return;
+            }
+
+            selectedProviderId = Settings.llmConnections.Count == 0 || Settings.llmConnections[0] == null
+                ? ""
+                : Settings.llmConnections[0].id;
+        }
+
+        private OrcaLlmConnectionSettings SelectedProvider()
+        {
+            if (Settings == null || Settings.llmConnections == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < Settings.llmConnections.Count; i++)
+            {
+                OrcaLlmConnectionSettings connection = Settings.llmConnections[i];
+                if (connection != null && connection.id == selectedProviderId)
+                {
+                    return connection;
+                }
+            }
+
+            return null;
+        }
+
+        private void ConfirmRemoveProvider(OrcaLlmConnectionSettings connection)
+        {
+            if (connection == null)
+            {
+                return;
+            }
+
+            Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(
+                "DTO_ProviderDeleteConfirm".Translate(connection.name),
+                delegate
+                {
+                    Settings.llmConnections.Remove(connection);
+                    selectedProviderId = "";
+                    EnsureSelectedProvider();
+                },
+                destructive: true));
+        }
+
+        private List<string> FilteredAvailableModels(OrcaLlmConnectionSettings connection)
+        {
+            if (connection == null || connection.availableModels == null)
+            {
+                return new List<string>();
+            }
+
+            string filter = providerModelFilter == null ? "" : providerModelFilter.Trim().ToLowerInvariant();
+            List<string> result = new List<string>();
+            for (int i = 0; i < connection.availableModels.Count; i++)
+            {
+                string model = connection.availableModels[i];
+                if (model.NullOrEmpty())
+                {
+                    continue;
+                }
+
+                if (filter.NullOrEmpty() || model.ToLowerInvariant().Contains(filter))
+                {
+                    result.Add(model);
+                }
+            }
+
+            return result;
         }
 
         private void DrawToolsSettings(Listing_Standard listing)

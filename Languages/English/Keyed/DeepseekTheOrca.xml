@@ -14,8 +14,10 @@
   <DTO_TavilyMaxResults>Tavily max results</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily search depth</DTO_TavilySearchDepth>
   <DTO_WebSearchNativeReserved>Reserved: provider-native web search can be enabled later for model adapters that support their own hosted search tool.</DTO_WebSearchNativeReserved>
-  <DTO_SettingsPageLlm>LLM connection</DTO_SettingsPageLlm>
-  <DTO_SettingsPageApiKeys>API keys</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageLlm>Agent models</DTO_SettingsPageLlm>
+  <DTO_SettingsPageApiKeys>Providers</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageAgentModels>Agent models</DTO_SettingsPageAgentModels>
+  <DTO_SettingsPageProviders>Providers</DTO_SettingsPageProviders>
   <DTO_SettingsPageStoryteller>Storyteller</DTO_SettingsPageStoryteller>
   <DTO_SettingsPagePersonas>Personas</DTO_SettingsPagePersonas>
   <DTO_SettingsPageSkills>Skills</DTO_SettingsPageSkills>
@@ -38,9 +40,9 @@
   <DTO_HttpMcpServerName>Server name</DTO_HttpMcpServerName>
   <DTO_HttpMcpNote>MCP tools are discovered from configured servers and exposed to Orca chat with an mcp_ prefix. If more than one server is enabled, exposed tool names include the server name. Use only servers you trust.</DTO_HttpMcpNote>
   <DTO_ApiProvider>LLM provider</DTO_ApiProvider>
-  <DTO_ApiProviderTooltip>Click to cycle providers. OpenAI, OpenRouter, and Custom expect an OpenAI-compatible /chat/completions API.</DTO_ApiProviderTooltip>
+  <DTO_ApiProviderTooltip>Click to cycle providers. Built-in presets use official DeepSeek and OpenAI endpoints. Use Custom for third-party OpenAI-compatible APIs such as OpenRouter, SiliconFlow, or local servers.</DTO_ApiProviderTooltip>
   <DTO_CustomBaseUrl>Custom base URL</DTO_CustomBaseUrl>
-  <DTO_CustomBaseUrlTooltip>Base URL for an OpenAI-compatible API, for example http://localhost:1234/v1 or https://example.com/v1.</DTO_CustomBaseUrlTooltip>
+  <DTO_CustomBaseUrlTooltip>Base URL for a third-party or local OpenAI-compatible API, for example http://localhost:1234/v1, https://openrouter.ai/api/v1, or https://api.siliconflow.cn/v1. Only use providers you trust.</DTO_CustomBaseUrlTooltip>
   <DTO_ActiveBaseUrl>Active base URL</DTO_ActiveBaseUrl>
   <DTO_ApiKey>LLM API key</DTO_ApiKey>
   <DTO_ApiKeyTooltip>Stored in RimWorld mod settings. The offline base storyteller does not send requests.</DTO_ApiKeyTooltip>
@@ -51,6 +53,10 @@
   <DTO_ApiKeyConnectionName>Connection name</DTO_ApiKeyConnectionName>
   <DTO_ApiKeyRefreshModels>Refresh models</DTO_ApiKeyRefreshModels>
   <DTO_ApiKeyAvailableModels>Available models</DTO_ApiKeyAvailableModels>
+  <DTO_ProviderListTitle>Providers</DTO_ProviderListTitle>
+  <DTO_ProviderRemoveMode>Remove mode</DTO_ProviderRemoveMode>
+  <DTO_ProviderDeleteConfirm>Remove provider "{0}"?</DTO_ProviderDeleteConfirm>
+  <DTO_ProviderActiveModels>Active models: {0} / {1}</DTO_ProviderActiveModels>
   <DTO_OpenAiOrganization>OpenAI organization ID</DTO_OpenAiOrganization>
   <DTO_OpenAiOrganizationTooltip>Optional. Use only if your OpenAI account or legacy key requires a specific organization.</DTO_OpenAiOrganizationTooltip>
   <DTO_OpenAiProject>OpenAI project ID</DTO_OpenAiProject>
@@ -119,7 +125,7 @@
   <DTO_SkillNew>New skill</DTO_SkillNew>
   <DTO_SkillReload>Reload files</DTO_SkillReload>
   <DTO_SkillFolder>Skill folder</DTO_SkillFolder>
-  <DTO_SkillFormatNote>Local skills are folders containing SKILL.md. Submods can provide Skills/*/SKILL.md or OrcaSkills/*/SKILL.md folders. Text files under references/ are searched and injected only when relevant.</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>Local skills are folders containing SKILL.md. Submods can provide Skills/*/SKILL.md or OrcaSkills/*/SKILL.md folders. Context tags and trigger hints decide when a skill is injected. Text files under references/ are searched and injected only when relevant.</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>Enabled skills: {0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>No skills are currently enabled.</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>No skills created.</DTO_SkillNoSkills>
@@ -135,6 +141,7 @@
   <DTO_SkillName>Name</DTO_SkillName>
   <DTO_SkillDescription>Description</DTO_SkillDescription>
   <DTO_SkillTriggerHints>Trigger hints</DTO_SkillTriggerHints>
+  <DTO_SkillContexts>Context tags</DTO_SkillContexts>
   <DTO_SkillAllowedTools>Allowed tools</DTO_SkillAllowedTools>
   <DTO_SkillPrompt>Skill prompt</DTO_SkillPrompt>
   <DTO_SkillSave>Save</DTO_SkillSave>

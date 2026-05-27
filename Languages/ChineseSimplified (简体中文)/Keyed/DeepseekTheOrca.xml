@@ -14,8 +14,10 @@
   <DTO_TavilyMaxResults>Tavily 最大结果数</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily 搜索深度</DTO_TavilySearchDepth>
   <DTO_WebSearchNativeReserved>预留：后续模型适配器如果支持托管的原生联网搜索工具，可以在这里切换到提供方原生搜索。</DTO_WebSearchNativeReserved>
-  <DTO_SettingsPageLlm>LLM 连接</DTO_SettingsPageLlm>
-  <DTO_SettingsPageApiKeys>API 密钥</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageLlm>Agent 模型</DTO_SettingsPageLlm>
+  <DTO_SettingsPageApiKeys>Provider</DTO_SettingsPageApiKeys>
+  <DTO_SettingsPageAgentModels>Agent 模型</DTO_SettingsPageAgentModels>
+  <DTO_SettingsPageProviders>Provider</DTO_SettingsPageProviders>
   <DTO_SettingsPageStoryteller>叙事者</DTO_SettingsPageStoryteller>
   <DTO_SettingsPagePersonas>人格</DTO_SettingsPagePersonas>
   <DTO_SettingsPageSkills>技能</DTO_SettingsPageSkills>
@@ -38,9 +40,9 @@
   <DTO_HttpMcpServerName>服务器名称</DTO_HttpMcpServerName>
   <DTO_HttpMcpNote>MCP 工具会从配置的服务器发现，并以 mcp_ 前缀暴露给奥卡对话。启用多个服务器时，暴露的工具名会包含服务器名称。请只使用你信任的服务器。</DTO_HttpMcpNote>
   <DTO_ApiProvider>LLM 提供方</DTO_ApiProvider>
-  <DTO_ApiProviderTooltip>点击循环切换提供方。OpenAI、OpenRouter 和自定义提供方需要兼容 OpenAI 的 /chat/completions API。</DTO_ApiProviderTooltip>
+  <DTO_ApiProviderTooltip>点击循环切换提供方。内置预设只使用 DeepSeek 和 OpenAI 官方端点。OpenRouter、硅基流动、本地服务等第三方 OpenAI-compatible API 请使用自定义提供方。</DTO_ApiProviderTooltip>
   <DTO_CustomBaseUrl>自定义基础 URL</DTO_CustomBaseUrl>
-  <DTO_CustomBaseUrlTooltip>兼容 OpenAI API 的基础 URL，例如 http://localhost:1234/v1 或 https://example.com/v1。</DTO_CustomBaseUrlTooltip>
+  <DTO_CustomBaseUrlTooltip>第三方或本地 OpenAI-compatible API 的基础 URL，例如 http://localhost:1234/v1、https://openrouter.ai/api/v1 或 https://api.siliconflow.cn/v1。请只使用你信任的提供方。</DTO_CustomBaseUrlTooltip>
   <DTO_ActiveBaseUrl>当前基础 URL</DTO_ActiveBaseUrl>
   <DTO_ApiKey>LLM API 密钥</DTO_ApiKey>
   <DTO_ApiKeyTooltip>保存到 RimWorld 模组设置。当前离线基底叙事者不会发送请求。</DTO_ApiKeyTooltip>
@@ -51,6 +53,10 @@
   <DTO_ApiKeyConnectionName>连接名称</DTO_ApiKeyConnectionName>
   <DTO_ApiKeyRefreshModels>刷新模型列表</DTO_ApiKeyRefreshModels>
   <DTO_ApiKeyAvailableModels>可用模型</DTO_ApiKeyAvailableModels>
+  <DTO_ProviderListTitle>Provider</DTO_ProviderListTitle>
+  <DTO_ProviderRemoveMode>移除模式</DTO_ProviderRemoveMode>
+  <DTO_ProviderDeleteConfirm>移除 Provider “{0}”？</DTO_ProviderDeleteConfirm>
+  <DTO_ProviderActiveModels>已激活模型：{0} / {1}</DTO_ProviderActiveModels>
   <DTO_OpenAiOrganization>OpenAI 组织 ID</DTO_OpenAiOrganization>
   <DTO_OpenAiOrganizationTooltip>可选。仅当你的 OpenAI 账号或旧版密钥需要指定组织时填写。</DTO_OpenAiOrganizationTooltip>
   <DTO_OpenAiProject>OpenAI 项目 ID</DTO_OpenAiProject>
@@ -119,7 +125,7 @@
   <DTO_SkillNew>新建技能</DTO_SkillNew>
   <DTO_SkillReload>重新加载文件</DTO_SkillReload>
   <DTO_SkillFolder>技能文件夹</DTO_SkillFolder>
-  <DTO_SkillFormatNote>本地 skill 是包含 SKILL.md 的文件夹。子 mod 可以提供 Skills/*/SKILL.md 或 OrcaSkills/*/SKILL.md 文件夹。references/ 下的文本文件会在相关时被检索并注入。</DTO_SkillFormatNote>
+  <DTO_SkillFormatNote>本地 skill 是包含 SKILL.md 的文件夹。子 mod 可以提供 Skills/*/SKILL.md 或 OrcaSkills/*/SKILL.md 文件夹。上下文标签和触发线索决定 skill 何时注入。references/ 下的文本文件会在相关时被检索并注入。</DTO_SkillFormatNote>
   <DTO_SkillEnabledCount>已启用 skill：{0}/{1}</DTO_SkillEnabledCount>
   <DTO_SkillNoEnabled>当前没有启用的 skill。</DTO_SkillNoEnabled>
   <DTO_SkillNoSkills>尚未创建 skill。</DTO_SkillNoSkills>
@@ -135,6 +141,7 @@
   <DTO_SkillName>名称</DTO_SkillName>
   <DTO_SkillDescription>描述</DTO_SkillDescription>
   <DTO_SkillTriggerHints>触发线索</DTO_SkillTriggerHints>
+  <DTO_SkillContexts>上下文标签</DTO_SkillContexts>
   <DTO_SkillAllowedTools>允许工具</DTO_SkillAllowedTools>
   <DTO_SkillPrompt>Skill 提示词</DTO_SkillPrompt>
   <DTO_SkillSave>保存</DTO_SkillSave>

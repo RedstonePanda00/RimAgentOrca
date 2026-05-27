@@ -24,15 +24,13 @@ namespace DeepseekTheOrca
     {
         public const string DeepSeek = "deepseek";
         public const string OpenAI = "openai";
-        public const string OpenRouter = "openrouter";
         public const string Custom = "custom";
 
         private static readonly LlmProviderProfile[] profiles =
         {
             new LlmProviderProfile(DeepSeek, "DeepSeek", "https://api.deepseek.com", "deepseek-chat", true),
             new LlmProviderProfile(OpenAI, "OpenAI", "https://api.openai.com/v1", "gpt-5.5", false),
-            new LlmProviderProfile(OpenRouter, "OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4.1-mini", false),
-            new LlmProviderProfile(Custom, "Custom OpenAI-compatible", "", "", false)
+            new LlmProviderProfile(Custom, "Custom", "", "", false)
         };
 
         public static LlmProviderProfile Profile(string providerId)
@@ -51,7 +49,7 @@ namespace DeepseekTheOrca
 
         public static string NormalizeProvider(string providerId)
         {
-            if (providerId == OpenAI || providerId == OpenRouter || providerId == Custom)
+            if (providerId == OpenAI || providerId == Custom)
             {
                 return providerId;
             }

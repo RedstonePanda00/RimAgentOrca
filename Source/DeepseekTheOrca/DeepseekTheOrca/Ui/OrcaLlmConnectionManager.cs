@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Verse;
 
@@ -121,6 +122,7 @@ namespace DeepseekTheOrca
             connection.status = result.success ? "succeeded" : "failed";
             connection.message = result.message ?? "";
             connection.availableModels = result.models ?? new List<string>();
+            RetainExistingActiveModels(connection);
             if (result.success && connection.availableModels.Count > 0)
             {
                 EnsureFallbackModelSelected(settings, connection);
@@ -141,10 +143,33 @@ namespace DeepseekTheOrca
 
         private static void EnsureFallbackModelSelected(DeepseekTheOrcaSettings settings, OrcaLlmConnectionSettings connection)
         {
-            if (settings.model.NullOrEmpty() && connection.availableModels != null && connection.availableModels.Count > 0)
+            if (settings.model.NullOrEmpty() && connection.activeModels != null && connection.activeModels.Count > 0)
             {
-                settings.model = DeepseekTheOrcaSettings.MakeModelReference(connection.id, connection.availableModels[0]);
+                settings.model = DeepseekTheOrcaSettings.MakeModelReference(connection.id, connection.activeModels[0]);
             }
+        }
+
+        private static void RetainExistingActiveModels(OrcaLlmConnectionSettings connection)
+        {
+            if (connection == null)
+            {
+                return;
+            }
+
+            if (connection.activeModels == null)
+            {
+                connection.activeModels = new List<string>();
+            }
+
+            if (connection.availableModels == null)
+            {
+                connection.availableModels = new List<string>();
+            }
+
+            connection.activeModels = connection.activeModels
+                .Where(model => !model.NullOrEmpty() && connection.availableModels.Contains(model))
+                .Distinct()
+                .ToList();
         }
 
         private static OrcaLlmConnectionSettings FindConnection(DeepseekTheOrcaSettings settings, string connectionId)

@@ -10,6 +10,7 @@ namespace DeepseekTheOrca
 
         public override void GameComponentTick()
         {
+            OrcaHttpMcpClient.Tick();
             LlmToolCallDebugRunner.Tick();
             OrcaProactiveConversationManager.Tick();
             OrcaSessionMemory.Tick();

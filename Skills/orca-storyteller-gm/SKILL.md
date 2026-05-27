@@ -16,6 +16,15 @@ triggerHints:
 - danger
 - gift
 - pressure
+contexts:
+- storyteller_request
+- storyteller_incident
+- storyteller_action
+- colony_observation
+- colony_state
+- recent_letter
+- rimtalk_chat_history
+- rimtalk_context
 allowedTools:
 - get_colony_summary
 - get_recent_letters
