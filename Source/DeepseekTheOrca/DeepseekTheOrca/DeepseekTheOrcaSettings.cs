@@ -182,7 +182,6 @@ namespace DeepseekTheOrca
         public int maxToolCalls = 8;
         public float planningMtbDays = 4.8f;
         public float chatWindowAlpha = 0.82f;
-        public float streamingOutputCharsPerSecond = 45f;
 
         public bool HasConfiguredLlm
         {
@@ -667,9 +666,7 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref maxToolCalls, "maxToolCalls", 8);
             Scribe_Values.Look(ref planningMtbDays, "planningMtbDays", 4.8f);
             Scribe_Values.Look(ref chatWindowAlpha, "chatWindowAlpha", 0.82f);
-            Scribe_Values.Look(ref streamingOutputCharsPerSecond, "streamingOutputCharsPerSecond", 45f);
             chatWindowAlpha = UnityEngine.Mathf.Clamp01(chatWindowAlpha);
-            streamingOutputCharsPerSecond = UnityEngine.Mathf.Clamp(streamingOutputCharsPerSecond, 5f, 200f);
             if (webSearchMode.NullOrEmpty())
             {
                 webSearchMode = "tavily";

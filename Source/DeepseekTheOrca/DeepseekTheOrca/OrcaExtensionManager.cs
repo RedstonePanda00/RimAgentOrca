@@ -107,6 +107,82 @@ namespace DeepseekTheOrca
             return hints.Count == 0 ? "" : " Enabled extension modules may affect routing. Extensions: " + string.Join("; ", hints.ToArray());
         }
 
+        public static List<OrcaAgentNodeSpec> AgentNodes()
+        {
+            List<OrcaAgentNodeSpec> result = new List<OrcaAgentNodeSpec>();
+            List<OrcaExtensionWorker> workers = EnabledWorkers();
+            for (int i = 0; i < workers.Count; i++)
+            {
+                OrcaExtensionWorker worker = workers[i];
+                try
+                {
+                    IEnumerable<OrcaAgentNodeSpec> specs = worker.AgentNodes();
+                    if (specs == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (OrcaAgentNodeSpec spec in specs)
+                    {
+                        if (spec != null && !spec.id.NullOrEmpty())
+                        {
+                            result.Add(spec);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning("[Deepseek The Orca] Agent node extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                }
+            }
+
+            return result;
+        }
+
+        public static void NotifyAgentPhase(OrcaAgentPhaseContext context)
+        {
+            if (context == null)
+            {
+                return;
+            }
+
+            List<OrcaExtensionWorker> workers = EnabledWorkers();
+            for (int i = 0; i < workers.Count; i++)
+            {
+                OrcaExtensionWorker worker = workers[i];
+                try
+                {
+                    worker.OnAgentPhase(context);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning("[Deepseek The Orca] Agent phase extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                }
+            }
+        }
+
+        public static void ModifyAgentRouting(OrcaAgentRoutingContext context)
+        {
+            if (context == null)
+            {
+                return;
+            }
+
+            List<OrcaExtensionWorker> workers = EnabledWorkers();
+            for (int i = 0; i < workers.Count; i++)
+            {
+                OrcaExtensionWorker worker = workers[i];
+                try
+                {
+                    worker.ModifyAgentRouting(context);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning("[Deepseek The Orca] Agent routing extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                }
+            }
+        }
+
         public static float RequestedExtraWidth(OrcaChatWindowContext context)
         {
             float width = 0f;
@@ -177,29 +253,6 @@ namespace DeepseekTheOrca
                     Log.Warning("[Deepseek The Orca] Chat window extension overlay failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
-        }
-
-        public static OrcaReplyDisplayController CreateReplyDisplayController(string fullText, OrcaChatSession session)
-        {
-            List<OrcaExtensionWorker> workers = EnabledWorkers();
-            for (int i = 0; i < workers.Count; i++)
-            {
-                OrcaExtensionWorker worker = workers[i];
-                try
-                {
-                    OrcaReplyDisplayController controller = worker.CreateReplyDisplayController(fullText, session);
-                    if (controller != null)
-                    {
-                        return controller;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning("[Deepseek The Orca] Reply display extension failed (" + WorkerLabel(worker) + "): " + ex.Message);
-                }
-            }
-
-            return null;
         }
 
         private static List<OrcaExtensionWorker> EnabledWorkers()

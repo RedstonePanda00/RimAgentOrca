@@ -4,6 +4,8 @@ Deepseek The Orca is a RimWorld 1.6 mod that adds an LLM-assisted storyteller, O
 
 The mod still includes XML storyteller comps for offline play. Without a configured LLM connection, the AI decision layer stays silent and RimWorld falls back to the XML-defined storyteller behavior.
 
+If you like my mod, please make sure to give me a Star!
+
 ## Features
 
 - Adds the `Orca Deepseek` storyteller for RimWorld 1.6.

@@ -92,6 +92,19 @@ namespace DeepseekTheOrca
             return "";
         }
 
+        public virtual IEnumerable<OrcaAgentNodeSpec> AgentNodes()
+        {
+            yield break;
+        }
+
+        public virtual void OnAgentPhase(OrcaAgentPhaseContext context)
+        {
+        }
+
+        public virtual void ModifyAgentRouting(OrcaAgentRoutingContext context)
+        {
+        }
+
         public virtual float GetChatWindowExtraWidth(OrcaChatWindowContext context)
         {
             return 0f;
@@ -105,22 +118,9 @@ namespace DeepseekTheOrca
         {
         }
 
-        public virtual OrcaReplyDisplayController CreateReplyDisplayController(string fullText, OrcaChatSession session)
-        {
-            return null;
-        }
-
         public virtual void DrawSettings(Rect rect)
         {
         }
-    }
-
-    public abstract class OrcaReplyDisplayController
-    {
-        public abstract string VisibleText { get; }
-        public abstract bool IsComplete { get; }
-        public abstract void Tick();
-        public abstract void Finish();
     }
 
     public class OrcaExtensionDef : Def

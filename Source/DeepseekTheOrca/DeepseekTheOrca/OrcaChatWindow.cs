@@ -238,6 +238,7 @@ namespace DeepseekTheOrca
         private const int MaxConversationTurns = 12;
         private const int MaxTurnLogs = 50;
         private const int MaxToolRounds = 8;
+        private const int ThinkingAnimationIntervalTicks = 30;
 
         private enum OrcaChatRequestStage
         {
@@ -249,6 +250,8 @@ namespace DeepseekTheOrca
         private readonly List<LlmChatMessage> messages = new List<LlmChatMessage>();
         private readonly List<OrcaChatLine> displayLines = new List<OrcaChatLine>();
         private Task<LlmChatResponse> pendingRequest;
+        private LlmStreamingChatRequest pendingStreamingRequest;
+        private OrcaChatLine pendingStreamingLine;
         private string statusText = "";
         private int mood = 60;
         private int lastMoodDelta;
@@ -265,6 +268,7 @@ namespace DeepseekTheOrca
         private OrcaChatRequestStage pendingStage;
         private bool hasForcedNextModelRole;
         private OrcaLlmModelRole forcedNextModelRole;
+        private OrcaLlmModelRole pendingRequestRole;
         private string lastControllerRoute = "direct";
         private string currentModelRoleLabel = "";
         private string currentModelReference = "";
@@ -272,12 +276,10 @@ namespace DeepseekTheOrca
         private int failedToolCalls;
         private string lastToolName = "";
         private string lastToolResult = "";
-        private OrcaReplyDisplayController replyDisplayController;
-        private OrcaChatLine replyDisplayLine;
 
         public bool IsWaiting
         {
-            get { return pendingRequest != null; }
+            get { return pendingRequest != null || pendingStreamingRequest != null; }
         }
 
         public string StatusText
@@ -375,12 +377,11 @@ namespace DeepseekTheOrca
 
         public void Send(string userText)
         {
-            if (pendingRequest != null)
+            if (IsWaiting)
             {
                 return;
             }
 
-            FinishActiveReplyDisplay();
             userText = userText == null ? "" : userText.TrimEnd('\r', '\n');
             if (userText.NullOrEmpty())
             {
@@ -418,12 +419,11 @@ namespace DeepseekTheOrca
 
         public bool TryStartProactive(OrcaProactiveConversationRequest request)
         {
-            if (pendingRequest != null || request == null)
+            if (IsWaiting || request == null)
             {
                 return false;
             }
 
-            FinishActiveReplyDisplay();
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !HasAnyChatModel(settings))
             {
@@ -450,13 +450,14 @@ namespace DeepseekTheOrca
             toolRoundsUsed = 0;
             allowExecutionToolsThisTurn = false;
             ClearForcedNextModelRole();
-            StartControllerOrChatRequest(settings);
+            ForceNextModelRole(OrcaLlmModelRole.Dialogue);
+            StartRequest(settings);
             return true;
         }
 
         public void Tick()
         {
-            TickReplyDisplay();
+            TickStreamingRequest();
 
             if (pendingRequest == null || !pendingRequest.IsCompleted)
             {
@@ -496,8 +497,38 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            if (pendingRequestRole == OrcaLlmModelRole.Tool && toolRoundsUsed > 0)
+            {
+                DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+                if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Dialogue))
+                {
+                    statusText = "DTO_OrcaChatNoApiKey".Translate();
+                    SetError(statusText);
+                    return;
+                }
+
+                AddProcess("Tool model produced no further tool calls; routing to dialogue model.");
+                messages.Add(LlmChatMessage.System(
+                    "Tool gathering is complete. The next assistant response must be exactly one JSON object and no extra text. "
+                    + "JSON schema: " + ChatReplyJsonSchema() + "."));
+                ForceNextModelRole(OrcaLlmModelRole.Dialogue);
+                StartRequest(settings);
+                return;
+            }
+
+            HandleFinalChatResponse(response, null);
+        }
+
+        private void HandleFinalChatResponse(LlmChatResponse response, OrcaChatLine existingLine)
+        {
             string content = response.content ?? "";
             OrcaChatReply parsed = OrcaChatReply.Parse(content);
+            string originalReply = parsed.reply ?? "";
+            parsed.reply = SanitizeVisibleReply(originalReply);
+            if (parsed.reply != originalReply)
+            {
+                AddProcess("Visible reply control markup removed from model output.");
+            }
             if (OrcaMoodPlugin.Enabled)
             {
                 lastMoodDelta = parsed.moodDelta;
@@ -518,7 +549,14 @@ namespace DeepseekTheOrca
             }
 
             messages.Add(LlmChatMessage.Assistant(parsed.HistoryContent(content), null));
-            AddAssistantDisplayReply(parsed.reply);
+            if (existingLine != null)
+            {
+                existingLine.Text = parsed.reply;
+            }
+            else
+            {
+                displayLines.Add(new OrcaChatLine("DTO_OrcaChatSpeakerOrca".Translate(), parsed.reply));
+            }
             OrcaSessionMemory.Add("orca_reply", OrcaMoodPlugin.Enabled ? parsed.reply + " moodDelta=" + parsed.moodDelta + " moodNow=" + mood : parsed.reply);
             lastReplyText = parsed.reply;
             if (currentTurn != null)
@@ -526,61 +564,112 @@ namespace DeepseekTheOrca
                 currentTurn.ReplyText = parsed.reply;
             }
             conversationVersion++;
+            NotifyAgentPhase(OrcaAgentPhase.Completed, pendingRequestRole, false, "final reply received");
             TrimConversation();
             statusText = "DTO_OrcaChatReady".Translate();
         }
 
-        private void AddAssistantDisplayReply(string reply)
+        private void TickStreamingRequest()
         {
-            FinishActiveReplyDisplay();
-            OrcaChatLine line = new OrcaChatLine("DTO_OrcaChatSpeakerOrca".Translate(), reply ?? "");
-            OrcaReplyDisplayController controller = OrcaExtensionManager.CreateReplyDisplayController(reply ?? "", this);
-            if (controller != null)
-            {
-                line.Text = controller.VisibleText ?? "";
-                replyDisplayController = controller;
-                replyDisplayLine = line;
-            }
-
-            displayLines.Add(line);
-        }
-
-        private void TickReplyDisplay()
-        {
-            if (replyDisplayController == null || replyDisplayLine == null)
+            if (pendingStreamingRequest == null)
             {
                 return;
             }
 
-            string before = replyDisplayLine.Text ?? "";
-            replyDisplayController.Tick();
-            string after = replyDisplayController.VisibleText ?? "";
+            string before = pendingStreamingLine == null ? "" : pendingStreamingLine.Text ?? "";
+            string visible = pendingStreamingRequest.VisibleText ?? "";
+            string after = visible.NullOrEmpty() ? ThinkingText() : visible;
             if (after != before)
             {
-                replyDisplayLine.Text = after;
+                if (pendingStreamingLine != null)
+                {
+                    pendingStreamingLine.Text = after;
+                }
                 conversationVersion++;
             }
 
-            if (replyDisplayController.IsComplete)
-            {
-                replyDisplayLine.Text = after;
-                replyDisplayController = null;
-                replyDisplayLine = null;
-            }
-        }
-
-        private void FinishActiveReplyDisplay()
-        {
-            if (replyDisplayController == null || replyDisplayLine == null)
+            if (!pendingStreamingRequest.IsCompleted)
             {
                 return;
             }
 
-            replyDisplayController.Finish();
-            replyDisplayLine.Text = replyDisplayController.VisibleText ?? "";
-            replyDisplayController = null;
-            replyDisplayLine = null;
-            conversationVersion++;
+            LlmStreamingChatRequest completed = pendingStreamingRequest;
+            OrcaChatLine line = pendingStreamingLine;
+            pendingStreamingRequest = null;
+            pendingStreamingLine = null;
+
+            LlmChatResponse response = completed.FinalResponse;
+            if (response == null || !response.success)
+            {
+                string error = completed.ErrorMessage.NullOrEmpty() ? "Streaming response failed." : completed.ErrorMessage;
+                if (TryStartNonStreamingDialogueFallback(line, error))
+                {
+                    return;
+                }
+
+                statusText = error;
+                SetError(error);
+                AddProcess("Streaming response failed; partial visible text was kept out of chat history and memory: " + error);
+                return;
+            }
+
+            if (response.toolCalls.Count > 0)
+            {
+                RouteDialogueToolRequestToToolModel(response, line);
+                return;
+            }
+
+            HandleFinalChatResponse(response, line);
+        }
+
+        private bool TryStartNonStreamingDialogueFallback(OrcaChatLine line, string error)
+        {
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+            if (settings == null || !settings.HasModelForRole(pendingRequestRole))
+            {
+                return false;
+            }
+
+            if (line != null)
+            {
+                displayLines.Remove(line);
+                conversationVersion++;
+            }
+
+            statusText = "DTO_OrcaChatWaiting".Translate();
+            pendingStage = OrcaChatRequestStage.Chat;
+            pendingRequest = client.SendPlainChatCompletionAsync(settings, new List<LlmChatMessage>(messages), pendingRequestRole);
+            NotifyAgentPhase(PhaseForRole(pendingRequestRole), pendingRequestRole, false, "streaming failed; fallback request sent");
+            AddProcess("Streaming response failed; retrying once without streaming: " + error);
+            AddProcess("Fallback request sent to " + ModelRoleLabel(pendingRequestRole) + " model: " + settings.ModelForRole(pendingRequestRole));
+            return true;
+        }
+
+        private void RouteDialogueToolRequestToToolModel(LlmChatResponse response, OrcaChatLine line)
+        {
+            if (line != null)
+            {
+                displayLines.Remove(line);
+                conversationVersion++;
+            }
+
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+            if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Tool) || toolRoundsUsed >= MaxToolRounds)
+            {
+                statusText = "DTO_OrcaChatToolBudgetReached".Translate();
+                SetError(statusText);
+                AddProcess("Dialogue model requested more tool data, but the tool model is unavailable or the tool budget is exhausted.");
+                return;
+            }
+
+            AddProcess("Dialogue model requested more tool data; routing back to tool model.");
+            NotifyAgentPhase(OrcaAgentPhase.NeedsMoreTools, OrcaLlmModelRole.Dialogue, false, "dialogue requested additional tool data");
+            messages.Add(LlmChatMessage.System(
+                "The dialogue model indicated that more game data is needed before the final player-facing reply. "
+                + "Continue tool gathering now. Use tools if needed; do not write player-facing prose. "
+                + "Requested tool hint: " + ToolCallHint(response)));
+            ForceNextModelRole(OrcaLlmModelRole.Tool);
+            StartRequest(settings);
         }
 
         public void Clear()
@@ -589,9 +678,10 @@ namespace DeepseekTheOrca
             displayLines.Clear();
             statusText = "";
             pendingRequest = null;
+            pendingStreamingRequest = null;
+            pendingStreamingLine = null;
             pendingStage = OrcaChatRequestStage.Chat;
-            replyDisplayController = null;
-            replyDisplayLine = null;
+            pendingRequestRole = OrcaLlmModelRole.Fallback;
             mood = 60;
             lastMoodDelta = 0;
             toolRoundsUsed = 0;
@@ -619,17 +709,68 @@ namespace DeepseekTheOrca
             RemoveOrphanToolMessages();
             OrcaLlmModelRole role = hasForcedNextModelRole ? forcedNextModelRole : InitialChatModelRole(settings);
             ClearForcedNextModelRole();
+            pendingRequestRole = role;
             pendingStage = OrcaChatRequestStage.Chat;
-            pendingRequest = client.SendChatCompletionWithToolsAsync(
-                settings,
-                new List<LlmChatMessage>(messages),
-                LlmToolSchemas.BuildChatTools(),
-                900,
-                0.85f,
-                role);
             currentModelRoleLabel = ModelRoleLabel(role);
             currentModelReference = settings.ModelForRole(role);
-            AddProcess("Request sent to " + ModelRoleLabel(role) + " model: " + settings.ModelForRole(role));
+            NotifyAgentPhase(PhaseForRole(role), role, ShouldStreamFinalReply(role), "request sent");
+            if (ShouldStreamFinalReply(role))
+            {
+                pendingStreamingLine = new OrcaChatLine("DTO_OrcaChatSpeakerOrca".Translate(), ThinkingText());
+                displayLines.Add(pendingStreamingLine);
+                conversationVersion++;
+                pendingStreamingRequest = client.StartStreamingPlainChatCompletion(
+                    settings,
+                    new List<LlmChatMessage>(messages),
+                    900,
+                    0.85f,
+                    role);
+                AddProcess("Streaming request sent to " + ModelRoleLabel(role) + " model: " + settings.ModelForRole(role));
+            }
+            else
+            {
+                pendingRequest = client.SendChatCompletionWithToolsAsync(
+                    settings,
+                    new List<LlmChatMessage>(messages),
+                    LlmToolSchemas.BuildChatTools(),
+                    900,
+                    0.85f,
+                    role);
+                AddProcess("Request sent to " + ModelRoleLabel(role) + " model: " + settings.ModelForRole(role));
+            }
+        }
+
+        private static bool ShouldStreamFinalReply(OrcaLlmModelRole role)
+        {
+            return role == OrcaLlmModelRole.Dialogue;
+        }
+
+        private static OrcaAgentPhase PhaseForRole(OrcaLlmModelRole role)
+        {
+            switch (role)
+            {
+                case OrcaLlmModelRole.Controller:
+                    return OrcaAgentPhase.Routing;
+                case OrcaLlmModelRole.Tool:
+                case OrcaLlmModelRole.WebSearch:
+                case OrcaLlmModelRole.Vision:
+                    return OrcaAgentPhase.ToolGathering;
+                case OrcaLlmModelRole.Dialogue:
+                    return OrcaAgentPhase.FinalReply;
+                default:
+                    return OrcaAgentPhase.Unknown;
+            }
+        }
+
+        private void NotifyAgentPhase(OrcaAgentPhase phase, OrcaLlmModelRole role, bool streaming, string reason)
+        {
+            OrcaExtensionManager.NotifyAgentPhase(new OrcaAgentPhaseContext(this, phase, role, toolRoundsUsed, streaming, reason));
+        }
+
+        private static string ThinkingText()
+        {
+            int frame = (Find.TickManager == null ? 0 : Find.TickManager.TicksGame / ThinkingAnimationIntervalTicks) % 3;
+            return "Thinking" + new string('.', frame + 1);
         }
 
         private void StartControllerOrChatRequest(DeepseekTheOrcaSettings settings)
@@ -651,6 +792,7 @@ namespace DeepseekTheOrca
             currentModelRoleLabel = ModelRoleLabel(OrcaLlmModelRole.Controller);
             currentModelReference = settings.ModelForRole(OrcaLlmModelRole.Controller);
             AddProcess("Request sent to controller model: " + settings.ModelForRole(OrcaLlmModelRole.Controller));
+            NotifyAgentPhase(OrcaAgentPhase.Routing, OrcaLlmModelRole.Controller, false, "controller request sent");
         }
 
         private List<LlmChatMessage> BuildControllerMessages()
@@ -695,9 +837,17 @@ namespace DeepseekTheOrca
 
             string route = ParseControllerRoute(response.content);
             OrcaLlmModelRole role = ModelRoleForControllerRoute(route, settings);
+            OrcaAgentRoutingContext routingContext = new OrcaAgentRoutingContext(this, route, role, "controller route");
+            OrcaExtensionManager.ModifyAgentRouting(routingContext);
+            route = routingContext.route;
+            role = routingContext.requestedRole;
             lastControllerRoute = route;
             ForceNextModelRole(role);
             AddProcess("Controller route: " + route + " -> " + ModelRoleLabel(role) + " model.");
+            if (routingContext.Changed)
+            {
+                AddProcess("Extension adjusted route to " + route + " -> " + ModelRoleLabel(role) + " model.");
+            }
             StartRequest(settings);
         }
 
@@ -805,19 +955,31 @@ namespace DeepseekTheOrca
                 messages.Add(LlmChatMessage.Tool(toolCall.id, SerializeToolResult(result)));
             }
 
-            messages.Add(LlmChatMessage.System(
-                "Tool results have been supplied. The next assistant response must be exactly one JSON object and no extra text. "
-                + "JSON schema: " + ChatReplyJsonSchema() + "."));
-
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Dialogue))
+            OrcaLlmModelRole nextRole = toolRoundsUsed >= MaxToolRounds || settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Tool)
+                ? OrcaLlmModelRole.Dialogue
+                : OrcaLlmModelRole.Tool;
+            if (settings == null || !settings.HasModelForRole(nextRole))
             {
                 statusText = "DTO_OrcaChatNoApiKey".Translate();
                 SetError(statusText);
                 return;
             }
 
-            ForceNextModelRole(OrcaLlmModelRole.Dialogue);
+            if (nextRole == OrcaLlmModelRole.Tool)
+            {
+                messages.Add(LlmChatMessage.System(
+                    "Tool results have been supplied. If more game data is needed to satisfy the player's request, call another tool. "
+                    + "If enough information has been gathered, do not call tools; the dialogue model will write the final player-facing response."));
+            }
+            else
+            {
+                messages.Add(LlmChatMessage.System(
+                    "Tool results have been supplied. The next assistant response must be exactly one JSON object and no extra text. "
+                    + "JSON schema: " + ChatReplyJsonSchema() + "."));
+            }
+
+            ForceNextModelRole(nextRole);
             StartRequest(settings);
         }
 
@@ -1028,6 +1190,7 @@ namespace DeepseekTheOrca
             builder.AppendLine("If external MCP tools are available, they were configured by the player. Use them only when they directly help with the player's request, and treat their results as external tool output rather than RimWorld game state.");
             builder.AppendLine("RimTalk history may be read without explicit permission when it helps you understand colony conversation, player behavior, pawn relationships, or a proactive trigger. Its playerName is the value of RimTalk's player address/name configuration; do not treat it as the player's real name or SteamPersonaName. It only indicates how RimTalk was configured to refer to the player in that mod's dialogue context. Origin distinguishes player_initiated from ai_auto_generated dialogue.");
             builder.AppendLine("If a user message says it is a system proactive trigger, it is not from the player. Speak proactively about that trigger. For RimTalk proactive triggers, you may read RimTalk history before replying. Do not call execution tools for proactive triggers because the event was already scheduled or observed.");
+            builder.AppendLine("The reply field is player-visible natural language only. Do not include XML-like tags, HTML-like tags, hidden channels, or control markup in reply.");
             builder.AppendLine("Respond in the same language the player uses unless asked otherwise. For proactive triggers, use the current game/player language rather than English trigger labels.");
             builder.AppendLine("Output exactly one JSON object and no extra text. JSON schema: " + ChatReplyJsonSchema() + ".");
             return builder.ToString();
@@ -1091,6 +1254,16 @@ namespace DeepseekTheOrca
             return AiToolResult.Ok(message)
                 .WithValue("incidentDef", plan.incidentDefName)
                 .WithValue("reason", plan.reason ?? "");
+        }
+
+        private static string SanitizeVisibleReply(string text)
+        {
+            if (text.NullOrEmpty())
+            {
+                return text ?? "";
+            }
+
+            return OrcaVisibleReplySanitizer.Sanitize(text, trim: true);
         }
 
         private AiToolResult InvokeTriggerRaidFromChat(AiToolSession session, Dictionary<string, string> arguments)
@@ -1409,6 +1582,28 @@ namespace DeepseekTheOrca
             return "{" + string.Join(", ", parts.ToArray()) + "}";
         }
 
+        private static string ToolCallHint(LlmChatResponse response)
+        {
+            if (response == null || response.toolCalls == null || response.toolCalls.Count == 0)
+            {
+                return "none";
+            }
+
+            List<string> parts = new List<string>();
+            for (int i = 0; i < response.toolCalls.Count; i++)
+            {
+                LlmToolCall toolCall = response.toolCalls[i];
+                if (toolCall == null)
+                {
+                    continue;
+                }
+
+                parts.Add((toolCall.name ?? "") + " " + (toolCall.argumentsJson ?? "{}"));
+            }
+
+            return parts.Count == 0 ? "none" : string.Join(" | ", parts.ToArray());
+        }
+
         private static string FormatValues(AiToolResult result)
         {
             if (result.values == null || result.values.Count == 0)
@@ -1543,7 +1738,7 @@ namespace DeepseekTheOrca
         {
             get
             {
-                string text = UserText.Replace("\n", " ").Replace("\r", " ");
+                string text = StripRichTextTags(UserText).Replace("\n", " ").Replace("\r", " ");
                 if (text.Length > 24)
                 {
                     text = text.Substring(0, 24) + "...";
@@ -1551,6 +1746,39 @@ namespace DeepseekTheOrca
 
                 return "#" + Sequence + " " + text;
             }
+        }
+
+        private static string StripRichTextTags(string text)
+        {
+            if (text.NullOrEmpty())
+            {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            bool inTag = false;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+                if (ch == '<')
+                {
+                    inTag = true;
+                    continue;
+                }
+
+                if (ch == '>' && inTag)
+                {
+                    inTag = false;
+                    continue;
+                }
+
+                if (!inTag)
+                {
+                    builder.Append(ch);
+                }
+            }
+
+            return builder.ToString();
         }
     }
 
@@ -1562,7 +1790,7 @@ namespace DeepseekTheOrca
 
         public string HistoryContent(string originalContent)
         {
-            if (parsedJson)
+            if (parsedJson && !OrcaVisibleReplySanitizer.ContainsControlMarkup(originalContent))
             {
                 return originalContent ?? "";
             }

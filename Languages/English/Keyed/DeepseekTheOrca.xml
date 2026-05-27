@@ -169,13 +169,6 @@
   <DTO_ProactivePluginSettingsNote>Defaults: colony observations 0.25, RimTalk 0.15 plus 0.05 per miss, forced after 8 misses.</DTO_ProactivePluginSettingsNote>
   <DTO_ColonyObservationProactiveSettingsNote>Default: colony observations 0.25.</DTO_ColonyObservationProactiveSettingsNote>
   <DTO_RimtalkProactiveUnavailable>RimTalk is not active, so RimTalk proactive trigger settings are hidden.</DTO_RimtalkProactiveUnavailable>
-  <DTO_StreamingOutputPluginName>Streaming output</DTO_StreamingOutputPluginName>
-  <DTO_StreamingOutputPluginCategory>Chat display</DTO_StreamingOutputPluginCategory>
-  <DTO_StreamingOutputPluginDescription>Displays Orca's final reply with a typewriter-style reveal after the model response is received.</DTO_StreamingOutputPluginDescription>
-  <DTO_StreamingOutputPluginDetails>This is a UI display plugin. It does not change the LLM request, tool calling, mood parsing, memory, or prompt format. Sending a new message completes the current reveal first.</DTO_StreamingOutputPluginDetails>
-  <DTO_StreamingOutputSettings>Display speed</DTO_StreamingOutputSettings>
-  <DTO_StreamingOutputCharsPerSecond>Characters per second</DTO_StreamingOutputCharsPerSecond>
-  <DTO_StreamingOutputSettingsNote>Only the visible chat line is streamed; history and memory still receive the complete parsed reply.</DTO_StreamingOutputSettingsNote>
   <DTO_TestConnection>Test LLM connection</DTO_TestConnection>
   <DTO_TestConnectionRunning>Testing connection...</DTO_TestConnectionRunning>
   <DTO_ConnectionStatus>Connection status</DTO_ConnectionStatus>

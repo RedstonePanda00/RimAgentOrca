@@ -169,13 +169,6 @@
   <DTO_ProactivePluginSettingsNote>默认值：殖民地观察 0.25，RimTalk 0.15，每次未触发 +0.05，连续 8 次未触发后强制触发。</DTO_ProactivePluginSettingsNote>
   <DTO_ColonyObservationProactiveSettingsNote>默认值：殖民地观察 0.25。</DTO_ColonyObservationProactiveSettingsNote>
   <DTO_RimtalkProactiveUnavailable>RimTalk 未启用，因此隐藏 RimTalk 主动触发相关设置。</DTO_RimtalkProactiveUnavailable>
-  <DTO_StreamingOutputPluginName>流式输出</DTO_StreamingOutputPluginName>
-  <DTO_StreamingOutputPluginCategory>聊天显示</DTO_StreamingOutputPluginCategory>
-  <DTO_StreamingOutputPluginDescription>模型回复完成后，以打字机效果逐字显示奥卡的最终回复。</DTO_StreamingOutputPluginDescription>
-  <DTO_StreamingOutputPluginDetails>这是一个 UI 显示插件。它不会改变 LLM 请求、工具调用、心情解析、记忆或提示词格式。发送新消息前会先补全当前显示。</DTO_StreamingOutputPluginDetails>
-  <DTO_StreamingOutputSettings>显示速度</DTO_StreamingOutputSettings>
-  <DTO_StreamingOutputCharsPerSecond>每秒字符数</DTO_StreamingOutputCharsPerSecond>
-  <DTO_StreamingOutputSettingsNote>只有聊天窗里的可见文本会逐字显示；历史记录和记忆仍会接收完整解析后的回复。</DTO_StreamingOutputSettingsNote>
   <DTO_TestConnection>检测 DeepSeek 连接</DTO_TestConnection>
   <DTO_TestConnectionRunning>正在检测连接...</DTO_TestConnectionRunning>
   <DTO_ConnectionStatus>连接状态</DTO_ConnectionStatus>

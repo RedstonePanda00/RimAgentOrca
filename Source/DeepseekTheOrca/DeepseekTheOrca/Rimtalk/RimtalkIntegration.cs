@@ -101,6 +101,39 @@ namespace DeepseekTheOrca.Rimtalk
                 .WithValue("entries", MiniJson.Serialize(entries));
         }
 
+        public static bool TryGetPawnPersona(Pawn pawn, out string personality, out float talkInitiationWeight, out bool hasVocalLink)
+        {
+            personality = "";
+            talkInitiationWeight = 0f;
+            hasVocalLink = false;
+
+            if (pawn == null || pawn.health == null || pawn.health.hediffSet == null || !IsAvailable)
+            {
+                return false;
+            }
+
+            hasVocalLink = HasHediff(pawn, "VocalLinkImplant");
+            Hediff personaHediff = FirstHediff(pawn, "RimTalk_PersonaData");
+            if (personaHediff == null)
+            {
+                return false;
+            }
+
+            object personalityValue = GetProperty(personaHediff, "Personality");
+            object weightValue = GetProperty(personaHediff, "TalkInitiationWeight");
+            personality = personalityValue == null ? "" : personalityValue.ToString();
+            if (weightValue is float)
+            {
+                talkInitiationWeight = (float)weightValue;
+            }
+            else if (weightValue != null)
+            {
+                float.TryParse(weightValue.ToString(), out talkInitiationWeight);
+            }
+
+            return !personality.NullOrEmpty() || weightValue != null || hasVocalLink;
+        }
+
         public static bool TryGetRecentHistorySnapshots(int count, int maxChars, out List<RimtalkHistorySnapshot> snapshots, out string error)
         {
             snapshots = new List<RimtalkHistorySnapshot>();
@@ -277,6 +310,22 @@ namespace DeepseekTheOrca.Rimtalk
             return value == null ? null : value.ToString();
         }
 
+        private static bool HasHediff(Pawn pawn, string defName)
+        {
+            return FirstHediff(pawn, defName) != null;
+        }
+
+        private static Hediff FirstHediff(Pawn pawn, string defName)
+        {
+            if (pawn == null || pawn.health == null || pawn.health.hediffSet == null || defName.NullOrEmpty())
+            {
+                return null;
+            }
+
+            HediffDef def = DefDatabase<HediffDef>.GetNamedSilentFail(defName);
+            return def == null ? null : pawn.health.hediffSet.GetFirstHediffOfDef(def, false);
+        }
+
         private static object GetProperty(object instance, string name)
         {
             if (instance == null)
@@ -343,8 +392,8 @@ namespace DeepseekTheOrca.Rimtalk
                 record.Pawn = FirstNonEmpty(ValueText(GetProperty(log, "Name")), PawnLabel(GetProperty(request, "Initiator")));
                 record.Recipient = PawnLabel(GetProperty(request, "Recipient"));
                 record.InteractionType = ValueText(GetProperty(log, "InteractionType"));
-                record.Prompt = Truncate(FirstNonEmpty(ValueText(GetProperty(request, "RawPrompt")), ValueText(GetProperty(request, "Prompt"))), maxChars);
-                record.Response = Truncate(ValueText(GetProperty(log, "Response")), maxChars);
+                record.Prompt = Truncate(CleanRimtalkMarkup(FirstNonEmpty(ValueText(GetProperty(request, "RawPrompt")), ValueText(GetProperty(request, "Prompt")))), maxChars);
+                record.Response = Truncate(CleanRimtalkMarkup(ValueText(GetProperty(log, "Response"))), maxChars);
                 record.ConversationId = GetInt(GetProperty(log, "ConversationId"), -1);
                 record.CreatedTick = GetInt(GetProperty(request, "CreatedTick"), -1);
                 record.FinishedTick = GetInt(GetProperty(request, "FinishedTick"), -1);
@@ -498,6 +547,16 @@ namespace DeepseekTheOrca.Rimtalk
                 }
 
                 return text.Substring(0, maxChars - 3) + "...";
+            }
+
+            private static string CleanRimtalkMarkup(string text)
+            {
+                if (text.NullOrEmpty())
+                {
+                    return text ?? "";
+                }
+
+                return OrcaVisibleReplySanitizer.Sanitize(text, trim: true);
             }
         }
     }

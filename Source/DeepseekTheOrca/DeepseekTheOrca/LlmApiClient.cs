@@ -4,8 +4,10 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DeepseekTheOrca
@@ -41,6 +43,8 @@ namespace DeepseekTheOrca
     public sealed class LlmApiClient
     {
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan StreamingTimeout = TimeSpan.FromSeconds(120);
+        private const int MaxTransportAttempts = 2;
 
         public async Task<LlmConnectionTestResult> TestConnectionAsync(string apiKey, string model)
         {
@@ -107,6 +111,7 @@ namespace DeepseekTheOrca
                 client.Timeout = Timeout;
                 client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
                 ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
+                ApplyTransportHeaders(client);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 HttpResponseMessage response;
@@ -174,6 +179,7 @@ namespace DeepseekTheOrca
                 client.Timeout = Timeout;
                 client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
                 ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
+                ApplyTransportHeaders(client);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 string body = BuildConnectionTestBody(model.Trim(), providerId);
@@ -252,6 +258,46 @@ namespace DeepseekTheOrca
         public async Task<LlmChatResponse> SendPlainChatCompletionAsync(DeepseekTheOrcaSettings settings, List<LlmChatMessage> messages, OrcaLlmModelRole role)
         {
             return await SendChatCompletionAsync(settings, messages, includeTools: false, maxTokens: 800, temperature: 0.85f, role: role).ConfigureAwait(false);
+        }
+
+        public LlmStreamingChatRequest StartStreamingPlainChatCompletion(DeepseekTheOrcaSettings settings, List<LlmChatMessage> messages, int maxTokens, float temperature, OrcaLlmModelRole role)
+        {
+            LlmStreamingChatRequest request = new LlmStreamingChatRequest();
+            if (settings == null)
+            {
+                request.Fail("Settings are unavailable.");
+                return request;
+            }
+
+            OrcaLlmRequestConfig config = settings.RequestConfigForRole(role);
+            if (config == null)
+            {
+                request.Fail("No model is selected for this role.");
+                return request;
+            }
+
+            request.role = role.ToString();
+            request.model = config.model == null ? "" : config.model.Trim();
+            request.providerId = config.providerId;
+            Task.Run(async delegate
+            {
+                await SendStreamingChatCompletionAsync(
+                    request,
+                    config.apiKey,
+                    config.model,
+                    config.baseUrl,
+                    config.IncludeThinkingToggle,
+                    messages,
+                    maxTokens,
+                    temperature,
+                    config.providerId,
+                    config.openAiOrganization,
+                    config.openAiProject,
+                    config.proxyUrl,
+                    role).ConfigureAwait(false);
+            });
+
+            return request;
         }
 
         public async Task<LlmChatResponse> SendChatCompletionWithToolsAsync(string apiKey, string model, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature)
@@ -345,65 +391,267 @@ namespace DeepseekTheOrca
 
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
-            using (HttpClient client = CreateHttpClient(proxyUrl))
+            for (int attempt = 1; attempt <= MaxTransportAttempts; attempt++)
             {
-                client.Timeout = Timeout;
-                client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
-                ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                string body = BuildChatCompletionBody(model.Trim(), messages, tools, maxTokens, temperature, includeThinkingToggle, providerId);
-                using (StringContent content = new StringContent(body, Encoding.UTF8, "application/json"))
+                using (HttpClient client = CreateHttpClient(proxyUrl))
                 {
-                    HttpResponseMessage response;
-                    string responseText;
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    try
-                    {
-                        response = await client.PostAsync("chat/completions", content).ConfigureAwait(false);
-                        responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        LlmConnectionTester.ReportFailedCall("Connection timed out.");
-                        return LlmChatResponse.Failure("Connection timed out.");
-                    }
-                    catch (Exception ex)
-                    {
-                        LlmConnectionTester.ReportFailedCall(ex.GetType().Name + ": " + ex.Message);
-                        return LlmChatResponse.Failure(ex.GetType().Name + ": " + ex.Message);
-                    }
-                    finally
-                    {
-                        stopwatch.Stop();
-                    }
+                    client.Timeout = Timeout;
+                    client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
+                    ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
+                    ApplyTransportHeaders(client);
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                    if (!response.IsSuccessStatusCode)
+                    string body = BuildChatCompletionBody(model.Trim(), messages, tools, maxTokens, temperature, includeThinkingToggle, providerId);
+                    using (StringContent content = new StringContent(body, Encoding.UTF8, "application/json"))
                     {
-                        string error = ExtractErrorMessage(responseText);
-                        LlmConnectionTester.ReportFailedCall(
-                            "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
-                        return LlmChatResponse.Failure(
-                            "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
-                    }
+                        HttpResponseMessage response;
+                        string responseText;
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            response = await client.PostAsync("chat/completions", content).ConfigureAwait(false);
+                            responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            LlmConnectionTester.ReportFailedCall("Connection timed out.");
+                            return LlmChatResponse.Failure("Connection timed out.");
+                        }
+                        catch (Exception ex)
+                        {
+                            stopwatch.Stop();
+                            if (IsTransientTransportException(ex) && attempt < MaxTransportAttempts)
+                            {
+                                LlmConnectionTester.ReportFailedCall(TransientRetryMessage(ex, attempt));
+                                await Task.Delay(250).ConfigureAwait(false);
+                                continue;
+                            }
 
-                    LlmChatResponse parsed = ParseChatResponse(responseText);
-                    parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
-                    parsed.role = role.ToString();
-                    parsed.model = model.Trim();
-                    parsed.providerId = providerId;
-                    if (parsed.success)
-                    {
-                        LlmConnectionTester.ReportSuccessfulCall("Connection succeeded by chat completion.");
-                        LlmUsageTracker.Record(parsed);
-                    }
+                            string failure = TransportFailureMessage(ex);
+                            LlmConnectionTester.ReportFailedCall(failure);
+                            return LlmChatResponse.Failure(failure);
+                        }
+                        finally
+                        {
+                            stopwatch.Stop();
+                        }
 
-                    return parsed;
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            string error = ExtractErrorMessage(responseText);
+                            LlmConnectionTester.ReportFailedCall(
+                                "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
+                            return LlmChatResponse.Failure(
+                                "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
+                        }
+
+                        LlmChatResponse parsed = ParseChatResponse(responseText);
+                        parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
+                        parsed.role = role.ToString();
+                        parsed.model = model.Trim();
+                        parsed.providerId = providerId;
+                        if (parsed.success)
+                        {
+                            LlmConnectionTester.ReportSuccessfulCall("Connection succeeded by chat completion.");
+                            LlmUsageTracker.Record(parsed);
+                        }
+
+                        return parsed;
+                    }
                 }
+            }
+
+            return LlmChatResponse.Failure("Transport failed after retry.");
+        }
+
+        private async Task SendStreamingChatCompletionAsync(
+            LlmStreamingChatRequest streamingRequest,
+            string apiKey,
+            string model,
+            string baseUrl,
+            bool includeThinkingToggle,
+            List<LlmChatMessage> messages,
+            int maxTokens,
+            float temperature,
+            string providerId,
+            string openAiOrganization,
+            string openAiProject,
+            string proxyUrl,
+            OrcaLlmModelRole role)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                if (streamingRequest == null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    streamingRequest.Fail("API key is empty.");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(model))
+                {
+                    streamingRequest.Fail("Model is empty.");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    streamingRequest.Fail("Base URL is empty.");
+                    return;
+                }
+
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+
+                for (int attempt = 1; attempt <= MaxTransportAttempts; attempt++)
+                {
+                    using (HttpClient client = CreateHttpClient(proxyUrl))
+                    {
+                        client.Timeout = StreamingTimeout;
+                        client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
+                        ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
+                        ApplyTransportHeaders(client);
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                        string body = BuildChatCompletionBody(model.Trim(), messages, null, maxTokens, temperature, includeThinkingToggle, providerId, stream: true);
+                        using (StringContent content = new StringContent(body, Encoding.UTF8, "application/json"))
+                        using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "chat/completions"))
+                        {
+                            request.Content = content;
+                            HttpResponseMessage response;
+                            try
+                            {
+                                response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                streamingRequest.Fail("Connection timed out.");
+                                LlmConnectionTester.ReportFailedCall("Connection timed out.");
+                                return;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (IsTransientTransportException(ex) && attempt < MaxTransportAttempts)
+                                {
+                                    LlmConnectionTester.ReportFailedCall(TransientRetryMessage(ex, attempt));
+                                    await Task.Delay(250).ConfigureAwait(false);
+                                    continue;
+                                }
+
+                                string failure = TransportFailureMessage(ex);
+                                streamingRequest.Fail(failure);
+                                LlmConnectionTester.ReportFailedCall(failure);
+                                return;
+                            }
+
+                            using (response)
+                            {
+                                if (!response.IsSuccessStatusCode)
+                                {
+                                    string responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                    string error = ExtractErrorMessage(responseText);
+                                    string message = "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error);
+                                    streamingRequest.Fail(message);
+                                    LlmConnectionTester.ReportFailedCall(message);
+                                    return;
+                                }
+
+                                using (Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                                {
+                                    string line;
+                                    while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                                    {
+                                        if (streamingRequest.IsCancellationRequested)
+                                        {
+                                            streamingRequest.Fail("Streaming request cancelled.");
+                                            return;
+                                        }
+
+                                        if (!line.StartsWith("data:", StringComparison.Ordinal))
+                                        {
+                                            continue;
+                                        }
+
+                                        string data = line.Substring(5).Trim();
+                                        if (data == "[DONE]")
+                                        {
+                                            break;
+                                        }
+
+                                        ParseStreamingChunk(data, streamingRequest);
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                stopwatch.Stop();
+                LlmChatResponse parsed = LlmChatResponse.Success();
+                parsed.content = streamingRequest.RawContent;
+                parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
+                parsed.role = role.ToString();
+                parsed.model = model.Trim();
+                parsed.providerId = providerId;
+                streamingRequest.Complete(parsed);
+                LlmConnectionTester.ReportSuccessfulCall("Connection succeeded by streaming chat completion.");
+                LlmUsageTracker.Record(parsed);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                if (streamingRequest != null)
+                {
+                    streamingRequest.Fail(ex.GetType().Name + ": " + ex.Message);
+                }
+                LlmConnectionTester.ReportFailedCall(ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private static void ParseStreamingChunk(string data, LlmStreamingChatRequest streamingRequest)
+        {
+            try
+            {
+                Dictionary<string, object> root = MiniJson.Deserialize(data) as Dictionary<string, object>;
+                object choicesObj;
+                List<object> choices = root != null && root.TryGetValue("choices", out choicesObj) ? choicesObj as List<object> : null;
+                if (choices == null || choices.Count == 0)
+                {
+                    return;
+                }
+
+                Dictionary<string, object> firstChoice = choices[0] as Dictionary<string, object>;
+                Dictionary<string, object> delta = firstChoice == null ? null : GetDictionary(firstChoice, "delta");
+                if (delta == null)
+                {
+                    return;
+                }
+
+                string content = GetString(delta, "content");
+                if (!string.IsNullOrEmpty(content))
+                {
+                    streamingRequest.AppendContent(content);
+                }
+            }
+            catch
+            {
             }
         }
 
         private static string BuildChatCompletionBody(string model, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, bool includeThinkingToggle, string providerId)
+        {
+            return BuildChatCompletionBody(model, messages, tools, maxTokens, temperature, includeThinkingToggle, providerId, stream: false);
+        }
+
+        private static string BuildChatCompletionBody(string model, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, bool includeThinkingToggle, string providerId, bool stream)
         {
             Dictionary<string, object> body = new Dictionary<string, object>();
             body["model"] = model;
@@ -425,7 +673,7 @@ namespace DeepseekTheOrca
                 body["temperature"] = temperature;
             }
             body[UsesOpenAiChatCompletionTokens(providerId) ? "max_completion_tokens" : "max_tokens"] = maxTokens;
-            body["stream"] = false;
+            body["stream"] = stream;
             return MiniJson.Serialize(body);
         }
 
@@ -567,6 +815,16 @@ namespace DeepseekTheOrca
                     }
                 }
 
+                if (parsed.toolCalls.Count == 0 && !string.IsNullOrEmpty(parsed.content))
+                {
+                    List<LlmToolCall> dsmlToolCalls = OrcaDsmlToolCallFallbackParser.ParseToolCalls(parsed.content);
+                    if (dsmlToolCalls.Count > 0)
+                    {
+                        parsed.toolCalls.AddRange(dsmlToolCalls);
+                        parsed.content = OrcaDsmlToolCallFallbackParser.StripToolCalls(parsed.content);
+                    }
+                }
+
                 return parsed;
             }
             catch (Exception ex)
@@ -696,6 +954,33 @@ namespace DeepseekTheOrca
             {
                 client.DefaultRequestHeaders.Add("OpenAI-Project", openAiProject.Trim());
             }
+        }
+
+        private static void ApplyTransportHeaders(HttpClient client)
+        {
+            if (client == null)
+            {
+                return;
+            }
+
+            client.DefaultRequestHeaders.ConnectionClose = true;
+        }
+
+        private static bool IsTransientTransportException(Exception ex)
+        {
+            return ex is HttpRequestException
+                || ex is ObjectDisposedException
+                || ex is IOException;
+        }
+
+        private static string TransportFailureMessage(Exception ex)
+        {
+            return ex == null ? "Transport error." : ex.GetType().Name + ": " + ex.Message;
+        }
+
+        private static string TransientRetryMessage(Exception ex, int attempt)
+        {
+            return "Transient transport error on attempt " + attempt + "; retrying once: " + TransportFailureMessage(ex);
         }
 
         private static HttpClient CreateHttpClient(string proxyUrl)
@@ -838,6 +1123,359 @@ namespace DeepseekTheOrca
         public static LlmChatResponse Failure(string message)
         {
             return new LlmChatResponse { success = false, errorMessage = message };
+        }
+    }
+
+    public sealed class LlmStreamingChatRequest
+    {
+        private readonly object syncRoot = new object();
+        private readonly StringBuilder rawContent = new StringBuilder();
+        private readonly JsonReplyStreamExtractor replyExtractor = new JsonReplyStreamExtractor();
+        private bool completed;
+        private bool cancelled;
+        private LlmChatResponse finalResponse;
+        private string errorMessage = "";
+        private string visibleText = "";
+        public string role = "";
+        public string model = "";
+        public string providerId = "";
+
+        public bool IsCompleted
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return completed;
+                }
+            }
+        }
+
+        public bool IsCancellationRequested
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return cancelled;
+                }
+            }
+        }
+
+        public bool Success
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return completed && finalResponse != null && finalResponse.success;
+                }
+            }
+        }
+
+        public string ErrorMessage
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return errorMessage;
+                }
+            }
+        }
+
+        public string VisibleText
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return visibleText;
+                }
+            }
+        }
+
+        public string RawContent
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return rawContent.ToString();
+                }
+            }
+        }
+
+        public LlmChatResponse FinalResponse
+        {
+            get
+            {
+                lock (syncRoot)
+                {
+                    return finalResponse;
+                }
+            }
+        }
+
+        public void AppendContent(string delta)
+        {
+            if (string.IsNullOrEmpty(delta))
+            {
+                return;
+            }
+
+            lock (syncRoot)
+            {
+                if (completed || cancelled)
+                {
+                    return;
+                }
+
+                rawContent.Append(delta);
+                visibleText = JsonReplyStreamExtractor.SanitizeVisibleText(replyExtractor.Extract(rawContent.ToString()));
+            }
+        }
+
+        public void Complete(LlmChatResponse response)
+        {
+            lock (syncRoot)
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                if (response == null)
+                {
+                    response = LlmChatResponse.Failure("Streaming response was empty.");
+                }
+
+                if (response.success && !string.IsNullOrEmpty(response.content))
+                {
+                    List<LlmToolCall> dsmlToolCalls = OrcaDsmlToolCallFallbackParser.ParseToolCalls(response.content);
+                    if (dsmlToolCalls.Count > 0)
+                    {
+                        response.toolCalls.AddRange(dsmlToolCalls);
+                        response.content = OrcaDsmlToolCallFallbackParser.StripToolCalls(response.content);
+                    }
+                }
+
+                finalResponse = response;
+                if (!response.success)
+                {
+                    errorMessage = response.errorMessage ?? "";
+                }
+                visibleText = JsonReplyStreamExtractor.SanitizeVisibleText(replyExtractor.Extract(rawContent.ToString()));
+                completed = true;
+            }
+        }
+
+        public void Fail(string message)
+        {
+            lock (syncRoot)
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                errorMessage = message ?? "";
+                finalResponse = LlmChatResponse.Failure(errorMessage);
+                finalResponse.content = rawContent.ToString();
+                finalResponse.role = role;
+                finalResponse.model = model;
+                finalResponse.providerId = providerId;
+                visibleText = JsonReplyStreamExtractor.SanitizeVisibleText(replyExtractor.Extract(rawContent.ToString()));
+                completed = true;
+            }
+        }
+
+        public void Cancel()
+        {
+            lock (syncRoot)
+            {
+                cancelled = true;
+            }
+        }
+    }
+
+    internal sealed class JsonReplyStreamExtractor
+    {
+        public static string SanitizeVisibleText(string text)
+        {
+            return OrcaVisibleReplySanitizer.Sanitize(text, trim: false);
+        }
+
+        public string Extract(string jsonPrefix)
+        {
+            if (string.IsNullOrEmpty(jsonPrefix))
+            {
+                return "";
+            }
+
+            int replyKey = FindReplyKey(jsonPrefix);
+            if (replyKey < 0)
+            {
+                return ShouldTreatAsPlainText(jsonPrefix) ? jsonPrefix : "";
+            }
+
+            int colon = jsonPrefix.IndexOf(':', replyKey);
+            if (colon < 0)
+            {
+                return "";
+            }
+
+            int quote = NextNonWhitespace(jsonPrefix, colon + 1);
+            if (quote < 0 || quote >= jsonPrefix.Length || jsonPrefix[quote] != '"')
+            {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            bool escaping = false;
+            for (int i = quote + 1; i < jsonPrefix.Length; i++)
+            {
+                char c = jsonPrefix[i];
+                if (escaping)
+                {
+                    AppendEscaped(builder, c, jsonPrefix, ref i);
+                    escaping = false;
+                    continue;
+                }
+
+                if (c == '\\')
+                {
+                    escaping = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    break;
+                }
+
+                builder.Append(c);
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool ShouldTreatAsPlainText(string text)
+        {
+            int start = NextNonWhitespace(text, 0);
+            if (start < 0)
+            {
+                return false;
+            }
+
+            char c = text[start];
+            return c != '{' && c != '[';
+        }
+
+        private static int FindReplyKey(string text)
+        {
+            bool inString = false;
+            bool escaping = false;
+            for (int i = 0; i <= text.Length - 7; i++)
+            {
+                char c = text[i];
+                if (escaping)
+                {
+                    escaping = false;
+                    continue;
+                }
+
+                if (c == '\\' && inString)
+                {
+                    escaping = true;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    if (!inString && MatchesAt(text, i, "\"reply\""))
+                    {
+                        return i;
+                    }
+
+                    inString = !inString;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool MatchesAt(string text, int index, string value)
+        {
+            if (index < 0 || index + value.Length > text.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (text[index + i] != value[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static int NextNonWhitespace(string text, int start)
+        {
+            for (int i = start; i < text.Length; i++)
+            {
+                if (!char.IsWhiteSpace(text[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static void AppendEscaped(StringBuilder builder, char c, string text, ref int index)
+        {
+            switch (c)
+            {
+                case '"':
+                case '\\':
+                case '/':
+                    builder.Append(c);
+                    break;
+                case 'b':
+                    builder.Append('\b');
+                    break;
+                case 'f':
+                    builder.Append('\f');
+                    break;
+                case 'n':
+                    builder.Append('\n');
+                    break;
+                case 'r':
+                    builder.Append('\r');
+                    break;
+                case 't':
+                    builder.Append('\t');
+                    break;
+                case 'u':
+                    if (index + 4 < text.Length)
+                    {
+                        string hex = text.Substring(index + 1, 4);
+                        int code;
+                        if (int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out code))
+                        {
+                            builder.Append((char)code);
+                            index += 4;
+                        }
+                    }
+                    break;
+                default:
+                    builder.Append(c);
+                    break;
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using DeepseekTheOrca.Rimtalk;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -285,6 +286,7 @@ namespace DeepseekTheOrca
             parts.Add("pawnId=" + PawnToolUtility.PawnId(pawn));
             parts.Add("name=" + PawnToolUtility.PawnName(pawn));
             parts.Add("kind=" + pawn.KindLabel);
+            parts.Add("race=" + PawnToolUtility.RaceSummary(pawn));
             parts.Add("type=" + PawnToolUtility.PawnType(pawn));
             parts.Add("faction=" + PawnToolUtility.FactionName(pawn.Faction));
             parts.Add("pos=" + pawn.Position);
@@ -347,6 +349,8 @@ namespace DeepseekTheOrca
                 .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
                 .WithValue("name", PawnToolUtility.PawnName(pawn))
                 .WithValue("kind", pawn.KindLabel)
+                .WithValue("race", PawnToolUtility.RaceSummary(pawn))
+                .WithValue("raceDescription", PawnToolUtility.RaceDescription(pawn))
                 .WithValue("type", PawnToolUtility.PawnType(pawn))
                 .WithValue("faction", PawnToolUtility.FactionName(pawn.Faction))
                 .WithValue("position", pawn.Position)
@@ -355,7 +359,42 @@ namespace DeepseekTheOrca
                 .WithValue("traits", TraitsSummary(pawn))
                 .WithValue("skills", SkillsSummary(pawn))
                 .WithValue("relations", RelationsSummary(map, pawn))
-                .WithValue("health", HealthSummary(pawn));
+                .WithValue("health", HealthSummary(pawn))
+                .WithValue("rimtalkPersona", RimtalkPersonaSummary(pawn));
+        }
+
+        private static string RimtalkPersonaSummary(Pawn pawn)
+        {
+            if (!RimtalkIntegration.IsAvailable)
+            {
+                return "";
+            }
+
+            string personality;
+            float talkInitiationWeight;
+            bool hasVocalLink;
+            if (!RimtalkIntegration.TryGetPawnPersona(pawn, out personality, out talkInitiationWeight, out hasVocalLink))
+            {
+                return "";
+            }
+
+            List<string> parts = new List<string>();
+            if (!personality.NullOrEmpty())
+            {
+                parts.Add("personality=" + personality);
+            }
+
+            if (talkInitiationWeight > 0f)
+            {
+                parts.Add("talkInitiationWeight=" + talkInitiationWeight.ToString("0.##"));
+            }
+
+            if (pawn.RaceProps != null && !pawn.RaceProps.Humanlike)
+            {
+                parts.Add("hasVocalLinkImplant=" + hasVocalLink);
+            }
+
+            return string.Join("; ", parts.ToArray());
         }
 
         private static string PawnState(Pawn pawn)
@@ -612,6 +651,27 @@ namespace DeepseekTheOrca
                 return "hostile";
             }
             return "other";
+        }
+
+        public static string RaceSummary(Pawn pawn)
+        {
+            if (pawn == null || pawn.def == null)
+            {
+                return "";
+            }
+
+            string label = pawn.def.label.NullOrEmpty() ? pawn.def.defName : pawn.def.label;
+            return label + "[" + pawn.def.defName + "]";
+        }
+
+        public static string RaceDescription(Pawn pawn)
+        {
+            if (pawn == null || pawn.def == null)
+            {
+                return "";
+            }
+
+            return pawn.def.description ?? "";
         }
 
         public static string FactionName(Faction faction)

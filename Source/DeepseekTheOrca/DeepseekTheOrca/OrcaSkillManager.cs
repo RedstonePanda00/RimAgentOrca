@@ -199,7 +199,7 @@ namespace DeepseekTheOrca
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(header);
-            builder.AppendLine("Agent skills are lightweight capability folders with metadata and instructions. Use a skill when it is relevant to the latest player message, proactive trigger, tool results, or when its activation is always. A skill changes how you perform that task; it is not a persona.");
+            builder.AppendLine("Agent skills are lightweight capability folders with metadata and instructions. Use a skill only when it is relevant to the latest player message, proactive trigger, tool results, or game context. A skill changes how you perform that task; it is not a persona.");
             builder.AppendLine("If a skill lists allowed tools, prefer those tools while handling that skill and avoid unrelated execution tools unless the player explicitly asks or the story context clearly requires them.");
             for (int i = 0; i < skills.Count; i++)
             {
@@ -1314,12 +1314,7 @@ namespace DeepseekTheOrca
         {
             if (skill == null || turnText.NullOrEmpty())
             {
-                return skill != null && skill.activation == "always";
-            }
-
-            if (skill.activation == "always")
-            {
-                return true;
+                return false;
             }
 
             string text = turnText.ToLowerInvariant();
@@ -1353,8 +1348,7 @@ namespace DeepseekTheOrca
 
         private static string NormalizeActivation(string activation)
         {
-            activation = activation == null ? "" : activation.Trim().ToLowerInvariant();
-            return activation == "always" ? "always" : "auto";
+            return "auto";
         }
 
         private static string SourceNameFor(ModContentPack mod)

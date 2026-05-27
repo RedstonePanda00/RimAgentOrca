@@ -21,16 +21,5 @@
     <defaultEnabled>true</defaultEnabled>
     <order>20</order>
   </DeepseekTheOrca.OrcaExtensionDef>
-
-  <DeepseekTheOrca.OrcaExtensionDef>
-    <defName>DTO_Extension_StreamingOutput</defName>
-    <label>DTO_StreamingOutputPluginName</label>
-    <description>DTO_StreamingOutputPluginDescription</description>
-    <category>DTO_StreamingOutputPluginCategory</category>
-    <details>DTO_StreamingOutputPluginDetails</details>
-    <workerClass>DeepseekTheOrca.OrcaStreamingOutputExtensionWorker</workerClass>
-    <defaultEnabled>true</defaultEnabled>
-    <order>30</order>
-  </DeepseekTheOrca.OrcaExtensionDef>
 </Defs>
 
