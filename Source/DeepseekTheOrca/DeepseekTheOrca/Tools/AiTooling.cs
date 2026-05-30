@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using RimWorld;
@@ -340,7 +340,7 @@ namespace DeepseekTheOrca
                 OrcaToolWorker worker = def.Worker;
                 if (worker == null)
                 {
-                    Log.Warning("[Deepseek The Orca] Skipping OrcaToolDef " + def.defName + " because its worker is unavailable.");
+                    Log.Warning("[RimAgent] Skipping OrcaToolDef " + def.defName + " because its worker is unavailable.");
                     continue;
                 }
                 if (!worker.ShouldRegister())
@@ -356,7 +356,7 @@ namespace DeepseekTheOrca
 
                 if (tools.ContainsKey(tool.Name))
                 {
-                    Log.Warning("[Deepseek The Orca] Skipping OrcaToolDef " + def.defName + " because tool name is already registered: " + tool.Name);
+                    Log.Warning("[RimAgent] Skipping OrcaToolDef " + def.defName + " because tool name is already registered: " + tool.Name);
                     continue;
                 }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -362,7 +362,7 @@ namespace DeepseekTheOrca
             parameters["capabilities"] = new Dictionary<string, object>();
             parameters["clientInfo"] = new Dictionary<string, object>
             {
-                { "name", "DeepseekTheOrca" },
+                { "name", "RimAgent" },
                 { "version", "0.1" }
             };
 
@@ -733,7 +733,7 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] " + message);
+                Log.Message("[RimAgent] " + message);
             }
         }
     }

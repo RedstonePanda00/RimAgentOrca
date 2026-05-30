@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -169,20 +169,20 @@ namespace DeepseekTheOrca
                 string skillName = markdown.name.NullOrEmpty() ? folderName : markdown.name;
                 if (markdown.name.NullOrEmpty())
                 {
-                    Log.Warning("[Deepseek The Orca] Skill " + directory + " has no metadata name; using folder name '" + folderName + "'.");
+                    Log.Warning("[RimAgent] Skill " + directory + " has no metadata name; using folder name '" + folderName + "'.");
                 }
                 else if (!IsValidSkillName(markdown.name))
                 {
-                    Log.Warning("[Deepseek The Orca] Skill " + directory + " has invalid name '" + markdown.name + "'. Skill names should use lowercase letters, numbers, and hyphens; using folder name '" + folderName + "'.");
+                    Log.Warning("[RimAgent] Skill " + directory + " has invalid name '" + markdown.name + "'. Skill names should use lowercase letters, numbers, and hyphens; using folder name '" + folderName + "'.");
                     skillName = folderName;
                 }
                 if (!string.Equals(skillName, folderName, StringComparison.Ordinal))
                 {
-                    Log.Warning("[Deepseek The Orca] Skill name '" + skillName + "' should match folder name '" + folderName + "'.");
+                    Log.Warning("[RimAgent] Skill name '" + skillName + "' should match folder name '" + folderName + "'.");
                 }
                 if (markdown.description.NullOrEmpty())
                 {
-                    Log.Warning("[Deepseek The Orca] Skill " + directory + " has no metadata description.");
+                    Log.Warning("[RimAgent] Skill " + directory + " has no metadata description.");
                 }
                 OrcaSkillProfile profile = new OrcaSkillProfile
                 {
@@ -209,7 +209,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
-                Log.Warning("[Deepseek The Orca] Failed to load skill folder " + directory + ": " + ex.Message);
+                Log.Warning("[RimAgent] Failed to load skill folder " + directory + ": " + ex.Message);
                 return null;
             }
         }

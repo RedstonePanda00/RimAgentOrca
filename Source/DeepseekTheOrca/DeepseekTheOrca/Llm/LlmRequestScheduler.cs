@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,7 +108,7 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] LLM scheduler: " + message);
+                Log.Message("[RimAgent] LLM scheduler: " + message);
             }
         }
 

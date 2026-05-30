@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Verse;
@@ -56,7 +56,7 @@ namespace DeepseekTheOrca
                 string organization = connection.openAiOrganization;
                 string project = connection.openAiProject;
                 string proxyUrl = connection.proxyUrl;
-                Log.Message("[Deepseek The Orca] Testing LLM API connection '" + name + "' (" + LlmProviderConfig.Profile(provider).label + ") at " + baseUrl + (proxyUrl.NullOrEmpty() ? "." : " via proxy " + proxyUrl + "."));
+                Log.Message("[RimAgent] Testing LLM API connection '" + name + "' (" + LlmProviderConfig.Profile(provider).label + ") at " + baseUrl + (proxyUrl.NullOrEmpty() ? "." : " via proxy " + proxyUrl + "."));
                 activeTasks[connection.id] = Task.Run(async delegate
                 {
                     return await new LlmApiClient().ListModelsAsync(apiKey, baseUrl, organization, project, proxyUrl).ConfigureAwait(false);
@@ -127,17 +127,17 @@ namespace DeepseekTheOrca
             {
                 EnsureFallbackModelSelected(settings, connection);
                 LlmConnectionTester.ReportSuccessfulCall(connection.message);
-                Log.Message("[Deepseek The Orca] LLM API connection '" + connection.name + "' succeeded; discovered " + connection.availableModels.Count + " model(s).");
+                Log.Message("[RimAgent] LLM API connection '" + connection.name + "' succeeded; discovered " + connection.availableModels.Count + " model(s).");
             }
             else if (result.success)
             {
                 LlmConnectionTester.ReportSuccessfulCall(connection.message);
-                Log.Warning("[Deepseek The Orca] LLM API connection '" + connection.name + "' succeeded but returned no models. " + connection.message);
+                Log.Warning("[RimAgent] LLM API connection '" + connection.name + "' succeeded but returned no models. " + connection.message);
             }
             else if (!result.success)
             {
                 LlmConnectionTester.ReportFailedCall(connection.message);
-                Log.Warning("[Deepseek The Orca] LLM API connection '" + connection.name + "' failed: " + connection.message);
+                Log.Warning("[RimAgent] LLM API connection '" + connection.name + "' failed: " + connection.message);
             }
         }
 

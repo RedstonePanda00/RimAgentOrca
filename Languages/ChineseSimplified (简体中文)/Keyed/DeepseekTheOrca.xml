@@ -85,7 +85,7 @@
   <DTO_ModelFilterCount>{0} / {1} 个模型</DTO_ModelFilterCount>
   <DTO_ModelNoMatchingModels>没有匹配的模型。</DTO_ModelNoMatchingModels>
   <DTO_StorytellerAppearanceTitle>叙事者外观</DTO_StorytellerAppearanceTitle>
-  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到 Deepseek The Orca 叙事者。头像路径从合并后的 Textures 根目录开始，例如 Orca/Orca 或 AnotherMod/Portraits/Foo。</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到「深度求索」奥卡叙事者。头像路径从合并后的 Textures 根目录开始，例如 Orca/Orca 或 AnotherMod/Portraits/Foo。</DTO_StorytellerAppearanceNote>
   <DTO_StorytellerLabel>叙事者名称</DTO_StorytellerLabel>
   <DTO_StorytellerDescription>叙事者描述</DTO_StorytellerDescription>
   <DTO_StorytellerPortraitFolder>贴图目录</DTO_StorytellerPortraitFolder>
@@ -190,7 +190,7 @@
   <DTO_DebugToolCallStatus>工具调用测试</DTO_DebugToolCallStatus>
   <DTO_DebugToolCallNotRun>未运行。</DTO_DebugToolCallNotRun>
   <DTO_DebugToolCallRunning>运行中。</DTO_DebugToolCallRunning>
-  <DTO_DebugTabTitle>“深度求索” 奥卡调试</DTO_DebugTabTitle>
+  <DTO_DebugTabTitle>RimAgent 调试</DTO_DebugTabTitle>
   <DTO_DebugClearLog>清空日志</DTO_DebugClearLog>
   <DTO_DebugLogEmpty>暂无日志。</DTO_DebugLogEmpty>
   <DTO_DebugCurrentMap>当前地图</DTO_DebugCurrentMap>
@@ -209,7 +209,7 @@
   <DTO_OrcaChatOpen>打开奥卡对话</DTO_OrcaChatOpen>
   <DTO_OrcaChatClose>关闭奥卡对话</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>悬浮对话；可读取工具，并可按请求触发事件。</DTO_OrcaChatNote>
-  <DTO_OrcaChatTitle>“深度求索” 奥卡</DTO_OrcaChatTitle>
+  <DTO_OrcaChatTitle>「深度求索」奥卡</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>背景透明度</DTO_OrcaChatAlpha>
   <DTO_OrcaChatSend>发送</DTO_OrcaChatSend>
   <DTO_OrcaChatWaiting>等待中...</DTO_OrcaChatWaiting>

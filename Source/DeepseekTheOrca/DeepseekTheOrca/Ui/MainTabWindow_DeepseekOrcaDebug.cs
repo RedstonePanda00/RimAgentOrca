@@ -781,7 +781,7 @@ namespace DeepseekTheOrca
 
         private static void DrawActionPanel(Rect rect)
         {
-            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 28f), "Deepseek The Orca");
+            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 28f), DeepseekTheOrcaMod.DisplayName);
             Rect settingsRect = new Rect(rect.x, rect.y + 42f, rect.width, 32f);
             if (Widgets.ButtonText(settingsRect, "Settings"))
             {

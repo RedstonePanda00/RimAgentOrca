@@ -85,7 +85,7 @@
   <DTO_ModelFilterCount>{0} of {1} models</DTO_ModelFilterCount>
   <DTO_ModelNoMatchingModels>No matching models.</DTO_ModelNoMatchingModels>
   <DTO_StorytellerAppearanceTitle>Storyteller appearance</DTO_StorytellerAppearanceTitle>
-  <DTO_StorytellerAppearanceNote>These values are saved in RimWorld mod settings and applied to the Deepseek The Orca storyteller at runtime. Portrait paths start at the merged Textures root, for example Orca/Orca or AnotherMod/Portraits/Foo.</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerAppearanceNote>These values are saved in RimWorld mod settings and applied to the Orca Deepseek storyteller at runtime. Portrait paths start at the merged Textures root, for example Orca/Orca or AnotherMod/Portraits/Foo.</DTO_StorytellerAppearanceNote>
   <DTO_StorytellerLabel>Storyteller name</DTO_StorytellerLabel>
   <DTO_StorytellerDescription>Storyteller description</DTO_StorytellerDescription>
   <DTO_StorytellerPortraitFolder>Portrait folder</DTO_StorytellerPortraitFolder>
@@ -190,7 +190,7 @@
   <DTO_DebugToolCallStatus>Tool-call test</DTO_DebugToolCallStatus>
   <DTO_DebugToolCallNotRun>Not run.</DTO_DebugToolCallNotRun>
   <DTO_DebugToolCallRunning>Running.</DTO_DebugToolCallRunning>
-  <DTO_DebugTabTitle>Deepseek the Orca Debug</DTO_DebugTabTitle>
+  <DTO_DebugTabTitle>RimAgent Debug</DTO_DebugTabTitle>
   <DTO_DebugClearLog>Clear log</DTO_DebugClearLog>
   <DTO_DebugLogEmpty>No log entries.</DTO_DebugLogEmpty>
   <DTO_DebugCurrentMap>Current map</DTO_DebugCurrentMap>
@@ -209,7 +209,7 @@
   <DTO_OrcaChatOpen>Open Orca chat</DTO_OrcaChatOpen>
   <DTO_OrcaChatClose>Close Orca chat</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>Floating chat; can read tools and trigger incidents on request.</DTO_OrcaChatNote>
-  <DTO_OrcaChatTitle>Deepseek the Orca</DTO_OrcaChatTitle>
+  <DTO_OrcaChatTitle>Orca Deepseek</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>Background alpha</DTO_OrcaChatAlpha>
   <DTO_OrcaChatSend>Send</DTO_OrcaChatSend>
   <DTO_OrcaChatWaiting>Waiting...</DTO_OrcaChatWaiting>

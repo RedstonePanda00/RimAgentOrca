@@ -75,7 +75,7 @@ namespace DeepseekTheOrca
                 using (HttpClient client = new HttpClient())
                 {
                     client.Timeout = Timeout;
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("DeepseekTheOrca/0.1");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("RimAgent/0.1");
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.tavilyApiKey);
 
                     string json = MiniJson.Serialize(payload);

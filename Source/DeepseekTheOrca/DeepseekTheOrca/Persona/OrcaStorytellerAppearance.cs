@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -88,7 +88,7 @@ namespace DeepseekTheOrca
 
         private static void LogWarningOnce(string message)
         {
-            Log.WarningOnce("[Deepseek The Orca] " + message, message.GetHashCode());
+            Log.WarningOnce("[RimAgent] " + message, message.GetHashCode());
         }
     }
 }

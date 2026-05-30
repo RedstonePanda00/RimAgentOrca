@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using DeepseekTheOrca.Rimtalk;
 using RimWorld;
@@ -198,7 +198,7 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] " + message);
+                Log.Message("[RimAgent] " + message);
             }
         }
     }

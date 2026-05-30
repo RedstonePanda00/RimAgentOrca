@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -375,7 +375,7 @@ namespace DeepseekTheOrca
 
         private static void WarnSkillMetadata(string filePath, int line, string message)
         {
-            Log.Warning("[Deepseek The Orca] Skill metadata warning in " + filePath + ":" + line + " - " + message + ".");
+            Log.Warning("[RimAgent] Skill metadata warning in " + filePath + ":" + line + " - " + message + ".");
         }
 
         private static void AddMetadataListValue(SkillMarkdown result, string listName, string value)

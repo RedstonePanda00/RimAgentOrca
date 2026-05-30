@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -364,7 +364,7 @@ Bad:
             }
             catch (Exception ex)
             {
-                Log.Warning("[Deepseek The Orca] Failed to load persona file " + file + ": " + ex.Message);
+                Log.Warning("[RimAgent] Failed to load persona file " + file + ": " + ex.Message);
                 return null;
             }
         }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Verse;
 using RimWorld;
 using System.Collections.Generic;
@@ -121,6 +121,8 @@ namespace DeepseekTheOrca
 
     public sealed class DeepseekTheOrcaMod : Mod
     {
+        public const string DisplayName = "RimAgent";
+
         private enum SettingsPage
         {
             Providers,
@@ -167,7 +169,7 @@ namespace DeepseekTheOrca
 
         public override string SettingsCategory()
         {
-            return "Deepseek The Orca";
+            return DisplayName;
         }
 
         public override void DoSettingsWindowContents(Rect inRect)

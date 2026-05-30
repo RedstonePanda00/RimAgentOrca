@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Verse;
 
 namespace DeepseekTheOrca
@@ -79,11 +79,11 @@ namespace DeepseekTheOrca
 
                 if (result.success)
                 {
-                    Log.Message("[Deepseek The Orca] LLM connection test succeeded.");
+                    Log.Message("[RimAgent] LLM connection test succeeded.");
                 }
                 else
                 {
-                    Log.Warning("[Deepseek The Orca] LLM connection test failed: " + result.message);
+                    Log.Warning("[RimAgent] LLM connection test failed: " + result.message);
                 }
             });
         }

@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -123,7 +123,7 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] " + message);
+                Log.Message("[RimAgent] " + message);
             }
         }
     }

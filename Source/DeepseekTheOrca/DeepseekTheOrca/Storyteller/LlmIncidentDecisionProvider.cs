@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Verse;
@@ -421,7 +421,7 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] " + message);
+                Log.Message("[RimAgent] " + message);
             }
         }
     }

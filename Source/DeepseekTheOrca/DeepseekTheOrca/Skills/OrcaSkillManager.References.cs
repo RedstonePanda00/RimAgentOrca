@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -71,7 +71,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
-                Log.Warning("[Deepseek The Orca] Failed to scan skill references " + referenceRoot + ": " + ex.Message);
+                Log.Warning("[RimAgent] Failed to scan skill references " + referenceRoot + ": " + ex.Message);
                 return result;
             }
 
@@ -125,7 +125,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
-                Log.Warning("[Deepseek The Orca] Failed to read skill reference " + file + ": " + ex.Message);
+                Log.Warning("[RimAgent] Failed to read skill reference " + file + ": " + ex.Message);
                 return null;
             }
 

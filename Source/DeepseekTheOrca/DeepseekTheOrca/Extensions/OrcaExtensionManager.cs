@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -72,7 +72,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Extension prompt hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Extension prompt hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
 
                 if (!wroteHeader && builder.Length > before)
@@ -100,7 +100,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Extension routing hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Extension routing hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
 
@@ -132,7 +132,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Agent node extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Agent node extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
 
@@ -156,7 +156,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Agent phase extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Agent phase extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
         }
@@ -178,7 +178,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Agent routing extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Agent routing extension hook failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
         }
@@ -227,7 +227,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Chat window extension draw failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Chat window extension draw failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
 
                 x += width;
@@ -250,7 +250,7 @@ namespace DeepseekTheOrca
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning("[Deepseek The Orca] Chat window extension overlay failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                    Log.Warning("[RimAgent] Chat window extension overlay failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 }
             }
         }
@@ -290,7 +290,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
-                Log.Warning("[Deepseek The Orca] Chat window extension width failed (" + WorkerLabel(worker) + "): " + ex.Message);
+                Log.Warning("[RimAgent] Chat window extension width failed (" + WorkerLabel(worker) + "): " + ex.Message);
                 return 0f;
             }
         }

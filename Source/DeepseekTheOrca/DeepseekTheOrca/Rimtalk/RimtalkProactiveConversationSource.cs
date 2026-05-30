@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -211,7 +211,7 @@ namespace DeepseekTheOrca.Rimtalk
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
-                Log.Message("[Deepseek The Orca] " + message);
+                Log.Message("[RimAgent] " + message);
             }
         }
     }
