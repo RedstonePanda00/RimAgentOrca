@@ -20,7 +20,7 @@ namespace DeepseekTheOrca
             CachedIncidentDef cached;
             if (!OrcaIncidentDefCache.TryGet(plan.incidentDefName, out cached))
             {
-                rejectReason = "incident is not in Orca incident cache: " + plan.incidentDefName;
+                rejectReason = "incident is not in incident cache: " + plan.incidentDefName;
                 return false;
             }
 

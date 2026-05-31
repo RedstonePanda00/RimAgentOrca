@@ -8,12 +8,11 @@
   <DTO_EnableWebSearchTooltip>向奥卡对话暴露公网搜索工具。当前本地提供方为 Tavily，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>联网搜索提供方</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily 本地工具</DTO_WebSearchProviderTavily>
-  <DTO_WebSearchProviderTooltip>当前实现会把 Tavily 暴露为函数工具。未来支持带原生联网搜索的模型适配器时，可改用提供方原生搜索。</DTO_WebSearchProviderTooltip>
+  <DTO_WebSearchProviderTooltip>使用 Tavily 作为本地联网搜索工具。</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API 密钥</DTO_TavilyApiKey>
   <DTO_TavilyApiKeyTooltip>仅在启用奥卡联网搜索时需要。保存在 RimWorld mod 设置内。</DTO_TavilyApiKeyTooltip>
   <DTO_TavilyMaxResults>Tavily 最大结果数</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily 搜索深度</DTO_TavilySearchDepth>
-  <DTO_WebSearchNativeReserved>预留：后续模型适配器如果支持托管的原生联网搜索工具，可以在这里切换到提供方原生搜索。</DTO_WebSearchNativeReserved>
   <DTO_SettingsPageLlm>Agent 模型</DTO_SettingsPageLlm>
   <DTO_SettingsPageApiKeys>Provider</DTO_SettingsPageApiKeys>
   <DTO_SettingsPageAgentModels>Agent 模型</DTO_SettingsPageAgentModels>
@@ -75,9 +74,9 @@
   <DTO_ModelTool>工具模型</DTO_ModelTool>
   <DTO_ModelToolTooltip>可选。填写后，奥卡聊天的第一轮可工具调用请求使用此模型；工具结果返回后再交给对话模型。</DTO_ModelToolTooltip>
   <DTO_ModelVision>识图模型</DTO_ModelVision>
-  <DTO_ModelVisionTooltip>为后续图像识别工具预留。留空则回退到兜底模型。</DTO_ModelVisionTooltip>
+  <DTO_ModelVisionTooltip>用于可识图请求。留空则回退到兜底模型。</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>联网搜索模型</DTO_ModelWebSearch>
-  <DTO_ModelWebSearchTooltip>为后续提供方原生联网搜索预留。当前 Tavily 搜索仍是本地工具。</DTO_ModelWebSearchTooltip>
+  <DTO_ModelWebSearchTooltip>用于可联网搜索请求。当前 Tavily 搜索仍是本地工具。</DTO_ModelWebSearchTooltip>
   <DTO_ModelUseFallback>使用兜底模型</DTO_ModelUseFallback>
   <DTO_ModelNoDiscoveredModels>尚未发现模型。请配置 API 密钥并等待模型发现完成。</DTO_ModelNoDiscoveredModels>
   <DTO_ModelSelectTitle>选择模型</DTO_ModelSelectTitle>
@@ -85,7 +84,7 @@
   <DTO_ModelFilterCount>{0} / {1} 个模型</DTO_ModelFilterCount>
   <DTO_ModelNoMatchingModels>没有匹配的模型。</DTO_ModelNoMatchingModels>
   <DTO_StorytellerAppearanceTitle>叙事者外观</DTO_StorytellerAppearanceTitle>
-  <DTO_StorytellerAppearanceNote>这些值会保存到 RimWorld mod 设置，并在运行时应用到「深度求索」奥卡叙事者。头像路径从合并后的 Textures 根目录开始，例如 Orca/Orca 或 AnotherMod/Portraits/Foo。</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerAppearanceNote>头像路径从合并后的 Textures 根目录开始，例如 Orca/Orca 或 AnotherMod/Portraits/Foo。</DTO_StorytellerAppearanceNote>
   <DTO_StorytellerLabel>叙事者名称</DTO_StorytellerLabel>
   <DTO_StorytellerDescription>叙事者描述</DTO_StorytellerDescription>
   <DTO_StorytellerPortraitFolder>贴图目录</DTO_StorytellerPortraitFolder>
@@ -116,9 +115,10 @@
   <DTO_ChatPersonaDeleteConfirm>删除人格“{0}”？</DTO_ChatPersonaDeleteConfirm>
   <DTO_ChatPersonaName>名称</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>描述</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaPriority>默认优先级</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>人格提示词</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>保存</DTO_ChatPersonaSave>
-  <DTO_ChatPersonaFormatNote>本地人格文件使用 XML，包含人格提示词、叙事者名称、叙事者描述和头像贴图路径。</DTO_ChatPersonaFormatNote>
+  <DTO_ChatPersonaFormatNote>本地人格是 RimWorld 配置目录下的 XML 文件，可以直接分享。</DTO_ChatPersonaFormatNote>
   <DTO_SkillManagerTitle>Agent 技能</DTO_SkillManagerTitle>
   <DTO_SkillManagerDescription>管理可选的 skill 配置。启用的 skill 会向对话提示词添加专门指令，并向主控模型提供路由线索。</DTO_SkillManagerDescription>
   <DTO_SkillManage>管理技能</DTO_SkillManage>
@@ -148,9 +148,12 @@
   <DTO_PluginManagerTitle>Agent 插件</DTO_PluginManagerTitle>
   <DTO_PluginManagerDescription>管理可选的 agent 模块。插件可以添加提示词上下文、回复格式要求、工具行为或运行时状态。</DTO_PluginManagerDescription>
   <DTO_PluginManagerInstalled>已安装插件</DTO_PluginManagerInstalled>
-  <DTO_PluginManagerFutureNote>后续新增的 agent 插件会进入这个管理器，而不是混在模型或工具设置里。</DTO_PluginManagerFutureNote>
   <DTO_PluginManagerEmpty>尚未安装插件。</DTO_PluginManagerEmpty>
   <DTO_PluginCategory>分类</DTO_PluginCategory>
+  <DTO_PluginAuthor>作者</DTO_PluginAuthor>
+  <DTO_PluginSettingsButton>设置</DTO_PluginSettingsButton>
+  <DTO_PluginSettingsButtonTooltip>打开插件设置。</DTO_PluginSettingsButtonTooltip>
+  <DTO_PluginNoSettings>这个插件没有可配置项。</DTO_PluginNoSettings>
   <DTO_PluginStateEnabled>已启用</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>已关闭</DTO_PluginStateDisabled>
   <DTO_EnableExtension>启用 {0}</DTO_EnableExtension>
@@ -217,8 +220,8 @@
   <DTO_OrcaChatClear>清空</DTO_OrcaChatClear>
   <DTO_OrcaChatEmpty>暂无对话。</DTO_OrcaChatEmpty>
   <DTO_OrcaChatNoApiKey>API 密钥为空。</DTO_OrcaChatNoApiKey>
-  <DTO_OrcaChatTab>奥卡对话</DTO_OrcaChatTab>
-  <DTO_OrcaChatPromptLocation>人格提示词目前写在 OrcaChatWindow.cs 的 OrcaChatSession.EnsureSystemPrompt 内。它和叙事者规划提示词是分离的。</DTO_OrcaChatPromptLocation>
+  <DTO_OrcaChatTab>RimAgent</DTO_OrcaChatTab>
+  <DTO_OrcaChatHistoryTab>对话记录</DTO_OrcaChatHistoryTab>
   <DTO_OrcaChatStatus>状态</DTO_OrcaChatStatus>
   <DTO_OrcaChatStatusIdle>空闲。</DTO_OrcaChatStatusIdle>
   <DTO_OrcaChatSpeakerOrca>奥卡</DTO_OrcaChatSpeakerOrca>

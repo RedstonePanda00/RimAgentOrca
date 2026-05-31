@@ -179,7 +179,7 @@ namespace DeepseekTheOrca
                 {
                     using (HttpClient client = CreateHttpClient(proxyUrl))
                     {
-                        client.Timeout = Timeout;
+                        client.Timeout = ChatTimeoutForRole(role);
                         client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
                         ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
                         ApplyTransportHeaders(client);
@@ -198,6 +198,13 @@ namespace DeepseekTheOrca
                             }
                             catch (TaskCanceledException)
                             {
+                                if (attempt < MaxTransportAttempts)
+                                {
+                                    LlmConnectionTester.ReportFailedCall("Connection timed out on attempt " + attempt + "; retrying once.");
+                                    await Task.Delay(250).ConfigureAwait(false);
+                                    continue;
+                                }
+
                                 LlmConnectionTester.ReportFailedCall("Connection timed out.");
                                 return LlmChatResponse.Failure("Connection timed out.");
                             }

@@ -73,7 +73,6 @@ namespace DeepseekTheOrca
             profile.filePath = Path.Combine(profile.folderPath, "SKILL.md");
             localSkills.Add(profile);
             Save(profile);
-            OrcaChatWindowManager.Session.Clear();
             return profile;
         }
 
@@ -108,8 +107,6 @@ namespace DeepseekTheOrca
             {
                 Directory.Delete(profile.folderPath, true);
             }
-
-            OrcaChatWindowManager.Session.Clear();
         }
 
         public static void SetEnabled(OrcaSkillProfile profile, bool enabled)
@@ -132,8 +129,6 @@ namespace DeepseekTheOrca
                 profile.enabled = enabled;
                 Save(profile);
             }
-
-            OrcaChatWindowManager.Session.Clear();
         }
 
         public static void ReloadLocal()
@@ -141,7 +136,6 @@ namespace DeepseekTheOrca
             loadedLocal = false;
             localSkills.Clear();
             EnsureLoaded();
-            OrcaChatWindowManager.Session.Clear();
         }
     }
 }

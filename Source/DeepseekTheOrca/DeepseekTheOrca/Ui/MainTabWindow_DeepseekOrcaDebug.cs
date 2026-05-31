@@ -56,7 +56,7 @@ namespace DeepseekTheOrca
             Widgets.Label(new Rect(0f, y, inRect.width, 24f), "DTO_OrcaChatStatus".Translate() + ": " + status);
             y += 34f;
 
-            OrcaMoodPlugin.TryDrawMainTabStatus(inRect, ref y, OrcaChatWindowManager.Session);
+            OrcaExtensionManager.DrawMainTabStatus(inRect, OrcaChatWindowManager.Session, ref y);
 
             Widgets.Label(new Rect(0f, y, 240f, 24f), "DTO_OrcaChatAlpha".Translate() + ": " + alpha.ToStringPercent());
             y += 28f;
@@ -192,7 +192,7 @@ namespace DeepseekTheOrca
             y += 42f;
             DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "DTO_DebugSingleToolTab".Translate(), DebugPage.SingleTool);
             y += 42f;
-            DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "Orca 对话记录", DebugPage.ChatLog);
+            DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "DTO_OrcaChatHistoryTab".Translate(), DebugPage.ChatLog);
         }
 
         private void DrawOptionButton(Rect rect, string label, DebugPage target)
@@ -683,7 +683,7 @@ namespace DeepseekTheOrca
 
             DrawStatusLine(left, ref leftY, "AI status", AiStatusText());
             DrawStatusLine(left, ref leftY, "Map", mapText);
-            DrawStatusLine(left, ref leftY, "Connection", ConnectionStatusText(connectionStatus));
+            DrawStatusLine(left, ref leftY, "Connection", OrcaSettingsFormatters.ConnectionStatusText(connectionStatus));
             DrawStatusLine(left, ref leftY, "Route", session.LastControllerRoute);
             DrawStatusLine(left, ref leftY, "Model role", EmptyAsDash(session.CurrentModelRoleLabel));
             DrawStatusLine(left, ref leftY, "Model", TrimForPanel(session.CurrentModelReference, 38));
@@ -804,21 +804,6 @@ namespace DeepseekTheOrca
             Widgets.DrawBoxSolid(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), BorderColor);
             Widgets.DrawBoxSolid(new Rect(rect.x, rect.y, 1f, rect.height), BorderColor);
             Widgets.DrawBoxSolid(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), BorderColor);
-        }
-
-        private static string ConnectionStatusText(LlmConnectionStatus status)
-        {
-            switch (status)
-            {
-                case LlmConnectionStatus.Testing:
-                    return "DTO_ConnectionStatusTesting".Translate();
-                case LlmConnectionStatus.Succeeded:
-                    return "DTO_ConnectionStatusSucceeded".Translate();
-                case LlmConnectionStatus.Failed:
-                    return "DTO_ConnectionStatusFailed".Translate();
-                default:
-                    return "DTO_ConnectionStatusNotTested".Translate();
-            }
         }
 
         private sealed class DebugToolSpec

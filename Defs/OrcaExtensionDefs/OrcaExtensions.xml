@@ -4,8 +4,20 @@
     <defName>DTO_Extension_Mood</defName>
     <label>DTO_MoodPluginName</label>
     <description>DTO_MoodPluginDescription</description>
+    <author>RimAgent: Orca</author>
     <category>DTO_MoodPluginCategory</category>
     <details>DTO_MoodPluginDetails</details>
+    <capabilities>
+      <li>prompt</li>
+      <li>chat_lifecycle</li>
+      <li>execution_gate</li>
+      <li>main_tab_status</li>
+    </capabilities>
+    <permissions>
+      <li>modify_prompt</li>
+      <li>read_chat_session</li>
+      <li>block_execution_tools</li>
+    </permissions>
     <workerClass>DeepseekTheOrca.OrcaMoodExtensionWorker</workerClass>
     <defaultEnabled>true</defaultEnabled>
     <order>10</order>
@@ -15,8 +27,51 @@
     <defName>DTO_Extension_AmbientProactiveDialogue</defName>
     <label>DTO_ProactivePluginName</label>
     <description>DTO_ProactivePluginDescription</description>
+    <author>RimAgent: Orca</author>
     <category>DTO_ProactivePluginCategory</category>
     <details>DTO_ProactivePluginDetails</details>
+    <capabilities>
+      <li>proactive_dialogue</li>
+      <li>chat_lifecycle</li>
+    </capabilities>
+    <permissions>
+      <li>start_chat_turns</li>
+      <li>read_colony_observations</li>
+    </permissions>
+    <settings>
+      <li>
+        <key>colonyObservationProactiveChance</key>
+        <fieldName>colonyObservationProactiveChance</fieldName>
+        <type>float</type>
+        <label>DTO_ColonyObservationProactiveChance</label>
+        <min>0</min>
+        <max>1</max>
+      </li>
+      <li>
+        <key>rimtalkProactiveBaseChance</key>
+        <fieldName>rimtalkProactiveBaseChance</fieldName>
+        <type>float</type>
+        <label>DTO_RimtalkProactiveBaseChance</label>
+        <min>0</min>
+        <max>1</max>
+      </li>
+      <li>
+        <key>rimtalkProactiveMissBonus</key>
+        <fieldName>rimtalkProactiveMissBonus</fieldName>
+        <type>float</type>
+        <label>DTO_RimtalkProactiveMissBonus</label>
+        <min>0</min>
+        <max>1</max>
+      </li>
+      <li>
+        <key>rimtalkProactiveForceAfterMisses</key>
+        <fieldName>rimtalkProactiveForceAfterMisses</fieldName>
+        <type>int</type>
+        <label>DTO_RimtalkProactiveForceAfterMisses</label>
+        <min>1</min>
+        <max>20</max>
+      </li>
+    </settings>
     <workerClass>DeepseekTheOrca.OrcaProactiveConversationExtensionWorker</workerClass>
     <defaultEnabled>true</defaultEnabled>
     <order>20</order>

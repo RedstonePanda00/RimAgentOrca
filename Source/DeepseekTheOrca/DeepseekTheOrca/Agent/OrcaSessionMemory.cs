@@ -54,7 +54,7 @@ namespace DeepseekTheOrca
                 }
 
                 StringBuilder builder = new StringBuilder();
-                builder.AppendLine("Orca run memory. This is process-level memory for the current RimWorld launch, shared across saves, and reset when the game process restarts. Use it as soft context, not as immutable truth.");
+                builder.AppendLine("Agent run memory. This is process-level memory for the current RimWorld launch, shared across saves, and reset when the game process restarts. Use it as soft context, not as immutable truth.");
                 if (!compressedSummary.NullOrEmpty())
                 {
                     builder.AppendLine("Compressed earlier memory:");
@@ -108,13 +108,13 @@ namespace DeepseekTheOrca
                 lastCompressionAttemptTick = ticksGame;
                 List<LlmChatMessage> messages = new List<LlmChatMessage>();
                 messages.Add(LlmChatMessage.System(
-                    "You compress Orca's process-level memory for a RimWorld mod. "
-                    + "Preserve stable facts, player preferences, Orca's ongoing attitudes, unresolved story threads, important colony events, and useful context for future dialogue. "
+                    "You compress the dialogue agent's process-level memory for a RimWorld mod. "
+                    + "Preserve stable facts, player preferences, the current persona's ongoing attitudes, unresolved story threads, important colony events, and useful context for future dialogue. "
                     + "Discard repetitive tool traces and low-value chatter. "
                     + "Return a concise plain-text memory summary, not JSON."));
                 messages.Add(LlmChatMessage.User(BuildCompressionInput()));
                 pendingCompression = client.SendPlainChatCompletionAsync(settings, messages, OrcaLlmModelRole.Dialogue);
-                Debug("Started Orca memory compression.");
+                Debug("Started agent memory compression.");
             }
         }
 
@@ -127,13 +127,13 @@ namespace DeepseekTheOrca
             }
             catch (System.Exception ex)
             {
-                Debug("Orca memory compression failed: " + ex.GetType().Name + ": " + ex.Message);
+                Debug("Agent memory compression failed: " + ex.GetType().Name + ": " + ex.Message);
                 return;
             }
 
             if (response == null || !response.success)
             {
-                Debug("Orca memory compression failed: " + (response == null ? "no response" : response.errorMessage));
+                Debug("Agent memory compression failed: " + (response == null ? "no response" : response.errorMessage));
                 return;
             }
 
@@ -143,7 +143,7 @@ namespace DeepseekTheOrca
                 KeepRecentEntriesLocked(KeepRecentAfterCompressChars);
             }
 
-            Debug("Orca memory compressed.");
+            Debug("Agent memory compressed.");
         }
 
         private static string BuildCompressionInput()

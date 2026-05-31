@@ -322,6 +322,34 @@ namespace DeepseekTheOrca
             }
         }
 
+        public void SetModelReferenceForRole(OrcaLlmModelRole role, string value)
+        {
+            switch (role)
+            {
+                case OrcaLlmModelRole.Controller:
+                    controllerModel = value;
+                    break;
+                case OrcaLlmModelRole.Decision:
+                    decisionModel = value;
+                    break;
+                case OrcaLlmModelRole.Dialogue:
+                    dialogueModel = value;
+                    break;
+                case OrcaLlmModelRole.Tool:
+                    toolModel = value;
+                    break;
+                case OrcaLlmModelRole.Vision:
+                    visionModel = value;
+                    break;
+                case OrcaLlmModelRole.WebSearch:
+                    webSearchModel = value;
+                    break;
+                default:
+                    model = value;
+                    break;
+            }
+        }
+
         public OrcaLlmRequestConfig RequestConfigForModelReference(string reference)
         {
             EnsureLlmConnections();

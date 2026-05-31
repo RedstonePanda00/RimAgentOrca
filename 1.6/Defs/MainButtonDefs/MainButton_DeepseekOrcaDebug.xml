@@ -2,7 +2,7 @@
 <Defs>
   <MainButtonDef>
     <defName>DTO_DeepseekOrcaDebug</defName>
-    <label>Orca AI</label>
+    <label>RimAgent</label>
     <description>Inspect and test Deepseek the Orca tool calls.</description>
     <workerClass>DeepseekTheOrca.MainButtonWorker_OrcaDebug</workerClass>
     <tabWindowClass>DeepseekTheOrca.MainTabWindow_DeepseekOrcaDebug</tabWindowClass>

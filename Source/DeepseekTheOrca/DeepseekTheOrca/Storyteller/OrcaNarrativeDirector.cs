@@ -170,7 +170,7 @@ namespace DeepseekTheOrca
                 + "Importance: " + beat.importance + "\n"
                 + "Details:\n" + beat.body + "\n"
                 + rimtalkContextInstruction
-                + "Speak proactively as Orca in the current game language. Act like a concise Game Master: describe the situation, name the tension or consequence, and ask the player what they intend to do only if it is useful. "
+                + "Speak proactively as the current persona in the current game language. Act like a concise Game Master: describe the situation, name the tension or consequence, and ask the player what they intend to do only if it is useful. "
                 + "Do not turn this into a long scene unless the beat demands it.";
 
             OrcaProactiveConversationRequest request = new OrcaProactiveConversationRequest(beat.source, beat.title, body);

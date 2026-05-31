@@ -103,37 +103,5 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaProactiveConversationExtensionWorker : OrcaExtensionWorker
     {
-        private string colonyObservationProactiveChanceBuffer;
-        private string rimtalkProactiveBaseChanceBuffer;
-        private string rimtalkProactiveMissBonusBuffer;
-        private string rimtalkProactiveForceAfterMissesBuffer;
-
-        public override void DrawSettings(UnityEngine.Rect rect)
-        {
-            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null)
-            {
-                return;
-            }
-
-            Listing_Standard listing = new Listing_Standard();
-            listing.Begin(rect);
-            listing.Label("DTO_ProactivePluginSettings".Translate());
-            listing.TextFieldNumericLabeled("DTO_ColonyObservationProactiveChance".Translate(), ref settings.colonyObservationProactiveChance, ref colonyObservationProactiveChanceBuffer, 0f, 1f);
-            if (RimtalkIntegration.IsAvailable)
-            {
-                listing.TextFieldNumericLabeled("DTO_RimtalkProactiveBaseChance".Translate(), ref settings.rimtalkProactiveBaseChance, ref rimtalkProactiveBaseChanceBuffer, 0f, 1f);
-                listing.TextFieldNumericLabeled("DTO_RimtalkProactiveMissBonus".Translate(), ref settings.rimtalkProactiveMissBonus, ref rimtalkProactiveMissBonusBuffer, 0f, 1f);
-                listing.TextFieldNumericLabeled("DTO_RimtalkProactiveForceAfterMisses".Translate(), ref settings.rimtalkProactiveForceAfterMisses, ref rimtalkProactiveForceAfterMissesBuffer, 1, 20);
-                listing.Label("DTO_ProactivePluginSettingsNote".Translate());
-            }
-            else
-            {
-                listing.Label("DTO_ColonyObservationProactiveSettingsNote".Translate());
-                listing.Label("DTO_RimtalkProactiveUnavailable".Translate());
-            }
-
-            listing.End();
-        }
     }
 }

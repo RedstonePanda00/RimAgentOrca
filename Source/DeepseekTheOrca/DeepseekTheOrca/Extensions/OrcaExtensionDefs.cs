@@ -18,6 +18,12 @@ namespace DeepseekTheOrca
         public string storytellerPortraitTinyPath = "";
     }
 
+    public class OrcaDefaultPersonaDef : Def
+    {
+        public string personaDefName = "";
+        public int priority;
+    }
+
     public sealed class OrcaChatWindowContext
     {
         public readonly OrcaChatSession session;
@@ -38,16 +44,6 @@ namespace DeepseekTheOrca
         public bool IsWaiting
         {
             get { return session != null && session.IsWaiting; }
-        }
-
-        public int Mood
-        {
-            get { return session == null ? 60 : session.Mood; }
-        }
-
-        public int LastMoodDelta
-        {
-            get { return session == null ? 0 : session.LastMoodDelta; }
         }
 
         public string LastReplyText
@@ -71,67 +67,190 @@ namespace DeepseekTheOrca
         }
     }
 
+    public sealed class OrcaMainTabStatusContext
+    {
+        public readonly OrcaChatSession session;
+        public readonly Rect inRect;
+        public float y;
+
+        public OrcaMainTabStatusContext(OrcaChatSession session, Rect inRect, float y)
+        {
+            this.session = session;
+            this.inRect = inRect;
+            this.y = y;
+        }
+
+        public void Advance(float height)
+        {
+            y += Mathf.Max(0f, height);
+        }
+    }
+
+    public sealed class OrcaChatTurnContext
+    {
+        public readonly OrcaChatSession session;
+        public readonly string source;
+        public readonly string playerName;
+        public readonly string text;
+        public readonly List<string> contextTags;
+        public readonly bool proactive;
+        private readonly List<string> processLines = new List<string>();
+
+        public OrcaChatTurnContext(OrcaChatSession session, string source, string playerName, string text, List<string> contextTags, bool proactive)
+        {
+            this.session = session;
+            this.source = source ?? "";
+            this.playerName = playerName ?? "";
+            this.text = text ?? "";
+            this.contextTags = contextTags ?? new List<string>();
+            this.proactive = proactive;
+        }
+
+        public List<string> ProcessLines
+        {
+            get { return processLines; }
+        }
+
+        public void AddProcess(string line)
+        {
+            if (!line.NullOrEmpty())
+            {
+                processLines.Add(line);
+            }
+        }
+    }
+
+    public sealed class OrcaChatReplyContext
+    {
+        public readonly OrcaChatSession session;
+        public readonly OrcaChatReply reply;
+        public readonly string originalContent;
+        private readonly List<string> processLines = new List<string>();
+        private readonly List<string> memoryFragments = new List<string>();
+
+        public OrcaChatReplyContext(OrcaChatSession session, OrcaChatReply reply, string originalContent)
+        {
+            this.session = session;
+            this.reply = reply;
+            this.originalContent = originalContent ?? "";
+        }
+
+        public List<string> ProcessLines
+        {
+            get { return processLines; }
+        }
+
+        public List<string> MemoryFragments
+        {
+            get { return memoryFragments; }
+        }
+
+        public void AddProcess(string line)
+        {
+            if (!line.NullOrEmpty())
+            {
+                processLines.Add(line);
+            }
+        }
+
+        public void AddMemoryFragment(string fragment)
+        {
+            if (!fragment.NullOrEmpty())
+            {
+                memoryFragments.Add(fragment);
+            }
+        }
+    }
+
+    public sealed class OrcaExecutionGateContext
+    {
+        private readonly List<string> processLines = new List<string>();
+
+        public readonly OrcaChatSession session;
+        public readonly string toolName;
+        public readonly Dictionary<string, string> arguments;
+
+        public OrcaExecutionGateContext(OrcaChatSession session, string toolName, Dictionary<string, string> arguments)
+        {
+            this.session = session;
+            this.toolName = toolName ?? "";
+            this.arguments = arguments ?? new Dictionary<string, string>();
+        }
+
+        public bool Blocked { get; private set; }
+        public string BlockReason { get; private set; }
+
+        public List<string> ProcessLines
+        {
+            get { return processLines; }
+        }
+
+        public void AddProcess(string line)
+        {
+            if (!line.NullOrEmpty())
+            {
+                processLines.Add(line);
+            }
+        }
+
+        public void Block(string reason)
+        {
+            Blocked = true;
+            BlockReason = reason.NullOrEmpty() ? "execution tool was blocked by an extension" : reason;
+        }
+    }
+
     public abstract class OrcaExtensionWorker
     {
         public OrcaExtensionDef def;
 
-        public virtual void OnEnabled()
+        public virtual void Register(OrcaExtensionRegistry registry)
+        {
+        }
+    }
+
+    public abstract class OrcaExtensionSettingsWorker
+    {
+        public OrcaExtensionDef def;
+
+        public virtual void DrawSettings(Rect rect, OrcaSettingsContext context)
         {
         }
 
-        public virtual void OnDisabled()
+        public virtual Vector2 WindowSize
         {
+            get { return new Vector2(700f, 520f); }
         }
+    }
 
-        public virtual void AppendSystemPrompt(StringBuilder builder)
-        {
-        }
-
-        public virtual string ControllerRoutingHint()
-        {
-            return "";
-        }
-
-        public virtual IEnumerable<OrcaAgentNodeSpec> AgentNodes()
-        {
-            yield break;
-        }
-
-        public virtual void OnAgentPhase(OrcaAgentPhaseContext context)
-        {
-        }
-
-        public virtual void ModifyAgentRouting(OrcaAgentRoutingContext context)
-        {
-        }
-
-        public virtual float GetChatWindowExtraWidth(OrcaChatWindowContext context)
-        {
-            return 0f;
-        }
-
-        public virtual void DrawChatWindow(Rect rect, OrcaChatWindowContext context)
-        {
-        }
-
-        public virtual void DrawChatWindowOverlay(Rect windowRect, OrcaChatWindowContext context)
-        {
-        }
-
-        public virtual void DrawSettings(Rect rect)
-        {
-        }
+    public class OrcaExtensionSettingEntry
+    {
+        public string key = "";
+        public string fieldName = "";
+        public string type = "string";
+        public string label = "";
+        public string tooltip = "";
+        public float min;
+        public float max = 1f;
+        public List<string> options = new List<string>();
+        public bool clearChatOnChange = true;
     }
 
     public class OrcaExtensionDef : Def
     {
         public bool defaultEnabled = true;
+        public string author = "";
         public string category = "";
         public string details = "";
+        public List<string> capabilities = new List<string>();
+        public List<string> permissions = new List<string>();
+        public List<OrcaExtensionSettingEntry> settings = new List<OrcaExtensionSettingEntry>();
         public float order;
         public Type workerClass;
+        public Type settingsWorkerClass;
 
         private OrcaExtensionWorker workerInt;
+        private OrcaExtensionSettingsWorker settingsWorkerInt;
 
         public OrcaExtensionWorker Worker
         {
@@ -157,6 +276,30 @@ namespace DeepseekTheOrca
             }
         }
 
+        public OrcaExtensionSettingsWorker SettingsWorker
+        {
+            get
+            {
+                if (settingsWorkerInt != null)
+                {
+                    return settingsWorkerInt;
+                }
+
+                if (settingsWorkerClass == null)
+                {
+                    return null;
+                }
+
+                settingsWorkerInt = Activator.CreateInstance(settingsWorkerClass) as OrcaExtensionSettingsWorker;
+                if (settingsWorkerInt != null)
+                {
+                    settingsWorkerInt.def = this;
+                }
+
+                return settingsWorkerInt;
+            }
+        }
+
         public override IEnumerable<string> ConfigErrors()
         {
             foreach (string error in base.ConfigErrors())
@@ -171,6 +314,11 @@ namespace DeepseekTheOrca
             else if (!typeof(OrcaExtensionWorker).IsAssignableFrom(workerClass))
             {
                 yield return "workerClass must inherit from DeepseekTheOrca.OrcaExtensionWorker.";
+            }
+
+            if (settingsWorkerClass != null && !typeof(OrcaExtensionSettingsWorker).IsAssignableFrom(settingsWorkerClass))
+            {
+                yield return "settingsWorkerClass must inherit from DeepseekTheOrca.OrcaExtensionSettingsWorker.";
             }
         }
     }

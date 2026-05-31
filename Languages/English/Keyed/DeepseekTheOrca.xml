@@ -8,12 +8,11 @@
   <DTO_EnableWebSearchTooltip>Expose a public web search tool to Orca chat. Current local provider is Tavily and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>Web search provider</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily local tool</DTO_WebSearchProviderTavily>
-  <DTO_WebSearchProviderTooltip>Current implementation exposes Tavily as a function tool. Future model adapters can use provider-native search instead.</DTO_WebSearchProviderTooltip>
+  <DTO_WebSearchProviderTooltip>Use Tavily as the local web search tool.</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API key</DTO_TavilyApiKey>
   <DTO_TavilyApiKeyTooltip>Required only when Orca web search is enabled. Stored in RimWorld mod settings.</DTO_TavilyApiKeyTooltip>
   <DTO_TavilyMaxResults>Tavily max results</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily search depth</DTO_TavilySearchDepth>
-  <DTO_WebSearchNativeReserved>Reserved: provider-native web search can be enabled later for model adapters that support their own hosted search tool.</DTO_WebSearchNativeReserved>
   <DTO_SettingsPageLlm>Agent models</DTO_SettingsPageLlm>
   <DTO_SettingsPageApiKeys>Providers</DTO_SettingsPageApiKeys>
   <DTO_SettingsPageAgentModels>Agent models</DTO_SettingsPageAgentModels>
@@ -75,9 +74,9 @@
   <DTO_ModelTool>Tool model</DTO_ModelTool>
   <DTO_ModelToolTooltip>Optional. When set, Orca chat uses this model for the first tool-capable pass, then the dialogue model after tool results.</DTO_ModelToolTooltip>
   <DTO_ModelVision>Vision model</DTO_ModelVision>
-  <DTO_ModelVisionTooltip>Reserved for future image-recognition tools. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
+  <DTO_ModelVisionTooltip>Used by vision-capable requests when available. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>Web-search model</DTO_ModelWebSearch>
-  <DTO_ModelWebSearchTooltip>Reserved for future provider-native web search. Current Tavily search remains a local tool.</DTO_ModelWebSearchTooltip>
+  <DTO_ModelWebSearchTooltip>Used by web-search-capable requests when available. Current Tavily search remains a local tool.</DTO_ModelWebSearchTooltip>
   <DTO_ModelUseFallback>Use fallback model</DTO_ModelUseFallback>
   <DTO_ModelNoDiscoveredModels>No discovered models. Configure an API key and wait for model discovery.</DTO_ModelNoDiscoveredModels>
   <DTO_ModelSelectTitle>Select model</DTO_ModelSelectTitle>
@@ -85,7 +84,7 @@
   <DTO_ModelFilterCount>{0} of {1} models</DTO_ModelFilterCount>
   <DTO_ModelNoMatchingModels>No matching models.</DTO_ModelNoMatchingModels>
   <DTO_StorytellerAppearanceTitle>Storyteller appearance</DTO_StorytellerAppearanceTitle>
-  <DTO_StorytellerAppearanceNote>These values are saved in RimWorld mod settings and applied to the Orca Deepseek storyteller at runtime. Portrait paths start at the merged Textures root, for example Orca/Orca or AnotherMod/Portraits/Foo.</DTO_StorytellerAppearanceNote>
+  <DTO_StorytellerAppearanceNote>Portrait paths start at the merged Textures root, for example Orca/Orca or AnotherMod/Portraits/Foo.</DTO_StorytellerAppearanceNote>
   <DTO_StorytellerLabel>Storyteller name</DTO_StorytellerLabel>
   <DTO_StorytellerDescription>Storyteller description</DTO_StorytellerDescription>
   <DTO_StorytellerPortraitFolder>Portrait folder</DTO_StorytellerPortraitFolder>
@@ -116,9 +115,10 @@
   <DTO_ChatPersonaDeleteConfirm>Delete persona "{0}"?</DTO_ChatPersonaDeleteConfirm>
   <DTO_ChatPersonaName>Name</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>Description</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaPriority>Default priority</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>Persona prompt</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>Save</DTO_ChatPersonaSave>
-  <DTO_ChatPersonaFormatNote>Local persona files use XML and include persona prompt, storyteller name, storyteller description, and portrait texture paths.</DTO_ChatPersonaFormatNote>
+  <DTO_ChatPersonaFormatNote>Local personas are XML files in the RimWorld config folder and can be shared directly.</DTO_ChatPersonaFormatNote>
   <DTO_SkillManagerTitle>Agent skills</DTO_SkillManagerTitle>
   <DTO_SkillManagerDescription>Manage optional skill modules. Enabled skills add focused instructions to chat prompts and routing hints to the controller model.</DTO_SkillManagerDescription>
   <DTO_SkillManage>Manage skills</DTO_SkillManage>
@@ -148,9 +148,12 @@
   <DTO_PluginManagerTitle>Agent plugins</DTO_PluginManagerTitle>
   <DTO_PluginManagerDescription>Manage optional agent modules. Plugins can add prompt context, response schema requirements, tool behavior, or runtime state.</DTO_PluginManagerDescription>
   <DTO_PluginManagerInstalled>Installed plugins</DTO_PluginManagerInstalled>
-  <DTO_PluginManagerFutureNote>Future agent plugins will appear in this manager instead of being mixed into model or tool settings.</DTO_PluginManagerFutureNote>
   <DTO_PluginManagerEmpty>No plugins installed.</DTO_PluginManagerEmpty>
   <DTO_PluginCategory>Category</DTO_PluginCategory>
+  <DTO_PluginAuthor>Author</DTO_PluginAuthor>
+  <DTO_PluginSettingsButton>Settings</DTO_PluginSettingsButton>
+  <DTO_PluginSettingsButtonTooltip>Open plugin settings.</DTO_PluginSettingsButtonTooltip>
+  <DTO_PluginNoSettings>This plugin has no settings.</DTO_PluginNoSettings>
   <DTO_PluginStateEnabled>Enabled</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>Disabled</DTO_PluginStateDisabled>
   <DTO_EnableExtension>Enable {0}</DTO_EnableExtension>
@@ -205,7 +208,8 @@
   <DTO_DebugNoTools>No registered tools.</DTO_DebugNoTools>
   <DTO_MaxToolCalls>Max tool calls</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>Planner MTB days</DTO_PlanningMtbDays>
-  <DTO_OrcaChatTab>Orca chat</DTO_OrcaChatTab>
+  <DTO_OrcaChatTab>RimAgent</DTO_OrcaChatTab>
+  <DTO_OrcaChatHistoryTab>Chat history</DTO_OrcaChatHistoryTab>
   <DTO_OrcaChatOpen>Open Orca chat</DTO_OrcaChatOpen>
   <DTO_OrcaChatClose>Close Orca chat</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>Floating chat; can read tools and trigger incidents on request.</DTO_OrcaChatNote>
@@ -229,6 +233,5 @@
   <DTO_OrcaChatLogProcess>2. Orca process</DTO_OrcaChatLogProcess>
   <DTO_OrcaChatLogReply>3. Orca reply</DTO_OrcaChatLogReply>
   <DTO_OrcaChatLogError>4. Error</DTO_OrcaChatLogError>
-  <DTO_OrcaChatPromptLocation>Persona prompt is currently hardcoded in OrcaChatSession.EnsureSystemPrompt in OrcaChatWindow.cs. It is intentionally separate from the storyteller planner prompt.</DTO_OrcaChatPromptLocation>
   <DTO_OfflineNote>Offline behavior: the AI decision layer returns immediately. Story events are generated only by the XML-defined vanilla storyteller comps until an LLM provider is connected.</DTO_OfflineNote>
 </LanguageData>

@@ -33,12 +33,14 @@ namespace DeepseekTheOrca
             if (Widgets.ButtonText(new Rect(inRect.x, y, 180f, 32f), "DTO_SkillNew".Translate()))
             {
                 OrcaSkillProfile profile = OrcaSkillManager.CreateLocal();
+                OrcaChatWindowManager.Session.Clear();
                 Find.WindowStack.Add(new OrcaSkillEditorWindow(profile));
             }
 
             if (Widgets.ButtonText(new Rect(inRect.x + 190f, y, 180f, 32f), "DTO_SkillReload".Translate()))
             {
                 OrcaSkillManager.ReloadLocal();
+                OrcaChatWindowManager.Session.Clear();
             }
 
             y += 44f;
@@ -79,6 +81,7 @@ namespace DeepseekTheOrca
             if (Widgets.ButtonText(enableRect, enabled ? "DTO_SkillDisable".Translate() : "DTO_SkillEnable".Translate()))
             {
                 OrcaSkillManager.SetEnabled(profile, !profile.enabled);
+                OrcaChatWindowManager.Session.Clear();
             }
 
             Rect editRect = new Rect(enableRect.xMax + 8f, enableRect.y, 72f, 28f);
@@ -105,6 +108,7 @@ namespace DeepseekTheOrca
                 Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("DTO_SkillDeleteConfirm".Translate(profile.label), delegate
                 {
                     OrcaSkillManager.Delete(profile);
+                    OrcaChatWindowManager.Session.Clear();
                 }, destructive: true));
             }
 

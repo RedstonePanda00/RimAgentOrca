@@ -7,14 +7,16 @@ namespace DeepseekTheOrca
 {
     public sealed class OrcaModelSelectionWindow : Window
     {
+        private readonly DeepseekTheOrcaSettings settings;
         private readonly OrcaLlmModelRole role;
         private readonly bool allowFallback;
         private readonly List<OrcaModelOption> options;
         private Vector2 scrollPosition;
         private string filter = "";
 
-        public OrcaModelSelectionWindow(OrcaLlmModelRole role, bool allowFallback, List<OrcaModelOption> options)
+        public OrcaModelSelectionWindow(DeepseekTheOrcaSettings settings, OrcaLlmModelRole role, bool allowFallback, List<OrcaModelOption> options)
         {
+            this.settings = settings;
             this.role = role;
             this.allowFallback = allowFallback;
             this.options = options ?? new List<OrcaModelOption>();
@@ -47,7 +49,10 @@ namespace DeepseekTheOrca
                 Rect fallbackRect = new Rect(inRect.x, y, inRect.width, 32f);
                 if (Widgets.ButtonText(fallbackRect, "DTO_ModelUseFallback".Translate()))
                 {
-                    DeepseekTheOrcaMod.SetModelReferenceForRole(role, "");
+                    if (settings != null)
+                    {
+                        settings.SetModelReferenceForRole(role, "");
+                    }
                     LlmConnectionTester.Reset();
                     Close();
                     return;
@@ -76,7 +81,10 @@ namespace DeepseekTheOrca
                 Rect rowRect = new Rect(0f, rowY, viewRect.width, rowHeight - 4f);
                 if (Widgets.ButtonText(rowRect, option.label))
                 {
-                    DeepseekTheOrcaMod.SetModelReferenceForRole(role, option.reference);
+                    if (settings != null)
+                    {
+                        settings.SetModelReferenceForRole(role, option.reference);
+                    }
                     LlmConnectionTester.Reset();
                     Close();
                     break;

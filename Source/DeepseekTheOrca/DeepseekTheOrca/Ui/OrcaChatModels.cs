@@ -85,27 +85,68 @@ namespace DeepseekTheOrca
     public sealed class OrcaChatReply
     {
         public string reply;
-        public int moodDelta;
         public bool parsedJson;
+        public Dictionary<string, object> fields = new Dictionary<string, object>();
 
-        public string HistoryContent(string originalContent)
+        public string HistoryContent()
         {
-            if (parsedJson && !OrcaVisibleReplySanitizer.ContainsControlMarkup(originalContent))
-            {
-                return originalContent ?? "";
-            }
-
             Dictionary<string, object> normalized = new Dictionary<string, object>();
             normalized["reply"] = reply ?? "";
-            normalized["moodDelta"] = moodDelta;
+            foreach (KeyValuePair<string, object> pair in fields)
+            {
+                if (pair.Key.NullOrEmpty() || pair.Key == "reply")
+                {
+                    continue;
+                }
+
+                normalized[pair.Key] = pair.Value;
+            }
             return MiniJson.Serialize(normalized);
+        }
+
+        public int GetInt(string key, int defaultValue = 0)
+        {
+            object value;
+            if (fields == null || !fields.TryGetValue(key, out value) || value == null)
+            {
+                return defaultValue;
+            }
+
+            int intValue;
+            if (int.TryParse(value.ToString(), out intValue))
+            {
+                return intValue;
+            }
+
+            float floatValue;
+            if (float.TryParse(value.ToString(), out floatValue))
+            {
+                return Mathf.RoundToInt(floatValue);
+            }
+
+            return defaultValue;
+        }
+
+        public void SetField(string key, object value)
+        {
+            if (key.NullOrEmpty())
+            {
+                return;
+            }
+
+            if (fields == null)
+            {
+                fields = new Dictionary<string, object>();
+            }
+
+            fields[key] = value;
         }
 
         public static OrcaChatReply Parse(string content)
         {
             if (content.NullOrEmpty())
             {
-                return new OrcaChatReply { reply = "", moodDelta = 0, parsedJson = false };
+                return new OrcaChatReply { reply = "", parsedJson = false };
             }
 
             try
@@ -113,21 +154,20 @@ namespace DeepseekTheOrca
                 Dictionary<string, object> parsed = MiniJson.Deserialize(ExtractJsonObject(content)) as Dictionary<string, object>;
                 if (parsed == null)
                 {
-                    return new OrcaChatReply { reply = content, moodDelta = 0, parsedJson = false };
+                    return new OrcaChatReply { reply = content, parsedJson = false };
                 }
 
                 string reply = GetString(parsed, "reply");
-                int moodDelta = ClampMoodDelta(GetInt(parsed, "moodDelta"));
                 return new OrcaChatReply
                 {
                     reply = reply.NullOrEmpty() ? content : reply,
-                    moodDelta = moodDelta,
+                    fields = new Dictionary<string, object>(parsed),
                     parsedJson = true
                 };
             }
             catch
             {
-                return new OrcaChatReply { reply = content, moodDelta = 0, parsedJson = false };
+                return new OrcaChatReply { reply = content, parsedJson = false };
             }
         }
 
@@ -154,42 +194,5 @@ namespace DeepseekTheOrca
             return value.ToString();
         }
 
-        private static int GetInt(Dictionary<string, object> parsed, string key)
-        {
-            object value;
-            if (!parsed.TryGetValue(key, out value) || value == null)
-            {
-                return 0;
-            }
-
-            int intValue;
-            if (int.TryParse(value.ToString(), out intValue))
-            {
-                return intValue;
-            }
-
-            float floatValue;
-            if (float.TryParse(value.ToString(), out floatValue))
-            {
-                return Mathf.RoundToInt(floatValue);
-            }
-
-            return 0;
-        }
-
-        private static int ClampMoodDelta(int value)
-        {
-            if (value < -10)
-            {
-                return -10;
-            }
-
-            if (value > 10)
-            {
-                return 10;
-            }
-
-            return value;
-        }
     }
 }

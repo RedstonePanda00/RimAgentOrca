@@ -21,6 +21,7 @@ namespace DeepseekTheOrca
         public string storytellerPortraitTinyName;
         public string storytellerPortraitLargePath;
         public string storytellerPortraitTinyPath;
+        public int priority;
         public bool readOnly;
         public string filePath;
         public string sourceMod;
@@ -152,6 +153,7 @@ Bad:
                 storytellerPortraitTinyName = DefaultStorytellerPortraitTinyName,
                 storytellerPortraitLargePath = DefaultStorytellerPortraitLargePath,
                 storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
+                priority = 0,
                 prompt = BuiltInOrcaPrompt,
                 readOnly = true,
                 sourceMod = "Core"
@@ -175,6 +177,7 @@ Bad:
                 storytellerPortraitTinyName = DefaultStorytellerPortraitTinyName,
                 storytellerPortraitLargePath = DefaultStorytellerPortraitLargePath,
                 storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
+                priority = 0,
                 prompt = "Write this persona's character, voice, attitude, and roleplay preferences here.",
                 readOnly = false
             };
@@ -211,6 +214,7 @@ Bad:
             AppendText(document, root, "storytellerPortraitTinyName", profile.storytellerPortraitTinyName ?? "");
             AppendText(document, root, "storytellerPortraitLargePath", profile.storytellerPortraitLargePath ?? "");
             AppendText(document, root, "storytellerPortraitTinyPath", profile.storytellerPortraitTinyPath ?? "");
+            AppendText(document, root, "priority", profile.priority.ToString());
             XmlElement prompt = document.CreateElement("prompt");
             prompt.AppendChild(document.CreateCDataSection(profile.prompt ?? ""));
             root.AppendChild(prompt);
@@ -312,6 +316,7 @@ Bad:
                 storytellerPortraitTinyName = def.storytellerPortraitTinyName,
                 storytellerPortraitLargePath = def.storytellerPortraitLargePath,
                 storytellerPortraitTinyPath = def.storytellerPortraitTinyPath,
+                priority = PriorityForDefPersona(def.defName),
                 prompt = def.prompt ?? "",
                 readOnly = true,
                 filePath = "",
@@ -355,6 +360,7 @@ Bad:
                     storytellerPortraitTinyName = ReadText(root, "storytellerPortraitTinyName"),
                     storytellerPortraitLargePath = ReadText(root, "storytellerPortraitLargePath"),
                     storytellerPortraitTinyPath = ReadText(root, "storytellerPortraitTinyPath"),
+                    priority = ReadInt(root, "priority", 0),
                     prompt = ReadText(root, "prompt"),
                     readOnly = false,
                     filePath = file
@@ -392,6 +398,81 @@ Bad:
         {
             XmlNode node = root.SelectSingleNode(name);
             return node == null ? "" : node.InnerText;
+        }
+
+        private static int ReadInt(XmlElement root, string name, int defaultValue)
+        {
+            int value;
+            return int.TryParse(ReadText(root, name), out value) ? value : defaultValue;
+        }
+
+        public static void ApplyDefaultPersonaSelection(DeepseekTheOrcaSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            OrcaChatPersonaProfile current = Get(settings.chatPersonaDefName);
+            int currentPriority = current == null ? int.MinValue : current.priority;
+            OrcaChatPersonaProfile candidate = HighestPriorityPersona();
+            if (candidate == null || candidate.priority <= currentPriority || candidate.id == settings.chatPersonaDefName)
+            {
+                return;
+            }
+
+            settings.chatPersonaDefName = candidate.id;
+            if (DeepseekTheOrcaMod.Instance != null)
+            {
+                DeepseekTheOrcaMod.Instance.WriteSettings();
+            }
+        }
+
+        private static OrcaChatPersonaProfile HighestPriorityPersona()
+        {
+            OrcaChatPersonaProfile best = BuiltInOrca();
+            List<OrcaChatPersonaProfile> personas = AllPersonas();
+            for (int i = 0; i < personas.Count; i++)
+            {
+                OrcaChatPersonaProfile persona = personas[i];
+                if (persona != null && persona.priority > best.priority)
+                {
+                    best = persona;
+                }
+            }
+
+            return best;
+        }
+
+        private static int PriorityForDefPersona(string defName)
+        {
+            int priority = 0;
+            List<OrcaDefaultPersonaDef> defs = DefDatabase<OrcaDefaultPersonaDef>.AllDefsListForReading;
+            if (defs == null)
+            {
+                return priority;
+            }
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                OrcaDefaultPersonaDef def = defs[i];
+                if (def != null && PersonaDefNameMatches(def.personaDefName, defName) && def.priority > priority)
+                {
+                    priority = def.priority;
+                }
+            }
+
+            return priority;
+        }
+
+        private static bool PersonaDefNameMatches(string configuredName, string defName)
+        {
+            if (configuredName.NullOrEmpty() || defName.NullOrEmpty())
+            {
+                return false;
+            }
+
+            return configuredName == defName || configuredName == DefPrefix + defName;
         }
 
         public static void NormalizeAppearance(OrcaChatPersonaProfile profile)

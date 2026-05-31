@@ -13,8 +13,7 @@ namespace DeepseekTheOrca
         private const int MaxConversationTurns = 12;
         private const int MaxTurnLogs = 50;
         private const int MaxToolRounds = 8;
-        private const int ThinkingAnimationIntervalTicks = 30;
-
+        private const int MaxToolGatheringRounds = 2;
         private enum OrcaChatRequestStage
         {
             Chat,
@@ -24,12 +23,11 @@ namespace DeepseekTheOrca
         private readonly LlmApiClient client = new LlmApiClient();
         private readonly List<LlmChatMessage> messages = new List<LlmChatMessage>();
         private readonly List<OrcaChatLine> displayLines = new List<OrcaChatLine>();
+        private readonly OrcaChatThinkingState thinkingState = new OrcaChatThinkingState();
         private Task<LlmChatResponse> pendingRequest;
         private LlmStreamingChatRequest pendingStreamingRequest;
         private OrcaChatLine pendingStreamingLine;
         private string statusText = "";
-        private int mood = 60;
-        private int lastMoodDelta;
         private int conversationVersion;
         private int toolRoundsUsed;
         private readonly List<OrcaChatTurnLog> turnLogs = new List<OrcaChatTurnLog>();
@@ -63,24 +61,9 @@ namespace DeepseekTheOrca
             get { return statusText; }
         }
 
-        public int Mood
-        {
-            get { return mood; }
-        }
-
-        public int LastMoodDelta
-        {
-            get { return lastMoodDelta; }
-        }
-
         public int ConversationVersion
         {
             get { return conversationVersion; }
-        }
-
-        public float WillingnessChance
-        {
-            get { return OrcaMoodPlugin.Enabled ? Mathf.Clamp(mood, 0, 100) / 100f : 1f; }
         }
 
         public string DisplayText
@@ -165,13 +148,9 @@ namespace DeepseekTheOrca
             }
 
             BeginTurnLog(userText);
-            if (OrcaMoodPlugin.Enabled)
-            {
-                AddProcess("Mood before request: " + mood);
-            }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null || !HasAnyChatModel(settings))
+            if (settings == null || !OrcaChatRoleUtility.HasAnyChatModel(settings))
             {
                 statusText = "DTO_OrcaChatNoApiKey".Translate();
                 SetError(statusText);
@@ -179,13 +158,17 @@ namespace DeepseekTheOrca
             }
 
             EnsureSystemPrompt();
-            string playerName = PlayerSteamPersonaName();
+            string playerName = OrcaPlayerIdentity.SteamPersonaName();
             lastPlayerName = playerName;
-            messages.Add(LlmChatMessage.User(BuildPlayerMessage(playerName, userText, PlayerContextTags(userText), null)));
+            List<string> contextTags = OrcaChatPromptBuilder.PlayerContextTags(userText);
+            OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, "player_chat", playerName, userText, contextTags, false);
+            OrcaExtensionManager.NotifyChatTurnStarting(turnContext);
+            AddProcessLines(turnContext.ProcessLines);
+            messages.Add(LlmChatMessage.User(OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, null)));
             OrcaSessionMemory.Add("player_message", playerName + ": " + userText);
             displayLines.Add(new OrcaChatLine(playerName, userText));
             conversationVersion++;
-            TrimConversation();
+            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
 
             statusText = "DTO_OrcaChatWaiting".Translate();
             toolRoundsUsed = 0;
@@ -202,21 +185,21 @@ namespace DeepseekTheOrca
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null || !HasAnyChatModel(settings))
+            if (settings == null || !OrcaChatRoleUtility.HasAnyChatModel(settings))
             {
                 return false;
             }
 
             BeginTurnLog("Proactive: " + request.title + "\n" + request.body);
-            if (OrcaMoodPlugin.Enabled)
-            {
-                AddProcess("Mood before proactive request: " + mood);
-            }
             EnsureSystemPrompt();
-            messages.Add(LlmChatMessage.User(BuildProactiveMessage(request, ProactiveContextTags(request))));
+            List<string> contextTags = OrcaChatPromptBuilder.ProactiveContextTags(request);
+            OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, request.source, "", request.title + "\n" + request.body, contextTags, true);
+            OrcaExtensionManager.NotifyChatTurnStarting(turnContext);
+            AddProcessLines(turnContext.ProcessLines);
+            messages.Add(LlmChatMessage.User(OrcaChatPromptBuilder.BuildProactiveMessage(request, turnContext)));
             OrcaSessionMemory.Add("proactive_trigger", request.source + " | " + request.title + " | " + request.body);
             conversationVersion++;
-            TrimConversation();
+            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
 
             if (request.openChatWindow)
             {
@@ -236,8 +219,19 @@ namespace DeepseekTheOrca
         {
             TickStreamingRequest();
 
-            if (pendingRequest == null || !pendingRequest.IsCompleted)
+            if (pendingStreamingRequest != null)
             {
+                return;
+            }
+
+            if (pendingRequest == null)
+            {
+                return;
+            }
+
+            if (!pendingRequest.IsCompleted)
+            {
+                thinkingState.Tick(MarkConversationChanged);
                 return;
             }
 
@@ -274,7 +268,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            if (IsToolGatheringRole(pendingRequestRole) && toolRoundsUsed > 0)
+            if (OrcaChatRoleUtility.IsToolGatheringRole(pendingRequestRole) && toolRoundsUsed > 0)
             {
                 DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
                 if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Dialogue))
@@ -284,16 +278,48 @@ namespace DeepseekTheOrca
                     return;
                 }
 
-                AddProcess(ModelRoleLabel(pendingRequestRole) + " model produced no further tool calls; routing to dialogue model.");
+                AddProcess(OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model produced no further tool calls; routing to dialogue model.");
                 messages.Add(LlmChatMessage.System(
                     "Tool gathering is complete. The next assistant response must be exactly one JSON object and no extra text. "
-                    + "JSON schema: " + ChatReplyJsonSchema() + "."));
+                    + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));
                 ForceNextModelRole(OrcaLlmModelRole.Dialogue);
                 StartRequest(settings);
                 return;
             }
 
-            HandleFinalChatResponse(response, null);
+            HandleFinalChatResponse(response, thinkingState.Consume());
+        }
+
+        private void EnsureSystemPrompt()
+        {
+            if (messages.Count > 0)
+            {
+                return;
+            }
+
+            messages.Add(LlmChatMessage.System(OrcaChatPromptBuilder.BuildSystemPrompt()));
+        }
+
+        private void NotifyAgentPhase(OrcaAgentPhase phase, OrcaLlmModelRole role, bool streaming, string reason)
+        {
+            OrcaExtensionManager.NotifyAgentPhase(new OrcaAgentPhaseContext(this, phase, role, toolRoundsUsed, streaming, reason));
+        }
+
+        private void ForceNextModelRole(OrcaLlmModelRole role)
+        {
+            forcedNextModelRole = role;
+            hasForcedNextModelRole = true;
+        }
+
+        private void ClearForcedNextModelRole()
+        {
+            forcedNextModelRole = OrcaLlmModelRole.Fallback;
+            hasForcedNextModelRole = false;
+        }
+
+        private void MarkConversationChanged()
+        {
+            conversationVersion++;
         }
     }
 }
