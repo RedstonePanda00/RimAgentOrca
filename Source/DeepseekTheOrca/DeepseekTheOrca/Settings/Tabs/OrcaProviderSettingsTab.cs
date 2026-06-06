@@ -105,7 +105,6 @@ namespace DeepseekTheOrca
             if (selected)
             {
                 Widgets.DrawBoxSolid(row, OrcaSettingsWidgets.RowSelectedFill);
-                Widgets.DrawBoxSolid(new Rect(row.x, row.y, 3f, row.height), new Color(0.45f, 0.68f, 0.88f, 1f));
             }
             else if (hover)
             {

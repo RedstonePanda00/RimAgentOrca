@@ -7,6 +7,9 @@ namespace DeepseekTheOrca
     {
         private Vector2 scrollPosition;
         private string maxToolCallsBuffer;
+        private string toolSearchTopKBuffer;
+        private string toolSemanticSearchWaitMsBuffer;
+        private string maxToolResultEstimatedTokensBuffer;
         private string planningMtbDaysBuffer;
         private string tavilyMaxResultsBuffer;
 
@@ -38,7 +41,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 680f);
+            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 820f);
             Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(viewRect);
@@ -58,6 +61,11 @@ namespace DeepseekTheOrca
                 }
             }
 
+            listing.GapLine();
+            listing.CheckboxLabeled("DTO_EnableSemanticToolSearch".Translate(), ref settings.enableSemanticToolSearch, "DTO_EnableSemanticToolSearchTooltip".Translate());
+            listing.TextFieldNumericLabeled("DTO_ToolSearchTopK".Translate(), ref settings.toolSearchTopK, ref toolSearchTopKBuffer, 1, 12);
+            listing.TextFieldNumericLabeled("DTO_ToolSemanticSearchWaitMs".Translate(), ref settings.toolSemanticSearchWaitMs, ref toolSemanticSearchWaitMsBuffer, 0, 3000);
+            listing.TextFieldNumericLabeled("DTO_MaxToolResultEstimatedTokens".Translate(), ref settings.maxToolResultEstimatedTokens, ref maxToolResultEstimatedTokensBuffer, 200, 4000);
             listing.GapLine();
             listing.TextFieldNumericLabeled("DTO_MaxToolCalls".Translate(), ref settings.maxToolCalls, ref maxToolCallsBuffer, 1, 32);
             listing.TextFieldNumericLabeled("DTO_PlanningMtbDays".Translate(), ref settings.planningMtbDays, ref planningMtbDaysBuffer, 0.1f, 60f);

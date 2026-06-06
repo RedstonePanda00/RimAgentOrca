@@ -159,6 +159,50 @@ namespace DeepseekTheOrca.Rimtalk
             return !personality.NullOrEmpty() || weightValue != null || hasVocalLink;
         }
 
+        public static string PawnPersonaSummary(Pawn pawn)
+        {
+            if (!IsAvailable)
+            {
+                return "";
+            }
+
+            string personality;
+            float talkInitiationWeight;
+            bool hasVocalLink;
+            if (!TryGetPawnPersona(pawn, out personality, out talkInitiationWeight, out hasVocalLink))
+            {
+                return "";
+            }
+
+            List<string> parts = new List<string>();
+            if (!personality.NullOrEmpty())
+            {
+                parts.Add("personality=" + personality);
+            }
+
+            if (talkInitiationWeight > 0f)
+            {
+                parts.Add("talkInitiationWeight=" + talkInitiationWeight.ToString("0.##"));
+            }
+
+            if (pawn != null && pawn.RaceProps != null && !pawn.RaceProps.Humanlike)
+            {
+                parts.Add("hasVocalLinkImplant=" + hasVocalLink);
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        public static string NarrativeContextInstruction()
+        {
+            if (!IsAvailable)
+            {
+                return "";
+            }
+
+            return "RimTalk is active. You may call get_rimtalk_chat_history before replying if recent pawn/player conversations could help you frame this beat, connect it to player behavior, or notice relevant pawn relationships. ";
+        }
+
         public static bool TryGetRecentHistorySnapshots(int count, int maxChars, out List<RimtalkHistorySnapshot> snapshots, out string error)
         {
             snapshots = new List<RimtalkHistorySnapshot>();

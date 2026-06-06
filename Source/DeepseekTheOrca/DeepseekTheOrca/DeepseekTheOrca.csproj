@@ -57,6 +57,8 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Tools\AiTooling.cs" />
+        <Compile Include="Tools\Routing\OrcaToolBundleDef.cs" />
+        <Compile Include="Tools\Routing\OrcaToolBundleRouter.cs" />
         <Compile Include="Tools\Colony\GetColonySummaryTool.cs" />
         <Compile Include="Tools\Letters\GetRecentLettersTool.cs" />
         <Compile Include="Tools\Pawns\ListMapPawnsTool.cs" />
@@ -138,12 +140,14 @@
         <Compile Include="Ui\OrcaChatSession.Trace.cs" />
         <Compile Include="Ui\OrcaChatSession.ToolLoop.cs" />
         <Compile Include="Ui\OrcaChatControllerRouter.cs" />
+        <Compile Include="Ui\OrcaLocalRouteGate.cs" />
         <Compile Include="Ui\OrcaChatHistoryMaintenance.cs" />
         <Compile Include="Ui\OrcaChatPromptBuilder.cs" />
         <Compile Include="Ui\OrcaChatRoleUtility.cs" />
         <Compile Include="Ui\OrcaChatThinkingState.cs" />
         <Compile Include="Ui\OrcaChatModels.cs" />
         <Compile Include="Tools\OrcaChatToolExecutor.cs" />
+        <Compile Include="Tools\OrcaToolResultBudgeter.cs" />
         <Compile Include="Ui\OrcaPlayerIdentity.cs" />
         <Compile Include="Ui\OrcaToolCallFormatter.cs" />
         <Compile Include="Ui\OrcaToolResultFormatter.cs" />
@@ -173,6 +177,7 @@
         <Compile Include="Agent\OrcaSessionMemory.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Rimtalk\GetRimtalkChatHistoryTool.cs" />
+        <Compile Include="Rimtalk\GetRimtalkWorldKnowledgeTool.cs" />
         <Compile Include="Rimtalk\RimtalkIntegration.cs" />
         <Compile Include="Rimtalk\RimtalkProactiveConversationSource.cs" />
         <Compile Include="Ui\SingleToolDebugRunner.cs" />

@@ -12,33 +12,38 @@
   </DeepseekTheOrca.OrcaToolDef>
 
   <DeepseekTheOrca.OrcaToolDef>
-    <defName>DTO_Tool_GetRecentLetters</defName>
-    <toolName>get_recent_letters</toolName>
-    <label>Get recent letters</label>
-    <description>Read recent letters from the game archive, falling back to the visible LetterStack.</description>
-    <workerClass>DeepseekTheOrca.GetRecentLettersTool</workerClass>
+    <defName>DTO_Tool_GetLatestLetter</defName>
+    <toolName>get_latest_letter</toolName>
+    <label>Get latest letter</label>
+    <description>Read only the latest in-game letter from the archive or visible LetterStack. Use this only when the player explicitly asks what the most recent letter said.</description>
+    <workerClass>DeepseekTheOrca.GetLatestLetterTool</workerClass>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
     <requiresCurrentMap>true</requiresCurrentMap>
     <parameters>
       <li>
-        <name>count</name>
+        <name>maxChars</name>
         <type>integer</type>
-        <description>Maximum number of recent letters to return. Range 1 to 10. Defaults to 5.</description>
+        <description>Maximum characters from the latest letter text. Range 120 to 1600. Defaults to 700.</description>
       </li>
     </parameters>
   </DeepseekTheOrca.OrcaToolDef>
 
   <DeepseekTheOrca.OrcaToolDef>
-    <defName>DTO_Tool_ListMapPawns</defName>
-    <toolName>list_map_pawns</toolName>
-    <label>List map pawns</label>
-    <description>List spawned pawns on the current map and return pawnId values for follow-up detail queries.</description>
-    <workerClass>DeepseekTheOrca.ListMapPawnsTool</workerClass>
+    <defName>DTO_Tool_SearchMapPawns</defName>
+    <toolName>search_map_pawns</toolName>
+    <label>Search map pawns</label>
+    <description>Search spawned pawns on the current map and return concise topK pawnId candidates for follow-up atomic detail tools.</description>
+    <workerClass>DeepseekTheOrca.SearchMapPawnsTool</workerClass>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
     <requiresCurrentMap>true</requiresCurrentMap>
     <parameters>
+      <li>
+        <name>query</name>
+        <type>string</type>
+        <description>Optional search text. Use the player's wording or a concise intent such as injured colonists, social relationships, best doctor, or hostile raiders.</description>
+      </li>
       <li>
         <name>filter</name>
         <type>string</type>
@@ -58,17 +63,17 @@
       <li>
         <name>count</name>
         <type>integer</type>
-        <description>Maximum number of pawns to return. Range 1 to 100. Defaults to 50.</description>
+        <description>Maximum number of pawn candidates to return. Range 1 to 20. Defaults to 5.</description>
       </li>
     </parameters>
   </DeepseekTheOrca.OrcaToolDef>
 
   <DeepseekTheOrca.OrcaToolDef>
-    <defName>DTO_Tool_GetPawnDetails</defName>
-    <toolName>get_pawn_details</toolName>
-    <label>Get pawn details</label>
-    <description>Read detailed information about one spawned pawn by pawnId or name.</description>
-    <workerClass>DeepseekTheOrca.GetPawnDetailsTool</workerClass>
+    <defName>DTO_Tool_GetPawnCore</defName>
+    <toolName>get_pawn_core</toolName>
+    <label>Get pawn core</label>
+    <description>Read core identity and state for one spawned pawn by pawnId or name.</description>
+    <workerClass>DeepseekTheOrca.GetPawnCoreTool</workerClass>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
     <requiresCurrentMap>true</requiresCurrentMap>
@@ -76,7 +81,102 @@
       <li>
         <name>pawnId</name>
         <type>string</type>
-        <description>Pawn id returned by list_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnNeeds</defName>
+    <toolName>get_pawn_needs</toolName>
+    <label>Get pawn needs</label>
+    <description>Read needs such as mood, food, rest, and recreation for one spawned pawn.</description>
+    <workerClass>DeepseekTheOrca.GetPawnNeedsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnHealth</defName>
+    <toolName>get_pawn_health</toolName>
+    <label>Get pawn health</label>
+    <description>Read health, pain, bleeding, capacities, and notable hediffs for one spawned pawn.</description>
+    <workerClass>DeepseekTheOrca.GetPawnHealthTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnSkills</defName>
+    <toolName>get_pawn_skills</toolName>
+    <label>Get pawn skills</label>
+    <description>Read traits and skills for one spawned pawn.</description>
+    <workerClass>DeepseekTheOrca.GetPawnSkillsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnRelations</defName>
+    <toolName>get_pawn_relations</toolName>
+    <label>Get pawn relations</label>
+    <description>Read direct relations and strong social opinions for one spawned pawn.</description>
+    <workerClass>DeepseekTheOrca.GetPawnRelationsTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetPawnRimtalkPersona</defName>
+    <toolName>get_pawn_rimtalk_persona</toolName>
+    <label>Get pawn RimTalk persona</label>
+    <description>Read RimTalk persona data for one pawn when RimTalk is active.</description>
+    <workerClass>DeepseekTheOrca.GetPawnRimtalkPersonaTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>pawnId</name>
+        <type>string</type>
+        <description>Pawn id returned by search_map_pawns. A pawn name or ThingID may also work as fallback.</description>
         <required>true</required>
       </li>
     </parameters>
@@ -366,6 +466,68 @@
         <name>maxChars</name>
         <type>integer</type>
         <description>Maximum characters per prompt or response field. Range 80 to 2000. Defaults to 500.</description>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GetRimtalkWorldKnowledge</defName>
+    <toolName>get_rimtalk_world_knowledge</toolName>
+    <label>Get RimTalk world knowledge</label>
+    <description>Read CommonKnowledge entries from the RimTalk Memory Patch extension when it is active. Use this for player/mod-provided world lore, setting notes, faction background, historical facts, or other reference knowledge stored in RimTalk memory.</description>
+    <workerClass>DeepseekTheOrca.Rimtalk.GetRimtalkWorldKnowledgeTool</workerClass>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>false</requiresCurrentMap>
+    <parameters>
+      <li>
+        <name>query</name>
+        <type>string</type>
+        <description>Optional search text matched against knowledge id, tag, category, and content.</description>
+      </li>
+      <li>
+        <name>tag</name>
+        <type>string</type>
+        <description>Optional case-insensitive tag filter.</description>
+      </li>
+      <li>
+        <name>category</name>
+        <type>string</type>
+        <description>Optional category filter. Defaults to all.</description>
+        <enumValues>
+          <li>all</li>
+          <li>None</li>
+          <li>Instructions</li>
+          <li>Lore</li>
+          <li>PawnStatus</li>
+          <li>History</li>
+          <li>Other</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>scope</name>
+        <type>string</type>
+        <description>Optional visibility scope filter. Defaults to all.</description>
+        <enumValues>
+          <li>all</li>
+          <li>global</li>
+          <li>pawn_specific</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>includeDisabled</name>
+        <type>boolean</type>
+        <description>Whether to include disabled RimTalk knowledge entries. Defaults to false.</description>
+      </li>
+      <li>
+        <name>count</name>
+        <type>integer</type>
+        <description>Maximum number of knowledge entries to return. Range 1 to 50. Defaults to 10.</description>
+      </li>
+      <li>
+        <name>maxChars</name>
+        <type>integer</type>
+        <description>Maximum characters per knowledge content field. Range 120 to 3000. Defaults to 900.</description>
       </li>
     </parameters>
   </DeepseekTheOrca.OrcaToolDef>

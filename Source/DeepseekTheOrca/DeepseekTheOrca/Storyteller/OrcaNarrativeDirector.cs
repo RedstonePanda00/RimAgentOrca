@@ -162,16 +162,12 @@ namespace DeepseekTheOrca
 
         private static OrcaProactiveConversationRequest ToRequest(OrcaNarrativeBeat beat)
         {
-            string rimtalkContextInstruction = RimtalkIntegration.IsAvailable
-                ? "RimTalk is active. You may call get_rimtalk_chat_history before replying if recent pawn/player conversations could help you frame this beat, connect it to player behavior, or notice relevant pawn relationships. "
-                : "";
-
             string body = "Narrative beat source: " + beat.source + "\n"
                 + "Current game language: " + OrcaLanguageUtility.CurrentGameLanguage() + "\n"
                 + "Title: " + beat.title + "\n"
                 + "Importance: " + beat.importance + "\n"
                 + "Details:\n" + beat.body + "\n"
-                + rimtalkContextInstruction
+                + RimtalkIntegration.NarrativeContextInstruction()
                 + "Speak proactively as the current persona in the current game language. Act like a concise Game Master: describe the situation, name the tension or consequence, and ask the player what they intend to do only if it is useful. "
                 + "Do not turn this into a long scene unless the beat demands it.";
 

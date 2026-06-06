@@ -52,6 +52,7 @@ allowedTools:
 - trigger_raid
 - spawn_pawns
 - get_rimtalk_chat_history
+- get_rimtalk_world_knowledge
 ---
 
 Use this skill whenever the active persona is speaking as the RimWorld storyteller or responding to colony state, player intent, proactive triggers, RimTalk context, incidents, raids, gifts, danger, pawn situations, or story consequences.

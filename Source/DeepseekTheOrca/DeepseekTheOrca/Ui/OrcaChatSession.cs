@@ -30,6 +30,7 @@ namespace DeepseekTheOrca
         private string statusText = "";
         private int conversationVersion;
         private int toolRoundsUsed;
+        private int toolCallsUsedThisTurn;
         private readonly List<OrcaChatTurnLog> turnLogs = new List<OrcaChatTurnLog>();
         private OrcaChatTurnLog currentTurn;
         private string lastUserText = "";
@@ -172,6 +173,7 @@ namespace DeepseekTheOrca
 
             statusText = "DTO_OrcaChatWaiting".Translate();
             toolRoundsUsed = 0;
+            toolCallsUsedThisTurn = 0;
             allowExecutionToolsThisTurn = true;
             ClearForcedNextModelRole();
             StartControllerOrChatRequest(settings);
@@ -208,6 +210,7 @@ namespace DeepseekTheOrca
 
             statusText = "DTO_OrcaChatWaiting".Translate();
             toolRoundsUsed = 0;
+            toolCallsUsedThisTurn = 0;
             allowExecutionToolsThisTurn = false;
             ClearForcedNextModelRole();
             ForceNextModelRole(OrcaLlmModelRole.Dialogue);

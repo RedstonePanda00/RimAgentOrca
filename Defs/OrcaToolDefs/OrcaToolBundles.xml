@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_ColonyState</defName>
+    <toolBundleId>colony_state</toolBundleId>
+    <label>Colony state</label>
+    <description>Use for current colony condition, pressure, storyteller context, food, medicine, wealth, threat, recent incidents, and broad situation checks.</description>
+    <aliases>
+      <li>殖民地</li>
+      <li>状况</li>
+      <li>压力</li>
+      <li>食物</li>
+      <li>药品</li>
+      <li>威胁</li>
+      <li>colony</li>
+      <li>status</li>
+      <li>pressure</li>
+    </aliases>
+    <toolNames>
+      <li>get_colony_summary</li>
+    </toolNames>
+    <priority>20</priority>
+    <includeByDefault>true</includeByDefault>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_PawnCore</defName>
+    <toolBundleId>pawn_core</toolBundleId>
+    <label>Pawn core</label>
+    <description>Use to identify relevant pawns and read their basic identity, type, faction, state, job, and position.</description>
+    <aliases>
+      <li>殖民者</li>
+      <li>小人</li>
+      <li>人物</li>
+      <li>谁</li>
+      <li>pawn</li>
+      <li>colonist</li>
+      <li>who</li>
+    </aliases>
+    <toolNames>
+      <li>search_map_pawns</li>
+      <li>get_pawn_core</li>
+    </toolNames>
+    <priority>18</priority>
+    <includeByDefault>true</includeByDefault>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_PawnHealth</defName>
+    <toolBundleId>pawn_health</toolBundleId>
+    <label>Pawn health</label>
+    <description>Use for injuries, pain, bleeding, diseases, incapacity, medical danger, tending, and pawn health questions.</description>
+    <aliases>
+      <li>受伤</li>
+      <li>伤势</li>
+      <li>疼</li>
+      <li>流血</li>
+      <li>疾病</li>
+      <li>健康</li>
+      <li>救治</li>
+      <li>injury</li>
+      <li>health</li>
+      <li>pain</li>
+      <li>bleeding</li>
+      <li>disease</li>
+    </aliases>
+    <toolNames>
+      <li>search_map_pawns</li>
+      <li>get_pawn_core</li>
+      <li>get_pawn_health</li>
+    </toolNames>
+    <priority>16</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_PawnNeeds</defName>
+    <toolBundleId>pawn_needs</toolBundleId>
+    <label>Pawn needs and mood</label>
+    <description>Use for mood, mental breaks, hunger, rest, recreation, comfort, and pawn needs.</description>
+    <aliases>
+      <li>心情</li>
+      <li>崩溃</li>
+      <li>饥饿</li>
+      <li>休息</li>
+      <li>娱乐</li>
+      <li>mood</li>
+      <li>mental</li>
+      <li>hunger</li>
+      <li>rest</li>
+      <li>recreation</li>
+    </aliases>
+    <toolNames>
+      <li>search_map_pawns</li>
+      <li>get_pawn_core</li>
+      <li>get_pawn_needs</li>
+    </toolNames>
+    <priority>15</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_PawnRelations</defName>
+    <toolBundleId>pawn_relations</toolBundleId>
+    <label>Pawn relationships</label>
+    <description>Use when the player asks about social relationships, lovers, friends, rivals, family, loneliness, people getting together, breakups, opinions, romance, and social bonds.</description>
+    <aliases>
+      <li>关系</li>
+      <li>恋人</li>
+      <li>情侣</li>
+      <li>朋友</li>
+      <li>敌人</li>
+      <li>家人</li>
+      <li>社交</li>
+      <li>走到一起</li>
+      <li>结婚</li>
+      <li>分手</li>
+      <li>relationship</li>
+      <li>lover</li>
+      <li>friend</li>
+      <li>romance</li>
+      <li>social</li>
+    </aliases>
+    <toolNames>
+      <li>search_map_pawns</li>
+      <li>get_pawn_core</li>
+      <li>get_pawn_needs</li>
+      <li>get_pawn_relations</li>
+    </toolNames>
+    <priority>16</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_PawnSkills</defName>
+    <toolBundleId>pawn_skills</toolBundleId>
+    <label>Pawn skills</label>
+    <description>Use for skills, traits, work capability, expertise, best pawn for a job, disabled work types, and passions.</description>
+    <aliases>
+      <li>技能</li>
+      <li>特性</li>
+      <li>工作</li>
+      <li>擅长</li>
+      <li>医生</li>
+      <li>建造</li>
+      <li>skill</li>
+      <li>trait</li>
+      <li>job</li>
+      <li>work</li>
+    </aliases>
+    <toolNames>
+      <li>search_map_pawns</li>
+      <li>get_pawn_core</li>
+      <li>get_pawn_skills</li>
+    </toolNames>
+    <priority>12</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_Letters</defName>
+    <toolBundleId>letters</toolBundleId>
+    <label>Latest letter</label>
+    <description>Use only when the player explicitly asks what the latest in-game letter, notification, quest letter, or funeral letter said.</description>
+    <aliases>
+      <li>信件</li>
+      <li>通知</li>
+      <li>葬礼</li>
+      <li>任务</li>
+      <li>事件文本</li>
+      <li>letter</li>
+      <li>quest</li>
+      <li>funeral</li>
+      <li>notification</li>
+    </aliases>
+    <toolNames>
+      <li>get_latest_letter</li>
+    </toolNames>
+    <priority>14</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_RimtalkHistory</defName>
+    <toolBundleId>rimtalk_history</toolBundleId>
+    <label>RimTalk history</label>
+    <description>Use for recent RimTalk pawn/player conversations, who said what, dialogue context, speaker history, and automatic pawn chat.</description>
+    <aliases>
+      <li>rimtalk</li>
+      <li>对话记录</li>
+      <li>聊天记录</li>
+      <li>说过</li>
+      <li>conversation</li>
+      <li>chat history</li>
+      <li>dialogue</li>
+    </aliases>
+    <toolNames>
+      <li>get_rimtalk_chat_history</li>
+      <li>get_pawn_rimtalk_persona</li>
+    </toolNames>
+    <priority>10</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_RimtalkKnowledge</defName>
+    <toolBundleId>rimtalk_knowledge</toolBundleId>
+    <label>RimTalk world knowledge</label>
+    <description>Use for RimTalk Memory Patch common knowledge, lore, world facts, faction background, player/mod notes, and stored setting knowledge.</description>
+    <aliases>
+      <li>知识</li>
+      <li>设定</li>
+      <li>世界观</li>
+      <li>背景</li>
+      <li>lore</li>
+      <li>knowledge</li>
+      <li>world knowledge</li>
+    </aliases>
+    <toolNames>
+      <li>get_rimtalk_world_knowledge</li>
+    </toolNames>
+    <priority>8</priority>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_IncidentPlanning</defName>
+    <toolBundleId>incident_planning</toolBundleId>
+    <label>Incident planning</label>
+    <description>Use for listing, validating, proposing, or scheduling storyteller incidents when the player explicitly asks for event planning or execution.</description>
+    <aliases>
+      <li>事件</li>
+      <li>叙事者事件</li>
+      <li>安排事件</li>
+      <li>触发事件</li>
+      <li>incident</li>
+      <li>storyteller event</li>
+    </aliases>
+    <toolNames>
+      <li>list_available_incidents</li>
+      <li>can_fire_incident</li>
+      <li>propose_incident</li>
+      <li>schedule_incident</li>
+      <li>trigger_raid</li>
+      <li>spawn_pawns</li>
+    </toolNames>
+    <priority>6</priority>
+    <allowDuringProactive>false</allowDuringProactive>
+    <requiresExplicitIntent>true</requiresExplicitIntent>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+</Defs>

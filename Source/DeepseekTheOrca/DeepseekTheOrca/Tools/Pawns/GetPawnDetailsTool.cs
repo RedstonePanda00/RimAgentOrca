@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using DeepseekTheOrca.Rimtalk;
 using RimWorld;
@@ -6,18 +6,8 @@ using Verse;
 
 namespace DeepseekTheOrca
 {
-    public sealed class GetPawnDetailsTool : OrcaToolWorker
+    public abstract class PawnSingleTargetTool : OrcaToolWorker
     {
-        public string Name
-        {
-            get { return "get_pawn_details"; }
-        }
-
-        public string Description
-        {
-            get { return "Read detailed information about one spawned pawn by pawnId or name."; }
-        }
-
         public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             Map map = context == null ? null : context.Map;
@@ -38,71 +28,93 @@ namespace DeepseekTheOrca
                 return AiToolResult.Fail("pawn not found: " + pawnId);
             }
 
-            return AiToolResult.Ok("pawn details captured")
+            return BuildResult(map, pawn);
+        }
+
+        protected abstract AiToolResult BuildResult(Map map, Pawn pawn);
+    }
+
+    public sealed class GetPawnCoreTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
+        {
+            return AiToolResult.Ok("pawn core captured")
                 .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
                 .WithValue("name", PawnToolUtility.PawnName(pawn))
                 .WithValue("kind", pawn.KindLabel)
                 .WithValue("race", PawnToolUtility.RaceSummary(pawn))
-                .WithValue("raceDescription", PawnToolUtility.RaceDescription(pawn))
                 .WithValue("type", PawnToolUtility.PawnType(pawn))
                 .WithValue("faction", PawnToolUtility.FactionName(pawn.Faction))
                 .WithValue("position", pawn.Position)
-                .WithValue("state", PawnState(pawn))
-                .WithValue("needs", NeedsSummary(pawn))
-                .WithValue("traits", TraitsSummary(pawn))
-                .WithValue("skills", SkillsSummary(pawn))
-                .WithValue("relations", RelationsSummary(map, pawn))
-                .WithValue("health", HealthSummary(pawn))
-                .WithValue("rimtalkPersona", RimtalkPersonaSummary(pawn));
+                .WithValue("state", PawnDetailsFormatter.PawnState(pawn));
         }
+    }
 
-        private static string RimtalkPersonaSummary(Pawn pawn)
+    public sealed class GetPawnNeedsTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
         {
-            if (!RimtalkIntegration.IsAvailable)
-            {
-                return "";
-            }
-
-            string personality;
-            float talkInitiationWeight;
-            bool hasVocalLink;
-            if (!RimtalkIntegration.TryGetPawnPersona(pawn, out personality, out talkInitiationWeight, out hasVocalLink))
-            {
-                return "";
-            }
-
-            List<string> parts = new List<string>();
-            if (!personality.NullOrEmpty())
-            {
-                parts.Add("personality=" + personality);
-            }
-
-            if (talkInitiationWeight > 0f)
-            {
-                parts.Add("talkInitiationWeight=" + talkInitiationWeight.ToString("0.##"));
-            }
-
-            if (pawn.RaceProps != null && !pawn.RaceProps.Humanlike)
-            {
-                parts.Add("hasVocalLinkImplant=" + hasVocalLink);
-            }
-
-            return string.Join("; ", parts.ToArray());
+            return AiToolResult.Ok("pawn needs captured")
+                .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
+                .WithValue("name", PawnToolUtility.PawnName(pawn))
+                .WithValue("needs", PawnDetailsFormatter.NeedsSummary(pawn));
         }
+    }
 
-        private static string PawnState(Pawn pawn)
+    public sealed class GetPawnHealthTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
+        {
+            return AiToolResult.Ok("pawn health captured")
+                .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
+                .WithValue("name", PawnToolUtility.PawnName(pawn))
+                .WithValue("health", PawnDetailsFormatter.HealthSummary(pawn));
+        }
+    }
+
+    public sealed class GetPawnSkillsTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
+        {
+            return AiToolResult.Ok("pawn skills captured")
+                .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
+                .WithValue("name", PawnToolUtility.PawnName(pawn))
+                .WithValue("traits", PawnDetailsFormatter.TraitsSummary(pawn))
+                .WithValue("skills", PawnDetailsFormatter.SkillsSummary(pawn));
+        }
+    }
+
+    public sealed class GetPawnRelationsTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
+        {
+            return AiToolResult.Ok("pawn relations captured")
+                .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
+                .WithValue("name", PawnToolUtility.PawnName(pawn))
+                .WithValue("relations", PawnDetailsFormatter.RelationsSummary(map, pawn));
+        }
+    }
+
+    public sealed class GetPawnRimtalkPersonaTool : PawnSingleTargetTool
+    {
+        protected override AiToolResult BuildResult(Map map, Pawn pawn)
+        {
+            string rimtalkPersona = RimtalkIntegration.PawnPersonaSummary(pawn);
+            return AiToolResult.Ok(rimtalkPersona.NullOrEmpty() ? "pawn has no RimTalk persona data" : "pawn RimTalk persona captured")
+                .WithValue("pawnId", PawnToolUtility.PawnId(pawn))
+                .WithValue("name", PawnToolUtility.PawnName(pawn))
+                .WithValue("rimtalkPersona", rimtalkPersona);
+        }
+    }
+
+    public static class PawnDetailsFormatter
+    {
+        public static string PawnState(Pawn pawn)
         {
             List<string> parts = new List<string>();
             parts.Add("dead=" + pawn.Dead);
             parts.Add("downed=" + pawn.Downed);
-            if (pawn.InMentalState && pawn.MentalStateDef != null)
-            {
-                parts.Add("mentalState=" + pawn.MentalStateDef.defName);
-            }
-            else
-            {
-                parts.Add("mentalState=none");
-            }
+            parts.Add(pawn.InMentalState && pawn.MentalStateDef != null ? "mentalState=" + pawn.MentalStateDef.defName : "mentalState=none");
             if (pawn.CurJobDef != null)
             {
                 parts.Add("currentJob=" + pawn.CurJobDef.defName);
@@ -110,7 +122,7 @@ namespace DeepseekTheOrca
             return string.Join(", ", parts.ToArray());
         }
 
-        private static string NeedsSummary(Pawn pawn)
+        public static string NeedsSummary(Pawn pawn)
         {
             if (pawn.needs == null)
             {
@@ -118,26 +130,14 @@ namespace DeepseekTheOrca
             }
 
             List<string> parts = new List<string>();
-            if (pawn.needs.mood != null)
-            {
-                parts.Add("mood=" + pawn.needs.mood.CurLevelPercentage.ToStringPercent());
-            }
-            if (pawn.needs.food != null)
-            {
-                parts.Add("food=" + pawn.needs.food.CurLevelPercentage.ToStringPercent());
-            }
-            if (pawn.needs.rest != null)
-            {
-                parts.Add("rest=" + pawn.needs.rest.CurLevelPercentage.ToStringPercent());
-            }
-            if (pawn.needs.joy != null)
-            {
-                parts.Add("recreation=" + pawn.needs.joy.CurLevelPercentage.ToStringPercent());
-            }
+            if (pawn.needs.mood != null) parts.Add("mood=" + pawn.needs.mood.CurLevelPercentage.ToStringPercent());
+            if (pawn.needs.food != null) parts.Add("food=" + pawn.needs.food.CurLevelPercentage.ToStringPercent());
+            if (pawn.needs.rest != null) parts.Add("rest=" + pawn.needs.rest.CurLevelPercentage.ToStringPercent());
+            if (pawn.needs.joy != null) parts.Add("recreation=" + pawn.needs.joy.CurLevelPercentage.ToStringPercent());
             return string.Join(", ", parts.ToArray());
         }
 
-        private static string TraitsSummary(Pawn pawn)
+        public static string TraitsSummary(Pawn pawn)
         {
             if (pawn.story == null || pawn.story.traits == null || pawn.story.traits.allTraits.NullOrEmpty())
             {
@@ -163,7 +163,7 @@ namespace DeepseekTheOrca
             return string.Join("; ", parts.ToArray());
         }
 
-        private static string SkillsSummary(Pawn pawn)
+        public static string SkillsSummary(Pawn pawn)
         {
             if (pawn.skills == null || pawn.skills.skills.NullOrEmpty())
             {
@@ -186,7 +186,7 @@ namespace DeepseekTheOrca
             return string.Join("; ", parts.ToArray());
         }
 
-        private static string RelationsSummary(Map map, Pawn pawn)
+        public static string RelationsSummary(Map map, Pawn pawn)
         {
             List<string> parts = new List<string>();
             if (pawn.relations != null && !pawn.relations.DirectRelations.NullOrEmpty())
@@ -202,7 +202,7 @@ namespace DeepseekTheOrca
                 }
             }
 
-            if (pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.relations != null)
+            if (map != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.relations != null)
             {
                 foreach (Pawn other in map.mapPawns.AllPawnsSpawned.Where(other => other != null && other != pawn && other.RaceProps != null && other.RaceProps.Humanlike).Take(80))
                 {
@@ -221,7 +221,7 @@ namespace DeepseekTheOrca
             return parts.Count == 0 ? "" : string.Join("; ", parts.ToArray());
         }
 
-        private static string HealthSummary(Pawn pawn)
+        public static string HealthSummary(Pawn pawn)
         {
             List<string> parts = new List<string>();
             if (pawn.health == null || pawn.health.hediffSet == null)
@@ -235,30 +235,15 @@ namespace DeepseekTheOrca
             parts.Add("capacities=" + CapacitiesSummary(pawn));
 
             List<string> hediffs = new List<string>();
-            foreach (Hediff hediff in pawn.health.hediffSet.hediffs.Where(hediff => hediff != null).Take(25))
+            foreach (Hediff hediff in pawn.health.hediffSet.hediffs.Where(hediff => hediff != null).Take(16))
             {
                 List<string> hediffParts = new List<string>();
                 hediffParts.Add(hediff.LabelCap);
-                if (hediff.Part != null)
-                {
-                    hediffParts.Add("part=" + hediff.Part.Label);
-                }
-                if (!hediff.SeverityLabel.NullOrEmpty())
-                {
-                    hediffParts.Add("severity=" + hediff.SeverityLabel);
-                }
-                if (hediff.Bleeding)
-                {
-                    hediffParts.Add("bleeding");
-                }
-                if (hediff.IsCurrentlyLifeThreatening)
-                {
-                    hediffParts.Add("lifeThreatening");
-                }
-                if (hediff.TendableNow())
-                {
-                    hediffParts.Add("tendable");
-                }
+                if (hediff.Part != null) hediffParts.Add("part=" + hediff.Part.Label);
+                if (!hediff.SeverityLabel.NullOrEmpty()) hediffParts.Add("severity=" + hediff.SeverityLabel);
+                if (hediff.Bleeding) hediffParts.Add("bleeding");
+                if (hediff.IsCurrentlyLifeThreatening) hediffParts.Add("lifeThreatening");
+                if (hediff.TendableNow()) hediffParts.Add("tendable");
                 hediffs.Add("[" + string.Join(", ", hediffParts.ToArray()) + "]");
             }
 
@@ -285,14 +270,9 @@ namespace DeepseekTheOrca
 
         private static void AddCapacity(List<string> parts, Pawn pawn, PawnCapacityDef capacity)
         {
-            if (pawn.health.capacities.CapableOf(capacity))
-            {
-                parts.Add(capacity.defName + "=" + pawn.health.capacities.GetLevel(capacity).ToStringPercent());
-            }
-            else
-            {
-                parts.Add(capacity.defName + "=incapable");
-            }
+            parts.Add(pawn.health.capacities.CapableOf(capacity)
+                ? capacity.defName + "=" + pawn.health.capacities.GetLevel(capacity).ToStringPercent()
+                : capacity.defName + "=incapable");
         }
     }
 }

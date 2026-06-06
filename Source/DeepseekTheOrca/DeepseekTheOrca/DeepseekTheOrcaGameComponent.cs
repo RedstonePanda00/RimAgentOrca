@@ -15,6 +15,7 @@ namespace DeepseekTheOrca
             OrcaProactiveConversationManager.Tick();
             OrcaSessionMemory.Tick();
             OrcaNarrativeHistoryMemory.Tick();
+            OrcaToolBundleRouter.Tick();
         }
 
         public override void ExposeData()

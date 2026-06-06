@@ -7,13 +7,23 @@ namespace DeepseekTheOrca
     {
         private void StartControllerOrChatRequest(DeepseekTheOrcaSettings settings)
         {
-            if (settings != null && settings.HasModelForRole(OrcaLlmModelRole.Controller))
+            OrcaLocalRouteDecision localDecision = OrcaLocalRouteGate.Decide(lastUserText, settings, allowExecutionToolsThisTurn);
+            if (localDecision.useController && settings != null && settings.HasModelForRole(OrcaLlmModelRole.Controller))
             {
+                AddProcess("Local route gate deferred to controller: " + localDecision.reason + ".");
                 StartControllerRequest(settings);
                 return;
             }
 
-            lastControllerRoute = "direct";
+            OrcaAgentRoutingContext routingContext = new OrcaAgentRoutingContext(this, localDecision.route, localDecision.role, "local route");
+            OrcaExtensionManager.ModifyAgentRouting(routingContext);
+            lastControllerRoute = "local:" + routingContext.route;
+            ForceNextModelRole(routingContext.requestedRole);
+            AddProcess("Local route: " + routingContext.route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(routingContext.requestedRole) + " model (" + localDecision.reason + ").");
+            if (routingContext.Changed)
+            {
+                AddProcess("Extension adjusted local route to " + routingContext.route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(routingContext.requestedRole) + " model.");
+            }
             StartRequest(settings);
         }
 

@@ -15,6 +15,7 @@ namespace DeepseekTheOrca
             pendingRequestRole = OrcaLlmModelRole.Fallback;
             OrcaExtensionManager.NotifyChatSessionCleared(this);
             toolRoundsUsed = 0;
+            toolCallsUsedThisTurn = 0;
             ClearForcedNextModelRole();
             lastUserText = "";
             lastPlayerName = "Player";

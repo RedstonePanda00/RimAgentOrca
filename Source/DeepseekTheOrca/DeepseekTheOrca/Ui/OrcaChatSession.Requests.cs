@@ -101,9 +101,8 @@ namespace DeepseekTheOrca
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Tool) || toolRoundsUsed >= MaxToolGatheringRounds)
             {
-                statusText = "DTO_OrcaChatToolBudgetReached".Translate();
-                SetError(statusText);
-                AddProcess("Dialogue model requested more tool data, but the tool model is unavailable or the tool budget is exhausted.");
+                AddProcess("Dialogue model requested more tool data, but the tool model is unavailable or the tool gathering budget is exhausted.");
+                ContinueToDialogueWithToolBudgetExhausted("dialogue requested additional tools after the tool budget was exhausted or unavailable");
                 return;
             }
 
@@ -142,10 +141,17 @@ namespace DeepseekTheOrca
             }
             else
             {
+                HashSet<string> allowedToolNames = role == OrcaLlmModelRole.Tool
+                    ? OrcaToolBundleRouter.SelectToolNames(lastUserText, role, allowExecutionToolsThisTurn)
+                    : null;
+                if (role == OrcaLlmModelRole.Tool)
+                {
+                    AddProcess("Tool bundle router selected " + (allowedToolNames == null ? 0 : allowedToolNames.Count) + " tool schema(s): " + (allowedToolNames == null ? "" : string.Join(", ", allowedToolNames.ToArray())));
+                }
                 pendingRequest = client.SendChatCompletionWithToolsAsync(
                     settings,
                     new List<LlmChatMessage>(messages),
-                    LlmToolSchemas.BuildForRole(role),
+                    LlmToolSchemas.BuildForRole(role, allowedToolNames),
                     900,
                     0.85f,
                     role);

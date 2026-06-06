@@ -206,6 +206,11 @@
   <DTO_DebugRunSingleTool>运行选中工具</DTO_DebugRunSingleTool>
   <DTO_DebugNoArguments>无参数。</DTO_DebugNoArguments>
   <DTO_DebugNoTools>没有已注册工具。</DTO_DebugNoTools>
+  <DTO_EnableSemanticToolSearch>语义工具路由</DTO_EnableSemanticToolSearch>
+  <DTO_EnableSemanticToolSearchTooltip>在工具组 embedding 缓存可用时用 embedding 模型排序工具组；不可用时回退到别名和描述匹配。</DTO_EnableSemanticToolSearchTooltip>
+  <DTO_ToolSearchTopK>工具组 TopK</DTO_ToolSearchTopK>
+  <DTO_ToolSemanticSearchWaitMs>工具语义等待毫秒数</DTO_ToolSemanticSearchWaitMs>
+  <DTO_MaxToolResultEstimatedTokens>最大工具结果估算 token</DTO_MaxToolResultEstimatedTokens>
   <DTO_MaxToolCalls>最大工具调用次数</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>规划器 MTB 天数</DTO_PlanningMtbDays>
   <DTO_OfflineNote>离线行为：AI 决策层直接返回。直到 LLM 提供方连接前，故事事件只由 XML 中定义的原版叙事者组件生成。</DTO_OfflineNote>

@@ -97,7 +97,10 @@ namespace DeepseekTheOrca
 
             defaultsRegistered = true;
             sources.Add(new OrcaNarrativeDirectorSource());
-            sources.Add(new RimtalkProactiveConversationSource());
+            if (RimtalkIntegration.IsAvailable)
+            {
+                sources.Add(new RimtalkProactiveConversationSource());
+            }
         }
     }
 

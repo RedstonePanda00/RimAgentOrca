@@ -57,7 +57,7 @@ namespace DeepseekTheOrca
                 values[pair.Key] = TruncateValue(pair.Value, limit);
             }
 
-            return values;
+            return OrcaToolResultBudgeter.Apply(values);
         }
 
         private static string TruncateValue(string value, int maxChars)

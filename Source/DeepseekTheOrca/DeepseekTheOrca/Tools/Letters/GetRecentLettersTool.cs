@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -6,86 +6,47 @@ using Verse;
 
 namespace DeepseekTheOrca
 {
-    public sealed class GetRecentLettersTool : OrcaToolWorker
+    public sealed class GetLatestLetterTool : OrcaToolWorker
     {
-        public string Name
-        {
-            get { return "get_recent_letters"; }
-        }
-
-        public string Description
-        {
-            get { return "Read recent letters from the game archive, falling back to the visible LetterStack."; }
-        }
-
         public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
-            int count = ParseCount(arguments);
-            List<Letter> letters = RecentArchivedLetters(count);
-            if (letters.Count == 0)
+            int maxChars = ParseBoundedInt(arguments, "maxChars", 700, 120, 1600);
+            Letter letter = LatestArchivedLetter() ?? LatestVisibleLetter();
+            if (letter == null)
             {
-                letters = RecentVisibleLetters(count);
+                return AiToolResult.Ok("no recent letter").WithValue("letter", "");
             }
 
-            if (letters.Count == 0)
-            {
-                return AiToolResult.Ok("no recent letters").WithValue("letters", "");
-            }
-
-            List<string> summaries = new List<string>();
-            for (int i = letters.Count - 1; i >= 0; i--)
-            {
-                summaries.Add(FormatLetter(letters[i]));
-            }
-
-            return AiToolResult.Ok("recent letter count: " + summaries.Count)
-                .WithValue("letters", string.Join(" || ", summaries.ToArray()));
+            return AiToolResult.Ok("latest letter captured")
+                .WithValue("letter", FormatLetter(letter, maxChars));
         }
 
-        private static int ParseCount(Dictionary<string, string> arguments)
-        {
-            int count = 5;
-            string countText;
-            if (arguments.TryGetValue("count", out countText))
-            {
-                int.TryParse(countText, out count);
-            }
-            return Mathf.Clamp(count <= 0 ? 5 : count, 1, 10);
-        }
-
-        private static List<Letter> RecentArchivedLetters(int count)
+        private static Letter LatestArchivedLetter()
         {
             if (Find.Archive == null || Find.Archive.ArchivablesListForReading == null)
             {
-                return new List<Letter>();
+                return null;
             }
 
-            List<Letter> archivedLetters = Find.Archive.ArchivablesListForReading
+            return Find.Archive.ArchivablesListForReading
                 .OfType<Letter>()
-                .OrderBy(letter => letter.arrivalTick)
-                .ToList();
-
-            if (archivedLetters.Count <= count)
-            {
-                return archivedLetters;
-            }
-
-            return archivedLetters.GetRange(archivedLetters.Count - count, count);
+                .OrderByDescending(letter => letter.arrivalTick)
+                .FirstOrDefault();
         }
 
-        private static List<Letter> RecentVisibleLetters(int count)
+        private static Letter LatestVisibleLetter()
         {
-            if (Find.LetterStack == null || Find.LetterStack.LettersListForReading == null)
+            if (Find.LetterStack == null || Find.LetterStack.LettersListForReading == null || Find.LetterStack.LettersListForReading.Count == 0)
             {
-                return new List<Letter>();
+                return null;
             }
 
-            List<Letter> visibleLetters = Find.LetterStack.LettersListForReading;
-            int start = Mathf.Max(0, visibleLetters.Count - count);
-            return visibleLetters.GetRange(start, visibleLetters.Count - start);
+            return Find.LetterStack.LettersListForReading
+                .OrderByDescending(letter => letter.arrivalTick)
+                .FirstOrDefault();
         }
 
-        private static string FormatLetter(Letter letter)
+        private static string FormatLetter(Letter letter, int maxChars)
         {
             string label = letter.Label.Resolve();
             string defName = letter.def == null ? "" : letter.def.defName;
@@ -108,9 +69,9 @@ namespace DeepseekTheOrca
                 }
             }
 
-            if (!text.NullOrEmpty() && text.Length > 500)
+            if (!text.NullOrEmpty() && text.Length > maxChars)
             {
-                text = text.Substring(0, 500) + "...";
+                text = text.Substring(0, maxChars) + "...";
             }
 
             List<string> parts = new List<string>();
@@ -138,6 +99,17 @@ namespace DeepseekTheOrca
             }
 
             return "[" + string.Join(", ", parts.ToArray()) + "]";
+        }
+
+        private static int ParseBoundedInt(Dictionary<string, string> arguments, string key, int defaultValue, int min, int max)
+        {
+            int value = defaultValue;
+            string text;
+            if (arguments != null && arguments.TryGetValue(key, out text))
+            {
+                int.TryParse(text, out value);
+            }
+            return Mathf.Clamp(value <= 0 ? defaultValue : value, min, max);
         }
     }
 }

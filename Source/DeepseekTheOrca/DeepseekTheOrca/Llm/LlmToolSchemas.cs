@@ -16,12 +16,17 @@ namespace DeepseekTheOrca
 
         public static List<Dictionary<string, object>> BuildForRole(OrcaLlmModelRole role)
         {
+            return BuildForRole(role, null);
+        }
+
+        public static List<Dictionary<string, object>> BuildForRole(OrcaLlmModelRole role, HashSet<string> allowedToolNames)
+        {
             switch (role)
             {
                 case OrcaLlmModelRole.Decision:
                     return BuildStorytellerPlanningTools();
                 case OrcaLlmModelRole.Tool:
-                    return BuildToolModelTools();
+                    return BuildToolModelTools(allowedToolNames);
                 case OrcaLlmModelRole.WebSearch:
                     return BuildWebSearchTools();
                 case OrcaLlmModelRole.Vision:
@@ -78,7 +83,7 @@ namespace DeepseekTheOrca
             return tools;
         }
 
-        private static List<Dictionary<string, object>> BuildToolModelTools()
+        private static List<Dictionary<string, object>> BuildToolModelTools(HashSet<string> allowedToolNames)
         {
             List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
             foreach (AiToolDefinition definition in AiStoryToolRegistry.ChatDefinitions)
@@ -87,10 +92,14 @@ namespace DeepseekTheOrca
                 {
                     continue;
                 }
+                if (allowedToolNames != null && !allowedToolNames.Contains(definition.Name))
+                {
+                    continue;
+                }
 
                 tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
             }
-            AppendHttpMcpTools(tools);
+            AppendHttpMcpTools(tools, allowedToolNames);
             return tools;
         }
 
@@ -125,12 +134,16 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static void AppendHttpMcpTools(List<Dictionary<string, object>> tools)
+        private static void AppendHttpMcpTools(List<Dictionary<string, object>> tools, HashSet<string> allowedToolNames)
         {
             List<OrcaMcpToolDescriptor> mcpTools = OrcaHttpMcpClient.DiscoverTools();
             for (int i = 0; i < mcpTools.Count; i++)
             {
                 OrcaMcpToolDescriptor tool = mcpTools[i];
+                if (allowedToolNames != null && !allowedToolNames.Contains(tool.exposedName))
+                {
+                    continue;
+                }
                 tools.Add(Function(tool.exposedName, tool.description, tool.inputSchema ?? EmptyParameters()));
             }
         }

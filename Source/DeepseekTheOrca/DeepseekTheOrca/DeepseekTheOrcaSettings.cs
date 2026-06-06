@@ -227,6 +227,10 @@ namespace DeepseekTheOrca
         public int memoryCompactionTokenThreshold = 6000;
         public int memoryChunkTokenSize = 450;
         public int memoryChunkOverlapTokens = 80;
+        public bool enableSemanticToolSearch = true;
+        public int toolSearchTopK = 5;
+        public int toolSemanticSearchWaitMs = 1000;
+        public int maxToolResultEstimatedTokens = 900;
         public int maxToolCalls = 8;
         public float planningMtbDays = 4.8f;
         public float chatWindowAlpha = 0.82f;
@@ -775,6 +779,10 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref memoryCompactionTokenThreshold, "memoryCompactionTokenThreshold", 6000);
             Scribe_Values.Look(ref memoryChunkTokenSize, "memoryChunkTokenSize", 450);
             Scribe_Values.Look(ref memoryChunkOverlapTokens, "memoryChunkOverlapTokens", 80);
+            Scribe_Values.Look(ref enableSemanticToolSearch, "enableSemanticToolSearch", defaultValue: true);
+            Scribe_Values.Look(ref toolSearchTopK, "toolSearchTopK", 5);
+            Scribe_Values.Look(ref toolSemanticSearchWaitMs, "toolSemanticSearchWaitMs", 1000);
+            Scribe_Values.Look(ref maxToolResultEstimatedTokens, "maxToolResultEstimatedTokens", 900);
             Scribe_Values.Look(ref maxToolCalls, "maxToolCalls", 8);
             Scribe_Values.Look(ref planningMtbDays, "planningMtbDays", 4.8f);
             Scribe_Values.Look(ref chatWindowAlpha, "chatWindowAlpha", 0.82f);
@@ -858,6 +866,9 @@ namespace DeepseekTheOrca
             memoryCompactionTokenThreshold = UnityEngine.Mathf.Clamp(memoryCompactionTokenThreshold, 1000, 20000);
             memoryChunkTokenSize = UnityEngine.Mathf.Clamp(memoryChunkTokenSize, 150, 1200);
             memoryChunkOverlapTokens = UnityEngine.Mathf.Clamp(memoryChunkOverlapTokens, 0, memoryChunkTokenSize / 2);
+            toolSearchTopK = UnityEngine.Mathf.Clamp(toolSearchTopK, 1, 12);
+            toolSemanticSearchWaitMs = UnityEngine.Mathf.Clamp(toolSemanticSearchWaitMs, 0, 3000);
+            maxToolResultEstimatedTokens = UnityEngine.Mathf.Clamp(maxToolResultEstimatedTokens, 200, 4000);
             if (tavilySearchDepth != "basic" && tavilySearchDepth != "advanced" && tavilySearchDepth != "fast" && tavilySearchDepth != "ultra-fast")
             {
                 tavilySearchDepth = "basic";

@@ -236,6 +236,11 @@
   <DTO_DebugRunSingleTool>Run selected tool</DTO_DebugRunSingleTool>
   <DTO_DebugNoArguments>No arguments.</DTO_DebugNoArguments>
   <DTO_DebugNoTools>No registered tools.</DTO_DebugNoTools>
+  <DTO_EnableSemanticToolSearch>Semantic tool routing</DTO_EnableSemanticToolSearch>
+  <DTO_EnableSemanticToolSearchTooltip>Use the embedding model to rank tool bundles when cached bundle embeddings are available; falls back to aliases and descriptions.</DTO_EnableSemanticToolSearchTooltip>
+  <DTO_ToolSearchTopK>Tool bundle TopK</DTO_ToolSearchTopK>
+  <DTO_ToolSemanticSearchWaitMs>Tool semantic wait ms</DTO_ToolSemanticSearchWaitMs>
+  <DTO_MaxToolResultEstimatedTokens>Max tool result estimated tokens</DTO_MaxToolResultEstimatedTokens>
   <DTO_MaxToolCalls>Max tool calls</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>Planner MTB days</DTO_PlanningMtbDays>
   <DTO_OrcaChatTab>RimAgent</DTO_OrcaChatTab>
