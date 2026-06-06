@@ -14,6 +14,13 @@ namespace DeepseekTheOrca
             LlmToolCallDebugRunner.Tick();
             OrcaProactiveConversationManager.Tick();
             OrcaSessionMemory.Tick();
+            OrcaNarrativeHistoryMemory.Tick();
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            OrcaNarrativeHistoryMemory.ExposeData();
         }
     }
 }

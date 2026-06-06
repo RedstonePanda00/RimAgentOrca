@@ -172,12 +172,12 @@
   <DTO_EnableAmbientProactiveDialogue>启用环境主动对话</DTO_EnableAmbientProactiveDialogue>
   <DTO_EnableAmbientProactiveDialogueTooltip>关闭后，只有奥卡自己选择的叙事事件会自动触发主动对话。</DTO_EnableAmbientProactiveDialogueTooltip>
   <DTO_ProactivePluginSettings>触发概率</DTO_ProactivePluginSettings>
-  <DTO_ColonyObservationProactiveChance>殖民地观察概率 (0-1)</DTO_ColonyObservationProactiveChance>
+  <DTO_ColonyObservationSpeakChanceMultiplier>殖民地观察开口概率倍率 (0-2)</DTO_ColonyObservationSpeakChanceMultiplier>
   <DTO_RimtalkProactiveBaseChance>RimTalk 基础概率 (0-1)</DTO_RimtalkProactiveBaseChance>
-  <DTO_RimtalkProactiveMissBonus>RimTalk 未触发递增 (0-1)</DTO_RimtalkProactiveMissBonus>
-  <DTO_RimtalkProactiveForceAfterMisses>RimTalk 几次未触发后强制触发</DTO_RimtalkProactiveForceAfterMisses>
-  <DTO_ProactivePluginSettingsNote>默认值：殖民地观察 0.25，RimTalk 0.15，每次未触发 +0.05，连续 8 次未触发后强制触发。</DTO_ProactivePluginSettingsNote>
-  <DTO_ColonyObservationProactiveSettingsNote>默认值：殖民地观察 0.25。</DTO_ColonyObservationProactiveSettingsNote>
+  <DTO_RimtalkProactiveForceAfterMisses>RimTalk 几次未触发后强制触发 (0 为关闭保底)</DTO_RimtalkProactiveForceAfterMisses>
+  <DTO_RimtalkProactiveCooldownTicks>RimTalk 成功触发冷却 ticks (0 为关闭)</DTO_RimtalkProactiveCooldownTicks>
+  <DTO_ProactivePluginSettingsNote>默认值：殖民地观察倍率 1.0，RimTalk 0.15，连续 8 次未触发后强制触发，成功触发后冷却 9000 ticks。将 RimTalk 强制触发次数或冷却 ticks 设为 0 可关闭对应行为。</DTO_ProactivePluginSettingsNote>
+  <DTO_ColonyObservationProactiveSettingsNote>默认值：殖民地观察倍率 1.0。</DTO_ColonyObservationProactiveSettingsNote>
   <DTO_RimtalkProactiveUnavailable>RimTalk 未启用，因此隐藏 RimTalk 主动触发相关设置。</DTO_RimtalkProactiveUnavailable>
   <DTO_TestConnection>检测 DeepSeek 连接</DTO_TestConnection>
   <DTO_TestConnectionRunning>正在检测连接...</DTO_TestConnectionRunning>
@@ -234,4 +234,34 @@
   <DTO_OrcaChatLogProcess>2. 奥卡的运行过程</DTO_OrcaChatLogProcess>
   <DTO_OrcaChatLogReply>3. 奥卡的回复</DTO_OrcaChatLogReply>
   <DTO_OrcaChatLogError>4. 错误原因</DTO_OrcaChatLogError>
+  <DTO_SettingsPageMemory>Memory</DTO_SettingsPageMemory>
+  <DTO_SettingsPageKnowledge>知识库</DTO_SettingsPageKnowledge>
+  <DTO_ModelEmbedding>Embedding model</DTO_ModelEmbedding>
+  <DTO_ModelEmbeddingTooltip>Used for long-term memory vectors.</DTO_ModelEmbeddingTooltip>
+  <DTO_ModelMemory>记忆模型</DTO_ModelMemory>
+  <DTO_ModelMemoryTooltip>用于上下文压缩和空闲期记忆整理。</DTO_ModelMemoryTooltip>
+  <DTO_MemoryManagerTitle>Long-term memory</DTO_MemoryManagerTitle>
+  <DTO_EnableLongTermMemory>Enable long-term memory</DTO_EnableLongTermMemory>
+  <DTO_EnableLongTermMemoryTooltip>Store selected important impressions across play sessions.</DTO_EnableLongTermMemoryTooltip>
+  <DTO_MemoryMaxInjectedEntries>Max memory entries injected</DTO_MemoryMaxInjectedEntries>
+  <DTO_MemoryMergeCosineThreshold>记忆合并余弦阈值</DTO_MemoryMergeCosineThreshold>
+  <DTO_EnableSemanticMemoryQuery>启用语义记忆检索</DTO_EnableSemanticMemoryQuery>
+  <DTO_EnableSemanticMemoryQueryTooltip>尝试使用 query embedding 进行语义 topK，失败时回退到关键词 topK。</DTO_EnableSemanticMemoryQueryTooltip>
+  <DTO_SemanticMemoryQueryWaitMs>语义检索等待毫秒数</DTO_SemanticMemoryQueryWaitMs>
+  <DTO_SemanticMemoryQueryHardTimeoutMs>语义检索硬超时毫秒数</DTO_SemanticMemoryQueryHardTimeoutMs>
+  <DTO_MemoryCompactionTokenThreshold>记忆压缩触发估算 token 阈值</DTO_MemoryCompactionTokenThreshold>
+  <DTO_MemoryChunkTokenSize>记忆 chunk 估算 token 大小</DTO_MemoryChunkTokenSize>
+  <DTO_MemoryChunkOverlapTokens>记忆 chunk overlap 估算 token 数</DTO_MemoryChunkOverlapTokens>
+  <DTO_MemoryRecentBuffer>近期经历缓存</DTO_MemoryRecentBuffer>
+  <DTO_MemoryRecent>近期</DTO_MemoryRecent>
+  <DTO_KnowledgeMaxInjectedEntries>最大注入知识条目数</DTO_KnowledgeMaxInjectedEntries>
+  <DTO_MemoryClearAll>Clear memory</DTO_MemoryClearAll>
+  <DTO_MemoryClearConfirm>Clear all long-term memory?</DTO_MemoryClearConfirm>
+  <DTO_MemoryStoredCount>Stored memories: {0}</DTO_MemoryStoredCount>
+  <DTO_MemoryEmpty>No long-term memory has been stored yet.</DTO_MemoryEmpty>
+  <DTO_KnowledgeManagerTitle>知识库</DTO_KnowledgeManagerTitle>
+  <DTO_KnowledgeFolder>知识库文件夹</DTO_KnowledgeFolder>
+  <DTO_KnowledgeReload>重新加载知识库</DTO_KnowledgeReload>
+  <DTO_KnowledgeStoredCount>知识条目：{0}</DTO_KnowledgeStoredCount>
+  <DTO_KnowledgeEmpty>尚未加载知识条目。</DTO_KnowledgeEmpty>
 </LanguageData>

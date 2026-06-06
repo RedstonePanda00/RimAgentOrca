@@ -12,12 +12,14 @@ namespace DeepseekTheOrca
 
         public string Description
         {
-            get { return "Read a compact storyteller-safe summary of the current incident target."; }
+            get { return "Read a compact storyteller-safe summary and narrative pressure assessment of the current incident target."; }
         }
 
         public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             ColonySnapshot snapshot = ColonySnapshot.Capture(context.target);
+            ColonyDeepSnapshot deepSnapshot = ColonyDeepSnapshot.Capture(context.Map);
+            OrcaNarrativeEvaluation evaluation = OrcaNarrativeEvaluator.EvaluateCurrentStateForTool(deepSnapshot);
             return AiToolResult.Ok("colony summary captured")
                 .WithValue("colonists", snapshot.colonists)
                 .WithValue("downedColonists", snapshot.downedColonists)
@@ -26,7 +28,19 @@ namespace DeepseekTheOrca
                 .WithValue("playerWealth", snapshot.playerWealth.ToString("F0"))
                 .WithValue("threatPoints", snapshot.threatPoints.ToString("F0"))
                 .WithValue("humanEdibleNutrition", snapshot.humanEdibleNutrition.ToString("F1"))
-                .WithValue("recentIncidents", snapshot.recentIncidents);
+                .WithValue("recentIncidents", snapshot.recentIncidents)
+                .WithValue("medicineCount", deepSnapshot.medicineCount)
+                .WithValue("silverCount", deepSnapshot.silverCount)
+                .WithValue("injuredColonists", deepSnapshot.injuredColonists)
+                .WithValue("lifeThreatenedColonists", deepSnapshot.lifeThreatenedColonists)
+                .WithValue("tendableColonists", deepSnapshot.tendableColonists)
+                .WithValue("combatCapacity", deepSnapshot.combatCapacity.ToString("F0"))
+                .WithValue("hasSuperPawn", deepSnapshot.hasSuperPawn)
+                .WithValue("narrativeClassification", evaluation.classification)
+                .WithValue("narrativeScore", evaluation.score.ToString("F0"))
+                .WithValue("narrativeTheme", evaluation.dominantTheme)
+                .WithValue("narrativeReasons", string.Join("; ", evaluation.reasons.ToArray()))
+                .WithValue("chainScores", evaluation.chainScores);
         }
     }
 }

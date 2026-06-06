@@ -36,7 +36,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 780f);
+            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, 830f);
             Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(viewRect);
@@ -50,6 +50,8 @@ namespace DeepseekTheOrca
             DrawModelSelector(listing, settings, "DTO_ModelTool".Translate(), OrcaLlmModelRole.Tool, "DTO_ModelToolTooltip".Translate(), allowFallback: true);
             DrawModelSelector(listing, settings, "DTO_ModelVision".Translate(), OrcaLlmModelRole.Vision, "DTO_ModelVisionTooltip".Translate(), allowFallback: true);
             DrawModelSelector(listing, settings, "DTO_ModelWebSearch".Translate(), OrcaLlmModelRole.WebSearch, "DTO_ModelWebSearchTooltip".Translate(), allowFallback: true);
+            DrawModelSelector(listing, settings, "DTO_ModelEmbedding".Translate(), OrcaLlmModelRole.Embedding, "DTO_ModelEmbeddingTooltip".Translate(), allowFallback: false);
+            DrawModelSelector(listing, settings, "DTO_ModelMemory".Translate(), OrcaLlmModelRole.Memory, "DTO_ModelMemoryTooltip".Translate(), allowFallback: false);
 
             LlmConnectionStatus connectionStatus;
             string connectionMessage;

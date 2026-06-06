@@ -93,6 +93,10 @@ namespace DeepseekTheOrca
                     return "vision";
                 case OrcaLlmModelRole.WebSearch:
                     return "web-search";
+                case OrcaLlmModelRole.Embedding:
+                    return "embedding";
+                case OrcaLlmModelRole.Memory:
+                    return "memory";
                 default:
                     return "fallback";
             }

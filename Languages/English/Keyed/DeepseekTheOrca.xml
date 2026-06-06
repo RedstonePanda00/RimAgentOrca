@@ -20,6 +20,8 @@
   <DTO_SettingsPageStoryteller>Storyteller</DTO_SettingsPageStoryteller>
   <DTO_SettingsPagePersonas>Personas</DTO_SettingsPagePersonas>
   <DTO_SettingsPageSkills>Skills</DTO_SettingsPageSkills>
+  <DTO_SettingsPageMemory>Memory</DTO_SettingsPageMemory>
+  <DTO_SettingsPageKnowledge>Knowledge</DTO_SettingsPageKnowledge>
   <DTO_SettingsPagePlugins>Plugins</DTO_SettingsPagePlugins>
   <DTO_SettingsPageTools>Tools</DTO_SettingsPageTools>
   <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
@@ -77,6 +79,10 @@
   <DTO_ModelVisionTooltip>Used by vision-capable requests when available. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>Web-search model</DTO_ModelWebSearch>
   <DTO_ModelWebSearchTooltip>Used by web-search-capable requests when available. Current Tavily search remains a local tool.</DTO_ModelWebSearchTooltip>
+  <DTO_ModelEmbedding>Embedding model</DTO_ModelEmbedding>
+  <DTO_ModelEmbeddingTooltip>Used for long-term memory vectors. Select an OpenAI-compatible embeddings model when available.</DTO_ModelEmbeddingTooltip>
+  <DTO_ModelMemory>Memory model</DTO_ModelMemory>
+  <DTO_ModelMemoryTooltip>Used for memory compaction and sleep-time memory evaluation.</DTO_ModelMemoryTooltip>
   <DTO_ModelUseFallback>Use fallback model</DTO_ModelUseFallback>
   <DTO_ModelNoDiscoveredModels>No discovered models. Configure an API key and wait for model discovery.</DTO_ModelNoDiscoveredModels>
   <DTO_ModelSelectTitle>Select model</DTO_ModelSelectTitle>
@@ -145,6 +151,30 @@
   <DTO_SkillAllowedTools>Allowed tools</DTO_SkillAllowedTools>
   <DTO_SkillPrompt>Skill prompt</DTO_SkillPrompt>
   <DTO_SkillSave>Save</DTO_SkillSave>
+  <DTO_MemoryManagerTitle>Long-term memory</DTO_MemoryManagerTitle>
+  <DTO_EnableLongTermMemory>Enable long-term memory</DTO_EnableLongTermMemory>
+  <DTO_EnableLongTermMemoryTooltip>Store selected important impressions across play sessions. Current save and current persona memories are weighted higher when recalled.</DTO_EnableLongTermMemoryTooltip>
+  <DTO_MemoryMaxInjectedEntries>Max memory entries injected</DTO_MemoryMaxInjectedEntries>
+  <DTO_MemoryMergeCosineThreshold>Memory merge cosine threshold</DTO_MemoryMergeCosineThreshold>
+  <DTO_EnableSemanticMemoryQuery>Semantic memory query</DTO_EnableSemanticMemoryQuery>
+  <DTO_EnableSemanticMemoryQueryTooltip>Try query embedding for semantic memory topK, then fall back to keyword topK.</DTO_EnableSemanticMemoryQueryTooltip>
+  <DTO_SemanticMemoryQueryWaitMs>Semantic query wait ms</DTO_SemanticMemoryQueryWaitMs>
+  <DTO_SemanticMemoryQueryHardTimeoutMs>Semantic query hard timeout ms</DTO_SemanticMemoryQueryHardTimeoutMs>
+  <DTO_MemoryCompactionTokenThreshold>Memory compaction threshold estimated tokens</DTO_MemoryCompactionTokenThreshold>
+  <DTO_MemoryChunkTokenSize>Chunk size estimated tokens</DTO_MemoryChunkTokenSize>
+  <DTO_MemoryChunkOverlapTokens>Chunk overlap estimated tokens</DTO_MemoryChunkOverlapTokens>
+  <DTO_MemoryRecentBuffer>Recent experience buffer</DTO_MemoryRecentBuffer>
+  <DTO_MemoryRecent>recent</DTO_MemoryRecent>
+  <DTO_KnowledgeMaxInjectedEntries>Max knowledge entries injected</DTO_KnowledgeMaxInjectedEntries>
+  <DTO_MemoryClearAll>Clear memory</DTO_MemoryClearAll>
+  <DTO_MemoryClearConfirm>Clear all long-term memory?</DTO_MemoryClearConfirm>
+  <DTO_MemoryStoredCount>Stored memories: {0}</DTO_MemoryStoredCount>
+  <DTO_MemoryEmpty>No long-term memory has been stored yet.</DTO_MemoryEmpty>
+  <DTO_KnowledgeManagerTitle>Knowledge base</DTO_KnowledgeManagerTitle>
+  <DTO_KnowledgeFolder>Knowledge folder</DTO_KnowledgeFolder>
+  <DTO_KnowledgeReload>Reload knowledge</DTO_KnowledgeReload>
+  <DTO_KnowledgeStoredCount>Knowledge entries: {0}</DTO_KnowledgeStoredCount>
+  <DTO_KnowledgeEmpty>No knowledge entries loaded.</DTO_KnowledgeEmpty>
   <DTO_PluginManagerTitle>Agent plugins</DTO_PluginManagerTitle>
   <DTO_PluginManagerDescription>Manage optional agent modules. Plugins can add prompt context, response schema requirements, tool behavior, or runtime state.</DTO_PluginManagerDescription>
   <DTO_PluginManagerInstalled>Installed plugins</DTO_PluginManagerInstalled>
@@ -172,12 +202,12 @@
   <DTO_EnableAmbientProactiveDialogue>Enable ambient proactive dialogue</DTO_EnableAmbientProactiveDialogue>
   <DTO_EnableAmbientProactiveDialogueTooltip>When disabled, only Orca-selected storyteller events can trigger proactive dialogue automatically.</DTO_EnableAmbientProactiveDialogueTooltip>
   <DTO_ProactivePluginSettings>Trigger probabilities</DTO_ProactivePluginSettings>
-  <DTO_ColonyObservationProactiveChance>Colony observation chance (0-1)</DTO_ColonyObservationProactiveChance>
+  <DTO_ColonyObservationSpeakChanceMultiplier>Colony observation chance multiplier (0-2)</DTO_ColonyObservationSpeakChanceMultiplier>
   <DTO_RimtalkProactiveBaseChance>RimTalk base chance (0-1)</DTO_RimtalkProactiveBaseChance>
-  <DTO_RimtalkProactiveMissBonus>RimTalk miss bonus (0-1)</DTO_RimtalkProactiveMissBonus>
-  <DTO_RimtalkProactiveForceAfterMisses>RimTalk force after misses</DTO_RimtalkProactiveForceAfterMisses>
-  <DTO_ProactivePluginSettingsNote>Defaults: colony observations 0.25, RimTalk 0.15 plus 0.05 per miss, forced after 8 misses.</DTO_ProactivePluginSettingsNote>
-  <DTO_ColonyObservationProactiveSettingsNote>Default: colony observations 0.25.</DTO_ColonyObservationProactiveSettingsNote>
+  <DTO_RimtalkProactiveForceAfterMisses>RimTalk force after misses (0 disables)</DTO_RimtalkProactiveForceAfterMisses>
+  <DTO_RimtalkProactiveCooldownTicks>RimTalk success cooldown ticks (0 disables)</DTO_RimtalkProactiveCooldownTicks>
+  <DTO_ProactivePluginSettingsNote>Defaults: colony observation multiplier 1.0, RimTalk 0.15, forced after 8 misses, success cooldown 9000 ticks. Set RimTalk force after misses or cooldown ticks to 0 to disable that behavior.</DTO_ProactivePluginSettingsNote>
+  <DTO_ColonyObservationProactiveSettingsNote>Default: colony observation multiplier 1.0.</DTO_ColonyObservationProactiveSettingsNote>
   <DTO_RimtalkProactiveUnavailable>RimTalk is not active, so RimTalk proactive trigger settings are hidden.</DTO_RimtalkProactiveUnavailable>
   <DTO_TestConnection>Test LLM connection</DTO_TestConnection>
   <DTO_TestConnectionRunning>Testing connection...</DTO_TestConnectionRunning>

@@ -40,12 +40,12 @@
     </permissions>
     <settings>
       <li>
-        <key>colonyObservationProactiveChance</key>
-        <fieldName>colonyObservationProactiveChance</fieldName>
+        <key>colonyObservationSpeakChanceMultiplier</key>
+        <fieldName>colonyObservationSpeakChanceMultiplier</fieldName>
         <type>float</type>
-        <label>DTO_ColonyObservationProactiveChance</label>
+        <label>DTO_ColonyObservationSpeakChanceMultiplier</label>
         <min>0</min>
-        <max>1</max>
+        <max>2</max>
       </li>
       <li>
         <key>rimtalkProactiveBaseChance</key>
@@ -56,20 +56,20 @@
         <max>1</max>
       </li>
       <li>
-        <key>rimtalkProactiveMissBonus</key>
-        <fieldName>rimtalkProactiveMissBonus</fieldName>
-        <type>float</type>
-        <label>DTO_RimtalkProactiveMissBonus</label>
-        <min>0</min>
-        <max>1</max>
-      </li>
-      <li>
         <key>rimtalkProactiveForceAfterMisses</key>
         <fieldName>rimtalkProactiveForceAfterMisses</fieldName>
         <type>int</type>
         <label>DTO_RimtalkProactiveForceAfterMisses</label>
-        <min>1</min>
+        <min>0</min>
         <max>20</max>
+      </li>
+      <li>
+        <key>rimtalkProactiveCooldownTicks</key>
+        <fieldName>rimtalkProactiveCooldownTicks</fieldName>
+        <type>int</type>
+        <label>DTO_RimtalkProactiveCooldownTicks</label>
+        <min>0</min>
+        <max>60000</max>
       </li>
     </settings>
     <workerClass>DeepseekTheOrca.OrcaProactiveConversationExtensionWorker</workerClass>

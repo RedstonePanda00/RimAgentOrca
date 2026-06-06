@@ -4,7 +4,7 @@
     <defName>DTO_Tool_GetColonySummary</defName>
     <toolName>get_colony_summary</toolName>
     <label>Get colony summary</label>
-    <description>Read a compact storyteller-safe summary of the current incident target.</description>
+    <description>Read a compact storyteller-safe summary and narrative pressure assessment of the current incident target.</description>
     <workerClass>DeepseekTheOrca.GetColonySummaryTool</workerClass>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>true</exposeToStorytellerPlanning>
@@ -308,7 +308,7 @@
     <defName>DTO_Tool_GetRimtalkChatHistory</defName>
     <toolName>get_rimtalk_chat_history</toolName>
     <label>Get RimTalk chat history</label>
-    <description>Read recent RimTalk chat records. Each entry includes origin=player_initiated or ai_auto_generated so Orca can tell whether dialogue was player-started or generated automatically by RimTalk.</description>
+    <description>Read recent RimTalk ApiHistory records. Entries include origin, channel, state, speaker, recipient, messageText, requestText, and conversationId so Orca can distinguish player-written lines from automatic RimTalk dialogue.</description>
     <workerClass>DeepseekTheOrca.Rimtalk.GetRimtalkChatHistoryTool</workerClass>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
@@ -328,6 +328,39 @@
           <li>player_initiated</li>
           <li>ai_auto_generated</li>
         </enumValues>
+      </li>
+      <li>
+        <name>channel</name>
+        <type>string</type>
+        <description>Optional RimTalk channel filter. Defaults to all. User is player-written chat, Stream is automatic dialogue, Query is usually ignored/query output.</description>
+        <enumValues>
+          <li>all</li>
+          <li>User</li>
+          <li>Stream</li>
+          <li>Query</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>state</name>
+        <type>string</type>
+        <description>Optional RimTalk ApiLog state filter. Defaults to all.</description>
+        <enumValues>
+          <li>all</li>
+          <li>Pending</li>
+          <li>Spoken</li>
+          <li>Ignored</li>
+          <li>Failed</li>
+        </enumValues>
+      </li>
+      <li>
+        <name>pawn</name>
+        <type>string</type>
+        <description>Optional case-insensitive speaker or recipient name filter.</description>
+      </li>
+      <li>
+        <name>conversationId</name>
+        <type>integer</type>
+        <description>Optional exact RimTalk conversation id filter. Monologues may use -1.</description>
       </li>
       <li>
         <name>maxChars</name>

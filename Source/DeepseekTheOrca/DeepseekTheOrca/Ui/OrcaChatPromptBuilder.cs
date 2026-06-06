@@ -15,8 +15,9 @@ namespace DeepseekTheOrca
             string userText = context == null ? "" : context.text;
             builder.AppendLine("Player SteamPersonaName: " + playerName);
             AppendContextTags(builder, context == null ? null : context.contextTags);
-            AppendMemoryContext(builder);
             AppendSelectedSkillContext(builder, selectedSkillIds, userText);
+            AppendKnowledgeContext(builder, userText);
+            AppendMemoryContext(builder, userText);
             builder.AppendLine("Player message:");
             builder.Append(userText);
             return builder.ToString();
@@ -31,8 +32,10 @@ namespace DeepseekTheOrca
             builder.AppendLine("Trigger title: " + request.title);
             List<string> contextTags = context == null ? null : context.contextTags;
             AppendContextTags(builder, contextTags);
-            AppendMemoryContext(builder);
             AppendActiveSkillContext(builder, request.source + "\n" + request.title + "\n" + request.body, contextTags);
+            string query = request.source + "\n" + request.title + "\n" + request.body;
+            AppendKnowledgeContext(builder, query);
+            AppendMemoryContext(builder, query);
             builder.AppendLine("Trigger details:");
             builder.AppendLine(request.body);
             builder.Append("This is not a player request. Speak proactively to the player in character. Reply in the current game language, even if the trigger details use English field labels. Do not call event execution tools for this trigger; the event has already been scheduled or observed.");
@@ -93,7 +96,7 @@ namespace DeepseekTheOrca
             }
 
             builder.AppendLine("Common chat runtime rules:");
-            builder.AppendLine("A memory context may be included in user messages. It is process-level memory for the current RimWorld launch, shared across saves, and reset when the game process restarts. Treat it as soft memory: useful for continuity, but less authoritative than current game data from tools.");
+            builder.AppendLine("Knowledge base and long-term memory context may be included in user messages. Knowledge explains terms and lore. Long-term memory contains fuzzy remembered impressions across personas and colonies, weighted toward the current persona and save. Treat both as soft context below current game data from tools.");
             builder.AppendLine("Never mention hidden rolls, willingness chance, percentages, dice rolls, random rolls, validation, tool calls, JSON, internal state, or tool result internals to the player.");
             builder.AppendLine("You may inspect game data through tools when it would help you answer naturally: colony summary, recent letters, map pawns, pawn details, available incidents, and RimTalk chat history if available.");
             builder.AppendLine("If web search is available, you may use it for current external information outside the game. Do not use web search for current RimWorld colony state; use game tools for that. Treat web results as imperfect and summarize them naturally.");
@@ -182,9 +185,21 @@ namespace DeepseekTheOrca
             return builder.ToString().Trim('_');
         }
 
-        private static void AppendMemoryContext(StringBuilder builder)
+        private static void AppendKnowledgeContext(StringBuilder builder, string query)
         {
-            string memoryContext = OrcaSessionMemory.ContextForPrompt();
+            string knowledgeContext = OrcaKnowledgeManager.ContextForPrompt(query);
+            if (knowledgeContext.NullOrEmpty())
+            {
+                return;
+            }
+
+            builder.AppendLine("Knowledge context:");
+            builder.AppendLine(knowledgeContext);
+        }
+
+        private static void AppendMemoryContext(StringBuilder builder, string query)
+        {
+            string memoryContext = OrcaSessionMemory.ContextForPrompt(query);
             if (memoryContext.NullOrEmpty())
             {
                 return;

@@ -21,7 +21,6 @@ If you like my mod, please make sure to give me a Star!
 ## Requirements
 
 - RimWorld 1.6.
-- Harmony.
 - An API key for at least one supported LLM provider if you want AI planning or Orca chat.
 - Optional: Tavily API key for web search.
 - Optional: RimTalk for RimTalk-aware chat history and proactive dialogue.
@@ -29,10 +28,8 @@ If you like my mod, please make sure to give me a Star!
 ## Installation
 
 1. Place this repository folder in your RimWorld `Mods` directory.
-2. Enable `Harmony`.
-3. Enable `AI Storyteller Expand: Deepseek The Orca`.
-4. Load Harmony before this mod.
-5. Start RimWorld and select `Orca Deepseek` as the storyteller.
+2. Enable `AI Storyteller Expand: Deepseek The Orca`.
+3. Start RimWorld and select `Orca Deepseek` as the storyteller.
 
 ## Configuration
 
@@ -55,7 +52,7 @@ This mod can send data outside the game when you enable external providers or to
 - Tavily search queries are sent to Tavily when web search is enabled.
 - HTTP MCP requests are sent to the MCP endpoint URLs you configure.
 - API keys and tokens are stored in RimWorld mod settings.
-- RimWorld, Unity, Harmony, Ludeon, DeepSeek, OpenAI, OpenRouter, Tavily, and RimTalk are separate third-party projects or services.
+- RimWorld, Unity, Ludeon, DeepSeek, OpenAI, OpenRouter, Tavily, and RimTalk are separate third-party projects or services.
 
 Only configure providers, proxies, and MCP servers you trust.
 
@@ -87,4 +84,4 @@ If your RimWorld installation is elsewhere, update the reference hint paths in `
 
 This project is licensed under the MIT License. See `LICENSE` for details.
 
-The MIT License applies to this repository's own code, XML, textures, and documentation to the extent they are owned by the project author. It does not grant rights to RimWorld, Unity, Harmony, or other third-party software and services.
+The MIT License applies to this repository's own code, XML, textures, and documentation to the extent they are owned by the project author. It does not grant rights to RimWorld, Unity, or other third-party software and services.

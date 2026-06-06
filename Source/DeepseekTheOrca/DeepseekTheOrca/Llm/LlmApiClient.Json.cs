@@ -319,6 +319,56 @@ namespace DeepseekTheOrca
             return models;
         }
 
+        private static OrcaEmbeddingResult ParseEmbeddingResponse(string responseText)
+        {
+            try
+            {
+                Dictionary<string, object> root = MiniJson.Deserialize(responseText) as Dictionary<string, object>;
+                object dataObj;
+                List<object> data = root != null && root.TryGetValue("data", out dataObj) ? dataObj as List<object> : null;
+                if (data == null || data.Count == 0)
+                {
+                    return OrcaEmbeddingResult.Failure("Embedding response did not contain data.");
+                }
+
+                Dictionary<string, object> first = data[0] as Dictionary<string, object>;
+                object embeddingObj;
+                List<object> raw = first != null && first.TryGetValue("embedding", out embeddingObj) ? embeddingObj as List<object> : null;
+                if (raw == null || raw.Count == 0)
+                {
+                    return OrcaEmbeddingResult.Failure("Embedding response did not contain an embedding vector.");
+                }
+
+                OrcaEmbeddingResult result = new OrcaEmbeddingResult { success = true };
+                for (int i = 0; i < raw.Count; i++)
+                {
+                    object value = raw[i];
+                    if (value is double)
+                    {
+                        result.embedding.Add((float)(double)value);
+                    }
+                    else if (value is long)
+                    {
+                        result.embedding.Add((float)(long)value);
+                    }
+                    else
+                    {
+                        float parsed;
+                        if (value != null && float.TryParse(value.ToString(), out parsed))
+                        {
+                            result.embedding.Add(parsed);
+                        }
+                    }
+                }
+
+                return result.embedding.Count == 0 ? OrcaEmbeddingResult.Failure("Embedding vector was empty.") : result;
+            }
+            catch (Exception ex)
+            {
+                return OrcaEmbeddingResult.Failure("Failed to parse embedding response: " + ex.Message);
+            }
+        }
+
         private static bool UsesOpenAiChatCompletionTokens(string providerId)
         {
             return LlmProviderConfig.NormalizeProvider(providerId) == LlmProviderConfig.OpenAI;

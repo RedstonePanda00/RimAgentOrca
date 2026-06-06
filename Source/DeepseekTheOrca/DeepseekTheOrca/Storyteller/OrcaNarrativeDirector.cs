@@ -60,11 +60,11 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static void EnqueueBeat(OrcaNarrativeBeat beat)
+        public static bool EnqueueBeat(OrcaNarrativeBeat beat)
         {
             if (beat == null || beat.importance < MinImportance)
             {
-                return;
+                return false;
             }
 
             int ticksGame = CurrentTick();
@@ -74,7 +74,7 @@ namespace DeepseekTheOrca
                 && ticksGame - lastTick < BeatCooldownTicks)
             {
                 Debug("Narrative beat skipped by cooldown: " + beat.cooldownKey);
-                return;
+                return false;
             }
 
             if (!beat.cooldownKey.NullOrEmpty())
@@ -89,24 +89,25 @@ namespace DeepseekTheOrca
 
             pendingBeats.Enqueue(beat);
             Debug("Narrative beat queued: " + beat.source + " | " + beat.title + " | importance=" + beat.importance);
+            return true;
         }
 
-        public static void EnqueueAmbientBeat(OrcaNarrativeBeat beat, float chance)
+        public static bool EnqueueAmbientBeat(OrcaNarrativeBeat beat, float chance)
         {
             if (!OrcaProactiveConversationManager.AmbientEnabled)
             {
                 Debug("Ambient proactive beat skipped because ambient proactive dialogue is disabled: " + (beat == null ? "<null>" : beat.source + " | " + beat.title));
-                return;
+                return false;
             }
 
             chance = Mathf.Clamp01(chance);
             if (chance < 1f && !Rand.Chance(chance))
             {
                 Debug("Ambient proactive beat roll skipped at " + chance.ToStringPercent() + ": " + (beat == null ? "<null>" : beat.source + " | " + beat.title));
-                return;
+                return false;
             }
 
-            EnqueueBeat(beat);
+            return EnqueueBeat(beat);
         }
 
         public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target)
@@ -116,6 +117,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            OrcaNarrativeHistoryMemory.BeginIncident(firingIncident.def.defName, firingIncident.parms == null ? 0f : firingIncident.parms.points, target as Map);
             string mapText = target == null ? "unknown target" : target.ToString();
             string body = "A non-player-requested storyteller event has just been scheduled by you.\n"
                 + "IncidentDef: " + firingIncident.def.defName + "\n"
@@ -209,7 +211,9 @@ namespace DeepseekTheOrca
         private const int MaxSeenKeys = 200;
         private readonly HashSet<string> seenLetterKeys = new HashSet<string>();
         private readonly Queue<string> seenKeyOrder = new Queue<string>();
-        private ColonySnapshot previous;
+        private readonly Queue<ColonyDeepSnapshot> recentSnapshots = new Queue<ColonyDeepSnapshot>();
+        private readonly OrcaNarrativeEvaluationState evaluationState = new OrcaNarrativeEvaluationState();
+        private ColonyDeepSnapshot previous;
         private int lastScanTick = -999999;
         private bool seeded;
 
@@ -228,17 +232,19 @@ namespace DeepseekTheOrca
 
             lastScanTick = ticksGame;
             List<Letter> letters = RecentLetters(12);
-            ColonySnapshot current = Find.CurrentMap == null || Find.CurrentMap.StoryState == null ? null : ColonySnapshot.Capture(Find.CurrentMap);
+            ColonyDeepSnapshot current = Find.CurrentMap == null || Find.CurrentMap.StoryState == null ? null : ColonyDeepSnapshot.Capture(Find.CurrentMap);
             if (!seeded)
             {
                 MarkSeen(letters);
                 previous = current;
+                AddRecentSnapshot(current);
                 seeded = true;
                 return;
             }
 
-            EmitDeltas(previous, current);
-            previous = current;
+            List<OrcaNarrativeObservationCandidate> candidates = new List<OrcaNarrativeObservationCandidate>();
+            ColonyDeepSnapshot trendPrevious = recentSnapshots.Count == 0 ? previous : recentSnapshots.Peek();
+            CollectDeltas(previous, current, trendPrevious, candidates);
 
             for (int i = 0; i < letters.Count; i++)
             {
@@ -250,11 +256,29 @@ namespace DeepseekTheOrca
                 }
 
                 AddSeen(key);
-                OrcaNarrativeBeat beat = BuildBeat(letter);
-                if (beat != null)
+                OrcaNarrativeObservationCandidate candidate = BuildCandidate(letter);
+                if (candidate != null)
                 {
-                    EnqueueColonyObservationBeat(beat);
+                    candidates.Add(candidate);
                 }
+            }
+
+            EvaluateAndMaybeEnqueue(candidates, trendPrevious, current);
+            previous = current;
+            AddRecentSnapshot(current);
+        }
+
+        private void AddRecentSnapshot(ColonyDeepSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            recentSnapshots.Enqueue(snapshot);
+            while (recentSnapshots.Count > 4)
+            {
+                recentSnapshots.Dequeue();
             }
         }
 
@@ -281,7 +305,7 @@ namespace DeepseekTheOrca
             }
         }
 
-        private static OrcaNarrativeBeat BuildBeat(Letter letter)
+        private static OrcaNarrativeObservationCandidate BuildCandidate(Letter letter)
         {
             if (letter == null)
             {
@@ -307,12 +331,51 @@ namespace DeepseekTheOrca
                 + "This is a colony observation. Consider it alongside colony state and recent letters. "
                 + "As a Game-Master-like narrator, decide whether this is worth commenting on. If it is, describe what changed and what pressure or opportunity it creates.";
 
-            return new OrcaNarrativeBeat(
-                "colony_observation",
-                label.NullOrEmpty() ? "New letter" : label,
-                body,
-                importance,
-                "letter:" + defName + ":" + label);
+            return new OrcaNarrativeObservationCandidate
+            {
+                kind = LetterKind(letter, label, text),
+                source = "colony_observation",
+                title = label.NullOrEmpty() ? "New letter" : label,
+                body = body,
+                defName = defName,
+                baseImportance = importance,
+                cooldownKey = "letter:" + defName + ":" + label
+            };
+        }
+
+        private static string LetterKind(Letter letter, string label, string text)
+        {
+            string defName = letter.def == null ? "" : letter.def.defName;
+            string haystack = (defName + " " + label + " " + text).ToLowerInvariant();
+            if (haystack.Contains("death") || haystack.Contains("dead") || haystack.Contains("died"))
+            {
+                return "death";
+            }
+            if (haystack.Contains("disease") || haystack.Contains("infection") || haystack.Contains("medical") || haystack.Contains("sick"))
+            {
+                return "medical";
+            }
+            if (haystack.Contains("raid") || haystack.Contains("threat") || haystack.Contains("manhunter") || haystack.Contains("infestation") || haystack.Contains("mech"))
+            {
+                return "threat";
+            }
+            if (haystack.Contains("trader") || haystack.Contains("caravan") || haystack.Contains("visitor") || haystack.Contains("quest"))
+            {
+                return "opportunity";
+            }
+            if (haystack.Contains("cargo") || haystack.Contains("pod") || haystack.Contains("positive"))
+            {
+                return "positive";
+            }
+            if (haystack.Contains("negative"))
+            {
+                return "state_negative";
+            }
+            if (haystack.Contains("neutral"))
+            {
+                return "opportunity";
+            }
+            return "generic";
         }
 
         private static int LetterImportance(Letter letter)
@@ -392,74 +455,165 @@ namespace DeepseekTheOrca
             return text.Resolve();
         }
 
-        private static void EmitDeltas(ColonySnapshot previous, ColonySnapshot current)
+        private static void CollectDeltas(ColonyDeepSnapshot previous, ColonyDeepSnapshot current, ColonyDeepSnapshot trendPrevious, List<OrcaNarrativeObservationCandidate> candidates)
         {
-            if (previous == null || current == null)
+            if (previous == null || current == null || candidates == null)
             {
                 return;
             }
 
             if (previous.humanEdibleNutrition > 0.5f && current.humanEdibleNutrition <= 0.1f)
             {
-                EnqueueColonyObservationBeat(new OrcaNarrativeBeat(
-                    "colony_observation",
-                    "Food has run out",
-                    "The colony's human-edible nutrition fell to " + current.humanEdibleNutrition.ToString("F1") + ". "
-                    + "This is a colony observation and a survival pressure point. Briefly describe the tension and ask what the player intends to prioritize if it fits.",
-                    85,
-                    "colony:food_empty"));
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "state_negative",
+                    source = "colony_observation",
+                    title = "Food has run out",
+                    body = "The colony's human-edible nutrition fell to " + current.humanEdibleNutrition.ToString("F1") + ". "
+                        + "This is a colony observation and a survival pressure point.",
+                    defName = "colony_food_empty",
+                    baseImportance = 85,
+                    cooldownKey = "colony:food_empty"
+                });
             }
 
             if (current.downedColonists > previous.downedColonists)
             {
-                EnqueueColonyObservationBeat(new OrcaNarrativeBeat(
-                    "colony_observation",
-                    "Colonist downed",
-                    "Downed colonists increased from " + previous.downedColonists + " to " + current.downedColonists + ". "
-                    + "This is a colony observation. Describe the immediate consequence without over-empathizing with pawns.",
-                    80,
-                    "colony:downed_colonists"));
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "state_negative",
+                    source = "colony_observation",
+                    title = "Colonist downed",
+                    body = "Downed colonists increased from " + previous.downedColonists + " to " + current.downedColonists + ".",
+                    defName = "colony_downed_colonists",
+                    baseImportance = 80,
+                    cooldownKey = "colony:downed_colonists"
+                });
             }
 
             if (current.mentalStateColonists > previous.mentalStateColonists)
             {
-                EnqueueColonyObservationBeat(new OrcaNarrativeBeat(
-                    "colony_observation",
-                    "Mental break pressure",
-                    "Colonists in mental state increased from " + previous.mentalStateColonists + " to " + current.mentalStateColonists + ". "
-                    + "Frame this as a control problem and a story consequence.",
-                    70,
-                    "colony:mental_states"));
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "state_negative",
+                    source = "colony_observation",
+                    title = "Mental break pressure",
+                    body = "Colonists in mental state increased from " + previous.mentalStateColonists + " to " + current.mentalStateColonists + ".",
+                    defName = "colony_mental_states",
+                    baseImportance = 70,
+                    cooldownKey = "colony:mental_states"
+                });
             }
 
             if (previous.averageMood >= 0.35f && current.averageMood < 0.25f)
             {
-                EnqueueColonyObservationBeat(new OrcaNarrativeBeat(
-                    "colony_observation",
-                    "Colony mood collapsed",
-                    "Average mood fell from " + previous.averageMood.ToStringPercent() + " to " + current.averageMood.ToStringPercent() + ". "
-                    + "Describe the colony's social pressure and possible consequences.",
-                    75,
-                    "colony:mood_collapse"));
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "state_negative",
+                    source = "colony_observation",
+                    title = "Colony mood collapsed",
+                    body = "Average mood fell from " + previous.averageMood.ToStringPercent() + " to " + current.averageMood.ToStringPercent() + ".",
+                    defName = "colony_mood_collapse",
+                    baseImportance = 75,
+                    cooldownKey = "colony:mood_collapse"
+                });
             }
 
             if (current.playerWealth > previous.playerWealth * 1.25f && current.playerWealth - previous.playerWealth > 3000f)
             {
-                EnqueueColonyObservationBeat(new OrcaNarrativeBeat(
-                    "colony_observation",
-                    "Wealth jumped",
-                    "Player wealth rose from " + previous.playerWealth.ToString("F0") + " to " + current.playerWealth.ToString("F0") + ". "
-                    + "Frame this as a reason the story may answer with bigger consequences.",
-                    55,
-                    "colony:wealth_jump"));
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "generic",
+                    source = "colony_observation",
+                    title = "Wealth jumped",
+                    body = "Player wealth rose from " + previous.playerWealth.ToString("F0") + " to " + current.playerWealth.ToString("F0") + ".",
+                    defName = "colony_wealth_jump",
+                    baseImportance = 55,
+                    cooldownKey = "colony:wealth_jump"
+                });
+            }
+
+            ColonyDeepSnapshot trend = trendPrevious ?? previous;
+            if (current.humanEdibleNutrition < trend.humanEdibleNutrition - 2f && current.averageMood < 0.35f)
+            {
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "state_negative",
+                    source = "colony_observation",
+                    title = "Colony pressure is rising",
+                    body = "Food and morale are trending downward without a single obvious incident. Food: "
+                        + trend.humanEdibleNutrition.ToString("F1") + " -> " + current.humanEdibleNutrition.ToString("F1")
+                        + ", mood: " + trend.averageMood.ToStringPercent() + " -> " + current.averageMood.ToStringPercent() + ".",
+                    defName = "colony_slow_decline",
+                    baseImportance = 65,
+                    cooldownKey = "colony:slow_decline"
+                });
+            }
+
+            if (current.humanEdibleNutrition > trend.humanEdibleNutrition + 3f
+                || current.medicineCount > trend.medicineCount
+                || current.averageMood > trend.averageMood + 0.08f
+                || current.downedColonists < trend.downedColonists
+                || current.mentalStateColonists < trend.mentalStateColonists)
+            {
+                candidates.Add(new OrcaNarrativeObservationCandidate
+                {
+                    kind = "recovery",
+                    source = "colony_observation",
+                    title = "Recovery period",
+                    body = "The colony shows signs of recovery. Food: " + trend.humanEdibleNutrition.ToString("F1") + " -> " + current.humanEdibleNutrition.ToString("F1")
+                        + ", medicine: " + trend.medicineCount + " -> " + current.medicineCount
+                        + ", mood: " + trend.averageMood.ToStringPercent() + " -> " + current.averageMood.ToStringPercent()
+                        + ", downed: " + trend.downedColonists + " -> " + current.downedColonists
+                        + ", mental states: " + trend.mentalStateColonists + " -> " + current.mentalStateColonists + ".",
+                    defName = "colony_recovery",
+                    baseImportance = 50,
+                    cooldownKey = "colony:recovery"
+                });
             }
         }
 
-        private static void EnqueueColonyObservationBeat(OrcaNarrativeBeat beat)
+        private void EvaluateAndMaybeEnqueue(List<OrcaNarrativeObservationCandidate> candidates, ColonyDeepSnapshot previous, ColonyDeepSnapshot current)
         {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            OrcaNarrativeEvaluation evaluation = OrcaNarrativeEvaluator.Evaluate(candidates, previous, current, evaluationState);
+            if (evaluation == null || evaluation.candidate == null)
+            {
+                return;
+            }
+
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            float chance = settings == null ? 0.25f : settings.colonyObservationProactiveChance;
-            OrcaNarrativeDirector.EnqueueAmbientBeat(beat, chance);
+            float chanceMultiplier = settings == null ? 1f : settings.colonyObservationSpeakChanceMultiplier;
+            float speakChance = Mathf.Clamp01(evaluation.speakChance * chanceMultiplier);
+
+            LogDebug("Narrative evaluation selected: classification=" + evaluation.classification
+                + ", score=" + evaluation.score.ToString("F0")
+                + ", chance=" + evaluation.speakChance.ToStringPercent()
+                + ", adjustedChance=" + speakChance.ToStringPercent()
+                + ", chanceMultiplier=" + chanceMultiplier.ToString("0.##")
+                + ", theme=" + evaluation.dominantTheme
+                + ", candidates=" + candidates.Count
+                + ", reasons=" + string.Join("; ", evaluation.reasons.ToArray()));
+
+            bool spoke = false;
+            if (speakChance > 0f)
+            {
+                spoke = OrcaNarrativeDirector.EnqueueAmbientBeat(evaluation.candidate.ToBeat(evaluation), speakChance);
+            }
+
+            evaluationState.RecordResult(evaluation, spoke);
+        }
+
+        private static void LogDebug(string message)
+        {
+            if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
+            {
+                Log.Message("[RimAgent] " + message);
+            }
         }
     }
 

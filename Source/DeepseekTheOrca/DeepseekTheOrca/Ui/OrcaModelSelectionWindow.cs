@@ -127,6 +127,10 @@ namespace DeepseekTheOrca
                     return "DTO_ModelVision".Translate();
                 case OrcaLlmModelRole.WebSearch:
                     return "DTO_ModelWebSearch".Translate();
+                case OrcaLlmModelRole.Embedding:
+                    return "DTO_ModelEmbedding".Translate();
+                case OrcaLlmModelRole.Memory:
+                    return "DTO_ModelMemory".Translate();
                 default:
                     return "DTO_ModelFallback".Translate();
             }

@@ -26,8 +26,13 @@ namespace DeepseekTheOrca.Rimtalk
         public string interactionType;
         public string prompt;
         public string response;
+        public int conversationId;
         public int createdTick;
+        public int finishedTick;
         public int spokenTick;
+        public bool isFirstDialogue;
+        public bool isPlayerMessage;
+        public bool isAiResponse;
     }
 
     public static class RimtalkIntegration
@@ -67,12 +72,29 @@ namespace DeepseekTheOrca.Rimtalk
             {
                 originFilter = "all";
             }
+            string channelFilter = GetArgument(arguments, "channel");
+            if (channelFilter.NullOrEmpty())
+            {
+                channelFilter = "all";
+            }
+            string stateFilter = GetArgument(arguments, "state");
+            if (stateFilter.NullOrEmpty())
+            {
+                stateFilter = "all";
+            }
+            string pawnFilter = GetArgument(arguments, "pawn");
+            int conversationIdFilter = ParseOptionalInt(arguments, "conversationId", int.MinValue);
 
             List<RimtalkChatRecord> records = new List<RimtalkChatRecord>();
             foreach (object log in allLogs)
             {
                 RimtalkChatRecord record = RimtalkChatRecord.FromLog(log, maxChars);
-                if (record != null && MatchesOrigin(record, originFilter))
+                if (record != null
+                    && MatchesOrigin(record, originFilter)
+                    && MatchesChannel(record, channelFilter)
+                    && MatchesState(record, stateFilter)
+                    && MatchesPawn(record, pawnFilter)
+                    && MatchesConversationId(record, conversationIdFilter))
                 {
                     records.Add(record);
                 }
@@ -97,7 +119,10 @@ namespace DeepseekTheOrca.Rimtalk
             return AiToolResult.Ok("RimTalk chat record count: " + entries.Count)
                 .WithValue("playerName", GetPlayerName())
                 .WithValue("gameLanguage", CurrentGameLanguage())
+                .WithValue("source", "RimTalk.Data.ApiHistory")
                 .WithValue("originLegend", "player_initiated means TalkType User or Channel User; ai_auto_generated means RimTalk generated the dialogue without direct player input")
+                .WithValue("channelLegend", "User=player-written RimTalk line, Stream=auto-generated dialogue, Query=RimTalk query/debug-style request usually treated as ignored")
+                .WithValue("stateLegend", "Pending=response missing or not spoken yet, Spoken=displayed in game, Ignored=not displayed or query channel, Failed=RimTalk error")
                 .WithValue("entries", MiniJson.Serialize(entries));
         }
 
@@ -207,6 +232,49 @@ namespace DeepseekTheOrca.Rimtalk
             return true;
         }
 
+        private static bool MatchesChannel(RimtalkChatRecord record, string channelFilter)
+        {
+            if (channelFilter == "all")
+            {
+                return true;
+            }
+
+            return string.Equals(record.Channel, channelFilter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool MatchesState(RimtalkChatRecord record, string stateFilter)
+        {
+            if (stateFilter == "all")
+            {
+                return true;
+            }
+
+            return string.Equals(record.State, stateFilter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool MatchesPawn(RimtalkChatRecord record, string pawnFilter)
+        {
+            if (pawnFilter.NullOrEmpty())
+            {
+                return true;
+            }
+
+            return ContainsIgnoreCase(record.Pawn, pawnFilter)
+                || ContainsIgnoreCase(record.Recipient, pawnFilter);
+        }
+
+        private static bool MatchesConversationId(RimtalkChatRecord record, int conversationIdFilter)
+        {
+            return conversationIdFilter == int.MinValue || record.ConversationId == conversationIdFilter;
+        }
+
+        private static bool ContainsIgnoreCase(string text, string value)
+        {
+            return !text.NullOrEmpty()
+                && !value.NullOrEmpty()
+                && text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static bool IsRimtalkModActive()
         {
             try
@@ -302,6 +370,13 @@ namespace DeepseekTheOrca.Rimtalk
             }
 
             return Mathf.Clamp(value, min, max);
+        }
+
+        private static int ParseOptionalInt(Dictionary<string, string> arguments, string key, int defaultValue)
+        {
+            string text = GetArgument(arguments, key);
+            int value;
+            return text.NullOrEmpty() || !int.TryParse(text, out value) ? defaultValue : value;
         }
 
         private static string GetStringProperty(object instance, string name)
@@ -423,15 +498,25 @@ namespace DeepseekTheOrca.Rimtalk
                 payload["channel"] = Channel ?? "";
                 payload["talkType"] = TalkType ?? "";
                 payload["state"] = State ?? "";
+                payload["speaker"] = Pawn ?? "";
                 payload["pawn"] = Pawn ?? "";
                 payload["recipient"] = Recipient ?? "";
                 payload["interactionType"] = InteractionType ?? "";
+                payload["messageText"] = MessageText;
+                payload["requestText"] = Prompt ?? "";
                 payload["prompt"] = Prompt ?? "";
                 payload["response"] = Response ?? "";
                 payload["conversationId"] = ConversationId;
                 payload["createdTick"] = CreatedTick;
                 payload["finishedTick"] = FinishedTick;
                 payload["spokenTick"] = SpokenTick;
+                payload["ageTicks"] = AgeTicks;
+                payload["isPlayerMessage"] = IsPlayerMessage;
+                payload["isAiResponse"] = IsAiResponse;
+                payload["isPending"] = string.Equals(State, "Pending", StringComparison.OrdinalIgnoreCase);
+                payload["isIgnored"] = string.Equals(State, "Ignored", StringComparison.OrdinalIgnoreCase);
+                payload["isSpoken"] = string.Equals(State, "Spoken", StringComparison.OrdinalIgnoreCase);
+                payload["isFailed"] = string.Equals(State, "Failed", StringComparison.OrdinalIgnoreCase);
                 payload["isFirstDialogue"] = IsFirstDialogue;
                 payload["isError"] = IsError;
                 return payload;
@@ -456,8 +541,13 @@ namespace DeepseekTheOrca.Rimtalk
                     interactionType = InteractionType ?? "",
                     prompt = Prompt ?? "",
                     response = Response ?? "",
+                    conversationId = ConversationId,
                     createdTick = CreatedTick,
-                    spokenTick = SpokenTick
+                    finishedTick = FinishedTick,
+                    spokenTick = SpokenTick,
+                    isFirstDialogue = IsFirstDialogue,
+                    isPlayerMessage = IsPlayerMessage,
+                    isAiResponse = IsAiResponse
                 };
             }
 
@@ -483,6 +573,35 @@ namespace DeepseekTheOrca.Rimtalk
                     + record.Recipient + "|"
                     + record.Prompt + "|"
                     + record.Response;
+            }
+
+            private string MessageText
+            {
+                get { return Response ?? ""; }
+            }
+
+            private bool IsPlayerMessage
+            {
+                get { return Channel == "User" || TalkType == "User"; }
+            }
+
+            private bool IsAiResponse
+            {
+                get { return !IsPlayerMessage && !Response.NullOrEmpty(); }
+            }
+
+            private int AgeTicks
+            {
+                get
+                {
+                    int tick = SpokenTick > 0 ? SpokenTick : FinishedTick > 0 ? FinishedTick : CreatedTick;
+                    if (tick < 0 || Find.TickManager == null)
+                    {
+                        return -1;
+                    }
+
+                    return Mathf.Max(0, Find.TickManager.TicksGame - tick);
+                }
             }
 
             private static string InvokeString(object instance, string methodName)

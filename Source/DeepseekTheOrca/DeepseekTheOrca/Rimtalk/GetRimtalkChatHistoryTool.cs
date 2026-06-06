@@ -11,7 +11,7 @@ namespace DeepseekTheOrca.Rimtalk
 
         public string Description
         {
-            get { return "Read recent RimTalk chat records, distinguishing player-initiated dialogue from AI auto-generated dialogue."; }
+            get { return "Read recent RimTalk chat records from RimTalk ApiHistory, with filters for origin, channel, state, pawn, and conversation id."; }
         }
 
         public override bool ShouldRegister()

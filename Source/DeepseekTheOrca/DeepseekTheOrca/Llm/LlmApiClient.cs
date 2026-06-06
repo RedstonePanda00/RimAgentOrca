@@ -18,6 +18,7 @@ namespace DeepseekTheOrca
         private static readonly TimeSpan StreamingTimeout = TimeSpan.FromSeconds(120);
         private static readonly TimeSpan DefaultChatTimeout = TimeSpan.FromSeconds(45);
         private static readonly TimeSpan ToolChatTimeout = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan EmbeddingTimeout = TimeSpan.FromSeconds(30);
         private const int MaxTransportAttempts = 2;
 
         private static TimeSpan ChatTimeoutForRole(OrcaLlmModelRole role)

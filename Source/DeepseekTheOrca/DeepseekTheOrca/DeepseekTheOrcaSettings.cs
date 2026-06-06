@@ -45,7 +45,9 @@ namespace DeepseekTheOrca
         Dialogue,
         Tool,
         Vision,
-        WebSearch
+        WebSearch,
+        Embedding,
+        Memory
     }
 
     public sealed class OrcaHttpMcpServerSettings : IExposable
@@ -182,9 +184,10 @@ namespace DeepseekTheOrca
         public bool debugLogging;
         public bool enableWebSearch;
         public float colonyObservationProactiveChance = 0.25f;
+        public float colonyObservationSpeakChanceMultiplier = 1f;
         public float rimtalkProactiveBaseChance = 0.15f;
-        public float rimtalkProactiveMissBonus = 0.05f;
         public int rimtalkProactiveForceAfterMisses = 8;
+        public int rimtalkProactiveCooldownTicks = 9000;
         public string webSearchMode = "tavily";
         public string chatPersonaDefName = "DTO_OrcaPersona";
         public string tavilyApiKey = "";
@@ -212,6 +215,18 @@ namespace DeepseekTheOrca
         public string toolModel = "";
         public string visionModel = "";
         public string webSearchModel = "";
+        public string embeddingModel = "";
+        public string memoryModel = "";
+        public bool enableLongTermMemory = true;
+        public int memoryMaxInjectedEntries = 5;
+        public int knowledgeMaxInjectedEntries = 5;
+        public float memoryMergeCosineThreshold = 0.9f;
+        public bool enableSemanticMemoryQuery = true;
+        public int semanticMemoryQueryWaitMs = 1500;
+        public int semanticMemoryQueryHardTimeoutMs = 5000;
+        public int memoryCompactionTokenThreshold = 6000;
+        public int memoryChunkTokenSize = 450;
+        public int memoryChunkOverlapTokens = 80;
         public int maxToolCalls = 8;
         public float planningMtbDays = 4.8f;
         public float chatWindowAlpha = 0.82f;
@@ -269,11 +284,22 @@ namespace DeepseekTheOrca
                 case OrcaLlmModelRole.WebSearch:
                     roleModel = webSearchModel;
                     break;
+                case OrcaLlmModelRole.Embedding:
+                    roleModel = embeddingModel;
+                    break;
+                case OrcaLlmModelRole.Memory:
+                    roleModel = memoryModel;
+                    break;
             }
 
             if (!roleModel.NullOrEmpty())
             {
                 return roleModel;
+            }
+
+            if (role == OrcaLlmModelRole.Embedding || role == OrcaLlmModelRole.Memory)
+            {
+                return "";
             }
 
             return model ?? "";
@@ -289,7 +315,7 @@ namespace DeepseekTheOrca
                 return config;
             }
 
-            if (role != OrcaLlmModelRole.Fallback)
+            if (role != OrcaLlmModelRole.Fallback && role != OrcaLlmModelRole.Embedding && role != OrcaLlmModelRole.Memory)
             {
                 config = RequestConfigForModelReference(model);
                 if (config != null)
@@ -317,6 +343,10 @@ namespace DeepseekTheOrca
                     return visionModel;
                 case OrcaLlmModelRole.WebSearch:
                     return webSearchModel;
+                case OrcaLlmModelRole.Embedding:
+                    return embeddingModel;
+                case OrcaLlmModelRole.Memory:
+                    return memoryModel;
                 default:
                     return model;
             }
@@ -343,6 +373,12 @@ namespace DeepseekTheOrca
                     break;
                 case OrcaLlmModelRole.WebSearch:
                     webSearchModel = value;
+                    break;
+                case OrcaLlmModelRole.Embedding:
+                    embeddingModel = value;
+                    break;
+                case OrcaLlmModelRole.Memory:
+                    memoryModel = value;
                     break;
                 default:
                     model = value;
@@ -677,6 +713,7 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref debugLogging, "debugLogging", defaultValue: false);
             Scribe_Values.Look(ref enableWebSearch, "enableWebSearch", defaultValue: false);
             Scribe_Values.Look(ref colonyObservationProactiveChance, "colonyObservationProactiveChance", 0.25f);
+            Scribe_Values.Look(ref colonyObservationSpeakChanceMultiplier, "colonyObservationSpeakChanceMultiplier", 1f);
             float legacyRecentLetterChance = -1f;
             float legacyColonyStateChance = -1f;
             Scribe_Values.Look(ref legacyRecentLetterChance, "recentLetterProactiveChance", -1f);
@@ -697,8 +734,8 @@ namespace DeepseekTheOrca
                 }
             }
             Scribe_Values.Look(ref rimtalkProactiveBaseChance, "rimtalkProactiveBaseChance", 0.15f);
-            Scribe_Values.Look(ref rimtalkProactiveMissBonus, "rimtalkProactiveMissBonus", 0.05f);
             Scribe_Values.Look(ref rimtalkProactiveForceAfterMisses, "rimtalkProactiveForceAfterMisses", 8);
+            Scribe_Values.Look(ref rimtalkProactiveCooldownTicks, "rimtalkProactiveCooldownTicks", 9000);
             Scribe_Values.Look(ref webSearchMode, "webSearchMode", "tavily");
             Scribe_Values.Look(ref chatPersonaDefName, "chatPersonaDefName", "DTO_OrcaPersona");
             Scribe_Values.Look(ref tavilyApiKey, "tavilyApiKey", "");
@@ -726,6 +763,18 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref toolModel, "toolModel", "");
             Scribe_Values.Look(ref visionModel, "visionModel", "");
             Scribe_Values.Look(ref webSearchModel, "webSearchModel", "");
+            Scribe_Values.Look(ref embeddingModel, "embeddingModel", "");
+            Scribe_Values.Look(ref memoryModel, "memoryModel", "");
+            Scribe_Values.Look(ref enableLongTermMemory, "enableLongTermMemory", defaultValue: true);
+            Scribe_Values.Look(ref memoryMaxInjectedEntries, "memoryMaxInjectedEntries", 5);
+            Scribe_Values.Look(ref knowledgeMaxInjectedEntries, "knowledgeMaxInjectedEntries", 5);
+            Scribe_Values.Look(ref memoryMergeCosineThreshold, "memoryMergeCosineThreshold", 0.9f);
+            Scribe_Values.Look(ref enableSemanticMemoryQuery, "enableSemanticMemoryQuery", defaultValue: true);
+            Scribe_Values.Look(ref semanticMemoryQueryWaitMs, "semanticMemoryQueryWaitMs", 1500);
+            Scribe_Values.Look(ref semanticMemoryQueryHardTimeoutMs, "semanticMemoryQueryHardTimeoutMs", 5000);
+            Scribe_Values.Look(ref memoryCompactionTokenThreshold, "memoryCompactionTokenThreshold", 6000);
+            Scribe_Values.Look(ref memoryChunkTokenSize, "memoryChunkTokenSize", 450);
+            Scribe_Values.Look(ref memoryChunkOverlapTokens, "memoryChunkOverlapTokens", 80);
             Scribe_Values.Look(ref maxToolCalls, "maxToolCalls", 8);
             Scribe_Values.Look(ref planningMtbDays, "planningMtbDays", 4.8f);
             Scribe_Values.Look(ref chatWindowAlpha, "chatWindowAlpha", 0.82f);
@@ -797,9 +846,18 @@ namespace DeepseekTheOrca
             tavilyMaxResults = UnityEngine.Mathf.Clamp(tavilyMaxResults, 1, 10);
             httpMcpMaxResultChars = UnityEngine.Mathf.Clamp(httpMcpMaxResultChars, 500, 20000);
             colonyObservationProactiveChance = UnityEngine.Mathf.Clamp01(colonyObservationProactiveChance);
+            colonyObservationSpeakChanceMultiplier = UnityEngine.Mathf.Clamp(colonyObservationSpeakChanceMultiplier, 0f, 2f);
             rimtalkProactiveBaseChance = UnityEngine.Mathf.Clamp01(rimtalkProactiveBaseChance);
-            rimtalkProactiveMissBonus = UnityEngine.Mathf.Clamp01(rimtalkProactiveMissBonus);
-            rimtalkProactiveForceAfterMisses = UnityEngine.Mathf.Clamp(rimtalkProactiveForceAfterMisses, 1, 20);
+            rimtalkProactiveForceAfterMisses = UnityEngine.Mathf.Clamp(rimtalkProactiveForceAfterMisses, 0, 20);
+            rimtalkProactiveCooldownTicks = UnityEngine.Mathf.Clamp(rimtalkProactiveCooldownTicks, 0, 60000);
+            memoryMaxInjectedEntries = UnityEngine.Mathf.Clamp(memoryMaxInjectedEntries, 1, 12);
+            knowledgeMaxInjectedEntries = UnityEngine.Mathf.Clamp(knowledgeMaxInjectedEntries, 1, 12);
+            memoryMergeCosineThreshold = UnityEngine.Mathf.Clamp(memoryMergeCosineThreshold, 0.75f, 0.98f);
+            semanticMemoryQueryWaitMs = UnityEngine.Mathf.Clamp(semanticMemoryQueryWaitMs, 0, 5000);
+            semanticMemoryQueryHardTimeoutMs = UnityEngine.Mathf.Clamp(semanticMemoryQueryHardTimeoutMs, semanticMemoryQueryWaitMs, 15000);
+            memoryCompactionTokenThreshold = UnityEngine.Mathf.Clamp(memoryCompactionTokenThreshold, 1000, 20000);
+            memoryChunkTokenSize = UnityEngine.Mathf.Clamp(memoryChunkTokenSize, 150, 1200);
+            memoryChunkOverlapTokens = UnityEngine.Mathf.Clamp(memoryChunkOverlapTokens, 0, memoryChunkTokenSize / 2);
             if (tavilySearchDepth != "basic" && tavilySearchDepth != "advanced" && tavilySearchDepth != "fast" && tavilySearchDepth != "ultra-fast")
             {
                 tavilySearchDepth = "basic";

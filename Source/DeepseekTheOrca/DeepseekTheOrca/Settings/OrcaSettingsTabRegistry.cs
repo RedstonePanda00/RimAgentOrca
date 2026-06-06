@@ -14,6 +14,8 @@ namespace DeepseekTheOrca
                 new OrcaAgentModelSettingsTab(),
                 new OrcaPersonaSettingsTab(),
                 new OrcaSkillSettingsTab(),
+                new OrcaMemorySettingsTab(),
+                new OrcaKnowledgeSettingsTab(),
                 new OrcaPluginSettingsTab(),
                 new OrcaToolsSettingsTab(),
                 new OrcaMcpSettingsTab(),

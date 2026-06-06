@@ -108,6 +108,87 @@ namespace DeepseekTheOrca
             return await SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle, messages, tools, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, role).ConfigureAwait(false);
         }
 
+        public async Task<OrcaEmbeddingResult> SendEmbeddingAsync(DeepseekTheOrcaSettings settings, string text)
+        {
+            return await SendEmbeddingAsync(settings, text, (int)EmbeddingTimeout.TotalMilliseconds).ConfigureAwait(false);
+        }
+
+        public async Task<OrcaEmbeddingResult> SendEmbeddingAsync(DeepseekTheOrcaSettings settings, string text, int timeoutMs)
+        {
+            if (settings == null)
+            {
+                return OrcaEmbeddingResult.Failure("Settings are unavailable.");
+            }
+
+            OrcaLlmRequestConfig config = settings.RequestConfigForRole(OrcaLlmModelRole.Embedding);
+            if (config == null)
+            {
+                return OrcaEmbeddingResult.Failure("No embedding model is selected.");
+            }
+
+            return await SendEmbeddingAsync(config.apiKey, config.model, config.baseUrl, text, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, timeoutMs).ConfigureAwait(false);
+        }
+
+        private async Task<OrcaEmbeddingResult> SendEmbeddingAsync(string apiKey, string model, string baseUrl, string text, string providerId, string openAiOrganization, string openAiProject, string proxyUrl)
+        {
+            return await SendEmbeddingAsync(apiKey, model, baseUrl, text, providerId, openAiOrganization, openAiProject, proxyUrl, (int)EmbeddingTimeout.TotalMilliseconds).ConfigureAwait(false);
+        }
+
+        private async Task<OrcaEmbeddingResult> SendEmbeddingAsync(string apiKey, string model, string baseUrl, string text, string providerId, string openAiOrganization, string openAiProject, string proxyUrl, int timeoutMs)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return OrcaEmbeddingResult.Failure("API key is empty.");
+            }
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                return OrcaEmbeddingResult.Failure("Model is empty.");
+            }
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                return OrcaEmbeddingResult.Failure("Base URL is empty.");
+            }
+
+            return await LlmRequestScheduler.RunAsync("embedding", async delegate
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                using (HttpClient client = CreateHttpClient(proxyUrl))
+                {
+                    client.Timeout = TimeSpan.FromMilliseconds(Math.Max(1000, timeoutMs));
+                    client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
+                    ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
+                    ApplyTransportHeaders(client);
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                    Dictionary<string, object> body = new Dictionary<string, object>();
+                    body["model"] = model.Trim();
+                    body["input"] = text ?? "";
+                    using (StringContent content = new StringContent(MiniJson.Serialize(body), Encoding.UTF8, "application/json"))
+                    {
+                        HttpResponseMessage response;
+                        string responseText;
+                        try
+                        {
+                            response = await client.PostAsync("embeddings", content).ConfigureAwait(false);
+                            responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            return OrcaEmbeddingResult.Failure(TransportFailureMessage(ex));
+                        }
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            string error = ExtractErrorMessage(responseText);
+                            return OrcaEmbeddingResult.Failure("HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
+                        }
+
+                        return ParseEmbeddingResponse(responseText);
+                    }
+                }
+            }).ConfigureAwait(false);
+        }
+
         private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages, bool includeTools, int maxTokens, float temperature)
         {
             return await SendChatCompletionAsync(apiKey, model, messages, includeTools ? LlmToolSchemas.Build() : null, maxTokens, temperature).ConfigureAwait(false);
