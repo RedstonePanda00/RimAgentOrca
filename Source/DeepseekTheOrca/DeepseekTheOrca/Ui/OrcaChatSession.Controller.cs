@@ -8,9 +8,9 @@ namespace DeepseekTheOrca
         private void StartControllerOrChatRequest(DeepseekTheOrcaSettings settings)
         {
             OrcaLocalRouteDecision localDecision = OrcaLocalRouteGate.Decide(lastUserText, settings, allowExecutionToolsThisTurn);
-            if (localDecision.useController && settings != null && settings.HasModelForRole(OrcaLlmModelRole.Controller))
+            if (settings != null && settings.HasModelForRole(OrcaLlmModelRole.Controller))
             {
-                AddProcess("Local route gate deferred to controller: " + localDecision.reason + ".");
+                AddProcess("Routing through controller model as central router. Local hint: " + localDecision.route + " (" + localDecision.reason + ").");
                 StartControllerRequest(settings);
                 return;
             }
@@ -38,6 +38,27 @@ namespace DeepseekTheOrca
             NotifyAgentPhase(OrcaAgentPhase.Routing, OrcaLlmModelRole.Controller, false, "controller request sent");
         }
 
+        private void StartControllerReviewRequest(DeepseekTheOrcaSettings settings)
+        {
+            pendingStage = OrcaChatRequestStage.ControllerReview;
+            thinkingState.Ensure(displayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
+            pendingRequest = client.SendPlainChatCompletionAsync(
+                settings,
+                OrcaChatControllerRouter.BuildControllerReviewMessages(
+                    messages,
+                    lastUserText,
+                    toolRoundsUsed,
+                    MaxToolGatheringRounds,
+                    toolCallsUsedThisTurn,
+                    MaxToolCallsForSettings(settings),
+                    specialistReturnedNoToolCalls),
+                OrcaLlmModelRole.Controller);
+            currentModelRoleLabel = OrcaChatRoleUtility.ModelRoleLabel(OrcaLlmModelRole.Controller);
+            currentModelReference = settings.ModelForRole(OrcaLlmModelRole.Controller);
+            AddProcess("Tool results returned to controller model for review: " + settings.ModelForRole(OrcaLlmModelRole.Controller));
+            NotifyAgentPhase(OrcaAgentPhase.Routing, OrcaLlmModelRole.Controller, false, "controller review request sent");
+        }
+
         private void HandleControllerResponse(LlmChatResponse response)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
@@ -57,12 +78,67 @@ namespace DeepseekTheOrca
             lastControllerRoute = route;
             ForceNextModelRole(role);
             ApplyControllerSkillSelection(decision.skillIds);
+            ApplyControllerContextSummary(decision.contextSummary, "controller route");
             AddProcess("Controller route: " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
             if (routingContext.Changed)
             {
                 AddProcess("Extension adjusted route to " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
             }
 
+            StartRequest(settings);
+        }
+
+        private void HandleControllerReviewResponse(LlmChatResponse response)
+        {
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+            if (settings == null || !OrcaChatRoleUtility.HasAnyChatModel(settings))
+            {
+                statusText = "DTO_OrcaChatNoApiKey".Translate();
+                SetError(statusText);
+                return;
+            }
+
+            OrcaControllerDecision decision = OrcaChatControllerRouter.ParseDecision(response.content);
+            OrcaLlmModelRole role = OrcaChatControllerRouter.ModelRoleForRoute(decision.route, settings);
+            OrcaAgentRoutingContext routingContext = new OrcaAgentRoutingContext(this, decision.route, role, "controller review route");
+            OrcaExtensionManager.ModifyAgentRouting(routingContext);
+            string route = routingContext.route;
+            role = routingContext.requestedRole;
+
+            if (role != OrcaLlmModelRole.Dialogue && !CanContinueSpecialistGathering(settings))
+            {
+                AddProcess("Controller review requested " + route + ", but the gathering budget is exhausted; forcing dialogue model.");
+                ContinueToDialogueWithToolBudgetExhausted("controller review requested more specialist data after budget was exhausted");
+                return;
+            }
+
+            if (role != OrcaLlmModelRole.Dialogue && specialistReturnedNoToolCalls)
+            {
+                AddProcess("Controller review requested " + route + ", but the previous specialist produced no tool calls; forcing dialogue model.");
+                RouteToDialogueAfterControllerReview(settings, "previous specialist produced no tool calls");
+                return;
+            }
+
+            lastControllerRoute = "review:" + route;
+            specialistReturnedNoToolCalls = false;
+            ApplyControllerContextSummary(decision.contextSummary, "controller review");
+            AddProcess("Controller review route: " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
+            if (routingContext.Changed)
+            {
+                AddProcess("Extension adjusted controller review route to " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
+            }
+
+            if (role == OrcaLlmModelRole.Dialogue)
+            {
+                RouteToDialogueAfterControllerReview(settings, "controller review found enough context");
+                return;
+            }
+
+            messages.Add(LlmChatMessage.System(
+                "Controller review requested more specialist data from the "
+                + OrcaChatRoleUtility.ModelRoleLabel(role)
+                + " model. Continue gathering data only; do not write player-facing prose."));
+            ForceNextModelRole(role);
             StartRequest(settings);
         }
 
@@ -85,6 +161,18 @@ namespace DeepseekTheOrca
             messages[userIndex].content = OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, selected);
         }
 
+        private void ApplyControllerContextSummary(string contextSummary, string source)
+        {
+            if (contextSummary.NullOrEmpty())
+            {
+                return;
+            }
+
+            messages.Add(LlmChatMessage.System(
+                "Controller context summary for downstream models (" + source + "):\n"
+                + contextSummary.Trim()));
+        }
+
         private int LatestUserMessageIndex()
         {
             for (int i = messages.Count - 1; i >= 0; i--)
@@ -96,6 +184,49 @@ namespace DeepseekTheOrca
             }
 
             return -1;
+        }
+
+        private void StartControllerReviewOrDialogue(DeepseekTheOrcaSettings settings, string reason)
+        {
+            if (settings != null
+                && settings.HasModelForRole(OrcaLlmModelRole.Controller)
+                && CanContinueSpecialistGathering(settings))
+            {
+                StartControllerReviewRequest(settings);
+                return;
+            }
+
+            AddProcess("Skipping controller review; routing to dialogue model. Reason: " + reason + ".");
+            RouteToDialogueAfterControllerReview(settings, reason);
+        }
+
+        private bool CanContinueSpecialistGathering(DeepseekTheOrcaSettings settings)
+        {
+            return settings != null
+                && toolRoundsUsed < MaxToolGatheringRounds
+                && toolCallsUsedThisTurn < MaxToolCallsForSettings(settings);
+        }
+
+        private int MaxToolCallsForSettings(DeepseekTheOrcaSettings settings)
+        {
+            return settings == null ? 8 : settings.maxToolCalls;
+        }
+
+        private void RouteToDialogueAfterControllerReview(DeepseekTheOrcaSettings settings, string reason)
+        {
+            if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Dialogue))
+            {
+                statusText = "DTO_OrcaChatNoApiKey".Translate();
+                SetError(statusText);
+                return;
+            }
+
+            messages.Add(LlmChatMessage.System(
+                "Controller review is complete. Reason: " + reason + ". "
+                + "The next assistant response must be exactly one JSON object and no extra text. "
+                + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));
+            ForceNextModelRole(OrcaLlmModelRole.Dialogue);
+            StartRequest(settings);
         }
 
     }

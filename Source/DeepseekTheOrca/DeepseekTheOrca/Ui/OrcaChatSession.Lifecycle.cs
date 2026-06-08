@@ -32,6 +32,8 @@ namespace DeepseekTheOrca
             failedToolCalls = 0;
             lastToolName = "";
             lastToolResult = "";
+            specialistReturnedNoToolCalls = false;
+            dialogueToolRequestRetryUsed = false;
             conversationVersion++;
         }
     }

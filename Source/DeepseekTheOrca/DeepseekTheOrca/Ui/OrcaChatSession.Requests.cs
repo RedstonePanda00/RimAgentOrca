@@ -57,7 +57,7 @@ namespace DeepseekTheOrca
 
             if (response.toolCalls.Count > 0)
             {
-                RouteDialogueToolRequestToToolModel(response, line);
+                RetryDialogueAfterUnexpectedToolRequest(response, line);
                 return;
             }
 
@@ -89,7 +89,7 @@ namespace DeepseekTheOrca
             return true;
         }
 
-        private void RouteDialogueToolRequestToToolModel(LlmChatResponse response, OrcaChatLine line)
+        private void RetryDialogueAfterUnexpectedToolRequest(LlmChatResponse response, OrcaChatLine line)
         {
             if (line != null)
             {
@@ -99,20 +99,26 @@ namespace DeepseekTheOrca
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Tool) || toolRoundsUsed >= MaxToolGatheringRounds)
+            if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Dialogue))
             {
-                AddProcess("Dialogue model requested more tool data, but the tool model is unavailable or the tool gathering budget is exhausted.");
-                ContinueToDialogueWithToolBudgetExhausted("dialogue requested additional tools after the tool budget was exhausted or unavailable");
+                statusText = "DTO_OrcaChatNoApiKey".Translate();
+                SetError(statusText);
                 return;
             }
 
-            AddProcess("Dialogue model requested more tool data; routing back to tool model.");
-            NotifyAgentPhase(OrcaAgentPhase.NeedsMoreTools, OrcaLlmModelRole.Dialogue, false, "dialogue requested additional tool data");
+            AddProcess("Dialogue model requested tool data; ignoring the tool request because controller owns routing decisions.");
+            if (dialogueToolRequestRetryUsed)
+            {
+                SetError("Dialogue model requested tools again after retry; controller-owned routing prevented direct tool execution.");
+                return;
+            }
+
+            dialogueToolRequestRetryUsed = true;
             messages.Add(LlmChatMessage.System(
-                "The dialogue model indicated that more game data is needed before the final player-facing reply. "
-                + "Continue tool gathering now. Use tools if needed; do not write player-facing prose. "
-                + "Requested tool hint: " + OrcaToolCallFormatter.ToolCallHint(response)));
-            ForceNextModelRole(OrcaLlmModelRole.Tool);
+                "The dialogue model attempted to request tools, but tool routing is controlled only by the controller model. "
+                + "Ignore that tool request and produce the final player-facing reply using only the existing controller context, memory summary, conversation, and tool results already supplied. "
+                + "Do not request tools. Requested tool hint was: " + OrcaToolCallFormatter.ToolCallHint(response)));
+            ForceNextModelRole(OrcaLlmModelRole.Dialogue);
             StartRequest(settings);
         }
 

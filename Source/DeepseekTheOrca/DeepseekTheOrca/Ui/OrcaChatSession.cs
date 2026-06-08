@@ -17,7 +17,8 @@ namespace DeepseekTheOrca
         private enum OrcaChatRequestStage
         {
             Chat,
-            Controller
+            Controller,
+            ControllerReview
         }
 
         private readonly LlmApiClient client = new LlmApiClient();
@@ -51,6 +52,8 @@ namespace DeepseekTheOrca
         private int failedToolCalls;
         private string lastToolName = "";
         private string lastToolResult = "";
+        private bool specialistReturnedNoToolCalls;
+        private bool dialogueToolRequestRetryUsed;
 
         public bool IsWaiting
         {
@@ -175,6 +178,8 @@ namespace DeepseekTheOrca
             toolRoundsUsed = 0;
             toolCallsUsedThisTurn = 0;
             allowExecutionToolsThisTurn = true;
+            specialistReturnedNoToolCalls = false;
+            dialogueToolRequestRetryUsed = false;
             ClearForcedNextModelRole();
             StartControllerOrChatRequest(settings);
         }
@@ -212,6 +217,8 @@ namespace DeepseekTheOrca
             toolRoundsUsed = 0;
             toolCallsUsedThisTurn = 0;
             allowExecutionToolsThisTurn = false;
+            specialistReturnedNoToolCalls = false;
+            dialogueToolRequestRetryUsed = false;
             ClearForcedNextModelRole();
             ForceNextModelRole(OrcaLlmModelRole.Dialogue);
             StartRequest(settings);
@@ -265,6 +272,12 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            if (pendingStage == OrcaChatRequestStage.ControllerReview)
+            {
+                HandleControllerReviewResponse(response);
+                return;
+            }
+
             if (response.toolCalls.Count > 0)
             {
                 HandleToolCalls(response);
@@ -281,12 +294,12 @@ namespace DeepseekTheOrca
                     return;
                 }
 
-                AddProcess(OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model produced no further tool calls; routing to dialogue model.");
+                specialistReturnedNoToolCalls = true;
+                AddProcess(OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model produced no further tool calls; returning control to controller review.");
                 messages.Add(LlmChatMessage.System(
-                    "Tool gathering is complete. The next assistant response must be exactly one JSON object and no extra text. "
-                    + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));
-                ForceNextModelRole(OrcaLlmModelRole.Dialogue);
-                StartRequest(settings);
+                    OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole)
+                    + " model produced no further tool calls or tool results. The controller must decide whether existing context is enough."));
+                StartControllerReviewOrDialogue(settings, "specialist model produced no tool calls");
                 return;
             }
 

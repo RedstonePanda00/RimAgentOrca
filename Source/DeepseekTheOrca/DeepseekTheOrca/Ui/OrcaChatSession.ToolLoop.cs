@@ -57,36 +57,29 @@ namespace DeepseekTheOrca
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            OrcaLlmModelRole nextRole = toolCallBudgetExhausted ? OrcaLlmModelRole.Dialogue : NextRoleAfterToolResults(settings);
-            if (settings == null || !settings.HasModelForRole(nextRole))
+            if (settings == null)
             {
                 statusText = "DTO_OrcaChatNoApiKey".Translate();
                 SetError(statusText);
                 return;
             }
 
-            if (nextRole == OrcaLlmModelRole.Tool || nextRole == OrcaLlmModelRole.WebSearch)
+            if (toolCallBudgetExhausted || !CanContinueSpecialistGathering(settings))
             {
-                messages.Add(LlmChatMessage.System(
-                    "Tool results have been supplied. If more game data is needed to satisfy the player's request, call another tool. "
-                    + "If enough information has been gathered, do not call tools; the dialogue model will write the final player-facing response."));
-            }
-            else
-            {
-                messages.Add(LlmChatMessage.System(
-                    (toolCallBudgetExhausted ? "Tool call budget is exhausted. Use only the existing tool results already supplied. Do not request or call more tools. " : "Tool results have been supplied. ")
-                    + "The next assistant response must be exactly one JSON object and no extra text. "
-                    + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));
+                ContinueToDialogueWithToolBudgetExhausted(toolCallBudgetExhausted ? "tool call budget exhausted after executing requested tools" : "tool gathering round budget exhausted after tool results");
+                return;
             }
 
-            ForceNextModelRole(nextRole);
-            StartRequest(settings);
+            specialistReturnedNoToolCalls = false;
+            messages.Add(LlmChatMessage.System(
+                "Specialist tool results have been supplied. Return control to the controller model so it can decide whether to gather more data or route to dialogue."));
+            StartControllerReviewOrDialogue(settings, "tool results supplied");
         }
 
         private bool TryReserveToolCall()
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            int maxCalls = settings == null ? 8 : settings.maxToolCalls;
+            int maxCalls = MaxToolCallsForSettings(settings);
             if (toolCallsUsedThisTurn >= maxCalls)
             {
                 return false;
@@ -113,26 +106,6 @@ namespace DeepseekTheOrca
                 + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));
             ForceNextModelRole(OrcaLlmModelRole.Dialogue);
             StartRequest(settings);
-        }
-
-        private OrcaLlmModelRole NextRoleAfterToolResults(DeepseekTheOrcaSettings settings)
-        {
-            if (toolRoundsUsed >= MaxToolGatheringRounds || settings == null)
-            {
-                return OrcaLlmModelRole.Dialogue;
-            }
-
-            if (pendingRequestRole == OrcaLlmModelRole.WebSearch && settings.HasModelForRole(OrcaLlmModelRole.WebSearch))
-            {
-                return OrcaLlmModelRole.WebSearch;
-            }
-
-            if (pendingRequestRole == OrcaLlmModelRole.Tool && settings.HasModelForRole(OrcaLlmModelRole.Tool))
-            {
-                return OrcaLlmModelRole.Tool;
-            }
-
-            return OrcaLlmModelRole.Dialogue;
         }
     }
 }

@@ -199,22 +199,64 @@ namespace DeepseekTheOrca
                 return;
             }
 
+            if (!IsSendEnterEvent(current))
+            {
+                return;
+            }
+
+            bool hasText = !inputBuffer.NullOrEmpty();
+            LogDebug("Chat input Enter detected: keyCode=" + current.keyCode
+                + ", character=" + FormatEventCharacter(current.character)
+                + ", shift=" + current.shift
+                + ", waiting=" + OrcaChatWindowManager.Session.IsWaiting
+                + ", hasText=" + hasText
+                + ", focusedControl=" + GUI.GetNameOfFocusedControl());
+
             if (current.shift)
             {
                 return;
             }
 
-            if (current.keyCode != KeyCode.Return && current.keyCode != KeyCode.KeypadEnter)
-            {
-                return;
-            }
-
-            if (!OrcaChatWindowManager.Session.IsWaiting && !inputBuffer.NullOrEmpty())
+            if (!OrcaChatWindowManager.Session.IsWaiting && hasText)
             {
                 SendInputBuffer();
             }
 
             current.Use();
+        }
+
+        private static bool IsSendEnterEvent(Event current)
+        {
+            return current.keyCode == KeyCode.Return
+                || current.keyCode == KeyCode.KeypadEnter
+                || current.character == '\n'
+                || current.character == '\r';
+        }
+
+        private static string FormatEventCharacter(char character)
+        {
+            if (character == '\n')
+            {
+                return "\\n";
+            }
+            if (character == '\r')
+            {
+                return "\\r";
+            }
+            if (character == '\0')
+            {
+                return "\\0";
+            }
+
+            return character + " (" + ((int)character) + ")";
+        }
+
+        private static void LogDebug(string message)
+        {
+            if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
+            {
+                Log.Message("[RimAgent] " + message);
+            }
         }
 
         private void SendInputBuffer()

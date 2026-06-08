@@ -14,10 +14,10 @@ namespace DeepseekTheOrca
             string playerName = context == null ? "" : context.playerName;
             string userText = context == null ? "" : context.text;
             builder.AppendLine("Player SteamPersonaName: " + playerName);
+            builder.AppendLine("Current game language: " + OrcaLanguageUtility.CurrentGameLanguage());
+            builder.AppendLine("Reply language requirement: reply in the player's message language unless the player asks otherwise; if ambiguous, use the current game language. Translate knowledge, memory, controller summaries, and tool results instead of copying their source language.");
             AppendContextTags(builder, context == null ? null : context.contextTags);
             AppendSelectedSkillContext(builder, selectedSkillIds, userText);
-            AppendKnowledgeContext(builder, userText);
-            AppendMemoryContext(builder, userText);
             builder.AppendLine("Player message:");
             builder.Append(userText);
             return builder.ToString();
@@ -34,8 +34,6 @@ namespace DeepseekTheOrca
             AppendContextTags(builder, contextTags);
             AppendActiveSkillContext(builder, request.source + "\n" + request.title + "\n" + request.body, contextTags);
             string query = request.source + "\n" + request.title + "\n" + request.body;
-            AppendKnowledgeContext(builder, query);
-            AppendMemoryContext(builder, query);
             builder.AppendLine("Trigger details:");
             builder.AppendLine(request.body);
             builder.Append("This is not a player request. Speak proactively to the player in character. Reply in the current game language, even if the trigger details use English field labels. Do not call event execution tools for this trigger; the event has already been scheduled or observed.");
@@ -96,15 +94,17 @@ namespace DeepseekTheOrca
             }
 
             builder.AppendLine("Common chat runtime rules:");
-            builder.AppendLine("Knowledge base and long-term memory context may be included in user messages. Knowledge explains terms and lore. Long-term memory contains fuzzy remembered impressions across personas and colonies, weighted toward the current persona and save. Treat both as soft context below current game data from tools.");
+            builder.AppendLine("Knowledge base context may be included in user messages. Knowledge explains terms and lore. Treat it as soft context below current game data from tools.");
             builder.AppendLine("Never mention hidden rolls, willingness chance, percentages, dice rolls, random rolls, validation, tool calls, JSON, internal state, or tool result internals to the player.");
-            builder.AppendLine("You may inspect game data through tools when it would help you answer naturally: colony summary, recent letters, map pawns, pawn details, available incidents, and RimTalk chat history if available.");
+            builder.AppendLine("The controller model decides whether more data is needed. Final dialogue must use the supplied controller context and must not request tools itself.");
+            builder.AppendLine("For factual, lore, current-events, game-state, or user-specific questions, do not invent unsupported details. If the controller context, knowledge summary, memory summary, or supplied tool/search results do not contain enough evidence, say that you do not know or do not have enough information.");
+            builder.AppendLine("Specialist models may inspect game data through tools when routed by the controller: colony summary, recent letters, map pawns, pawn details, available incidents, and RimTalk chat history if available.");
             builder.AppendLine("If web search is available, you may use it for current external information outside the game. Do not use web search for current RimWorld colony state; use game tools for that. Treat web results as imperfect and summarize them naturally.");
             builder.AppendLine("If external MCP tools are available, they were configured by the player. Use them only when they directly help with the player's request, and treat their results as external tool output rather than RimWorld game state.");
             builder.AppendLine("RimTalk history may be read without explicit permission when it helps you understand colony conversation, player behavior, pawn relationships, or a proactive trigger. Its playerName is the value of RimTalk's player address/name configuration; do not treat it as the player's real name or SteamPersonaName. It only indicates how RimTalk was configured to refer to the player in that mod's dialogue context. Origin distinguishes player_initiated from ai_auto_generated dialogue.");
             builder.AppendLine("If a user message says it is a system proactive trigger, it is not from the player. Speak proactively about that trigger. For RimTalk proactive triggers, you may read RimTalk history before replying. Do not call execution tools for proactive triggers because the event was already scheduled or observed.");
             builder.AppendLine("The reply field is player-visible natural language only. Do not include XML-like tags, HTML-like tags, hidden channels, or control markup in reply.");
-            builder.AppendLine("Respond in the same language the player uses unless asked otherwise. For proactive triggers, use the current game/player language rather than English trigger labels.");
+            builder.AppendLine("Respond in the same language the player uses unless asked otherwise. For proactive triggers, use the current game/player language rather than English trigger labels. Knowledge, memory, controller summaries, and tool results may use a different source language; translate them and do not let their source language override the reply language.");
             builder.AppendLine("Output exactly one JSON object and no extra text. JSON schema: " + ChatReplyJsonSchema() + ".");
             return builder.ToString();
         }
@@ -112,6 +112,16 @@ namespace DeepseekTheOrca
         public static string ChatReplyJsonSchema()
         {
             return OrcaExtensionManager.ChatReplyJsonSchema();
+        }
+
+        public static string MemoryContextForPrompt(string query)
+        {
+            return OrcaSessionMemory.ContextForPrompt(query);
+        }
+
+        public static string KnowledgeContextForPrompt(string query)
+        {
+            return OrcaKnowledgeManager.ContextForPrompt(query);
         }
 
         public static string CurrentPersonaSpeakerName()
@@ -183,30 +193,6 @@ namespace DeepseekTheOrca
             }
 
             return builder.ToString().Trim('_');
-        }
-
-        private static void AppendKnowledgeContext(StringBuilder builder, string query)
-        {
-            string knowledgeContext = OrcaKnowledgeManager.ContextForPrompt(query);
-            if (knowledgeContext.NullOrEmpty())
-            {
-                return;
-            }
-
-            builder.AppendLine("Knowledge context:");
-            builder.AppendLine(knowledgeContext);
-        }
-
-        private static void AppendMemoryContext(StringBuilder builder, string query)
-        {
-            string memoryContext = OrcaSessionMemory.ContextForPrompt(query);
-            if (memoryContext.NullOrEmpty())
-            {
-                return;
-            }
-
-            builder.AppendLine("Memory context:");
-            builder.AppendLine(memoryContext);
         }
 
         private static string CurrentPersonaPrompt()

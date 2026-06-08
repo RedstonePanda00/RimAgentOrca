@@ -200,13 +200,15 @@ namespace DeepseekTheOrca.Rimtalk
         {
             if (record == null || query.NullOrEmpty())
             {
-                return 0;
+                return record == null ? 0 : Mathf.RoundToInt(record.importance * 10f);
             }
 
             int score = 0;
             string lowerQuery = query.ToLowerInvariant();
             AddScore(ref score, lowerQuery, record.id, 35);
             AddScore(ref score, lowerQuery, record.tag, 45);
+            AddDelimitedScores(ref score, lowerQuery, record.id, 35);
+            AddDelimitedScores(ref score, lowerQuery, record.tag, 45);
             AddScore(ref score, lowerQuery, record.category, 12);
             foreach (string token in lowerQuery.Split(' ', '\n', '\r', '\t', ',', '.', ';', ':'))
             {
@@ -217,6 +219,11 @@ namespace DeepseekTheOrca.Rimtalk
                 }
             }
 
+            if (score <= 0)
+            {
+                return 0;
+            }
+
             return score + Mathf.RoundToInt(record.importance * 10f);
         }
 
@@ -225,6 +232,24 @@ namespace DeepseekTheOrca.Rimtalk
             if (!value.NullOrEmpty() && lowerQuery.Contains(value.ToLowerInvariant()))
             {
                 score += weight;
+            }
+        }
+
+        private static void AddDelimitedScores(ref int score, string lowerQuery, string value, int weight)
+        {
+            if (value.NullOrEmpty())
+            {
+                return;
+            }
+
+            string[] parts = value.Split(' ', '\n', '\r', '\t', ',', '，', '.', ';', '；', ':', '：', '|', '/', '\\', '、', '[', ']', '【', '】', '(', ')', '（', '）');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i] == null ? "" : parts[i].Trim().ToLowerInvariant();
+                if (part.Length >= 2 && lowerQuery.Contains(part))
+                {
+                    score += weight;
+                }
             }
         }
 
