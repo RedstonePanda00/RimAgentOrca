@@ -14,6 +14,8 @@ namespace DeepseekTheOrca
         public readonly string Category;
         public readonly string ModName;
         public readonly bool HasQuestScript;
+        public readonly string Polarity;
+        public readonly int BudgetHint;
 
         public CachedIncidentDef(IncidentDef incidentDef)
         {
@@ -23,6 +25,8 @@ namespace DeepseekTheOrca
             Category = incidentDef.category == null ? "" : incidentDef.category.defName;
             ModName = incidentDef.modContentPack == null ? "" : incidentDef.modContentPack.Name;
             HasQuestScript = incidentDef.questScriptDef != null;
+            Polarity = OrcaIncidentPolarityClassifier.PolarityFor(incidentDef, DefName, Label, Category);
+            BudgetHint = OrcaIncidentPolarityClassifier.BudgetHintFor(Polarity);
         }
 
         public string Summary
@@ -38,6 +42,7 @@ namespace DeepseekTheOrca
                 {
                     result += " quest";
                 }
+                result += " polarity=" + Polarity + " budgetHint=" + BudgetHint;
                 return result;
             }
         }
@@ -125,6 +130,72 @@ namespace DeepseekTheOrca
                 && incidentDef.targetTags != null
                 && incidentDef.targetTags.Count > 0
                 && incidentDef.workerClass != null;
+        }
+    }
+
+    public static class OrcaIncidentPolarityClassifier
+    {
+        public const string NegativeMajor = "negative_major";
+        public const string NegativeMinor = "negative_minor";
+        public const string Positive = "positive";
+        public const string Neutral = "neutral";
+
+        public static string PolarityFor(IncidentDef incidentDef, string defName, string label, string category)
+        {
+            string text = ((defName ?? "") + " " + (label ?? "") + " " + (category ?? "")).ToLowerInvariant();
+
+            if (ContainsAny(text, "threatbig", "raidenemy", "raidfriendly", "manhunter", "infestation", "mech", "siege", "breach", "assault"))
+            {
+                return NegativeMajor;
+            }
+
+            if (ContainsAny(text, "disease", "toxic", "psychic", "shortcircuit", "solarflare", "cold snap", "heat wave", "eclipse", "zzzt", "threatsmall", "mad animal", "blight"))
+            {
+                return NegativeMinor;
+            }
+
+            if (ContainsAny(text, "trader", "visitor", "wanderer", "refugee", "quest", "shipchunk", "transportpod", "resource", "meteorite", "farm animals", "join"))
+            {
+                return Positive;
+            }
+
+            if (incidentDef != null && incidentDef.questScriptDef != null)
+            {
+                return Positive;
+            }
+
+            return Neutral;
+        }
+
+        public static int BudgetHintFor(string polarity)
+        {
+            if (polarity == NegativeMajor)
+            {
+                return -2;
+            }
+            if (polarity == NegativeMinor)
+            {
+                return -1;
+            }
+            if (polarity == Positive)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private static bool ContainsAny(string text, params string[] needles)
+        {
+            for (int i = 0; i < needles.Length; i++)
+            {
+                if (text.Contains(needles[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

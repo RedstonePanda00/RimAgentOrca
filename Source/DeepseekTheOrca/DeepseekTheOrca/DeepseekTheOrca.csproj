@@ -57,6 +57,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Tools\AiTooling.cs" />
+        <Compile Include="Tools\OrcaToolToggles.cs" />
         <Compile Include="Tools\Routing\OrcaToolBundleDef.cs" />
         <Compile Include="Tools\Routing\OrcaToolBundleRouter.cs" />
         <Compile Include="Tools\Colony\GetColonySummaryTool.cs" />
@@ -75,13 +76,14 @@
         <Compile Include="Storyteller\ColonyDeepSnapshot.cs" />
         <Compile Include="Storyteller\OrcaNarrativeEvaluator.cs" />
         <Compile Include="Storyteller\OrcaNarrativeHistoryMemory.cs" />
+        <Compile Include="Storyteller\OrcaIncidentSchedule.cs" />
+        <Compile Include="Storyteller\OrcaStorytellerUtility.cs" />
         <Compile Include="Llm\LlmApiClient.cs" />
         <Compile Include="Llm\LlmApiClient.Chat.cs" />
         <Compile Include="Llm\LlmApiClient.Connections.cs" />
         <Compile Include="Llm\LlmApiClient.Json.cs" />
         <Compile Include="Llm\LlmConnectionTester.cs" />
         <Compile Include="Storyteller\LlmIncidentDecisionProvider.cs" />
-        <Compile Include="Llm\LlmToolCallDebugRunner.cs" />
         <Compile Include="DeepseekTheOrcaGameComponent.cs" />
         <Compile Include="DeepseekTheOrcaMod.cs" />
         <Compile Include="DeepseekTheOrcaSettings.cs" />
@@ -91,9 +93,12 @@
         <Compile Include="Llm\LlmModels.cs" />
         <Compile Include="Llm\LlmRequestScheduler.cs" />
         <Compile Include="Llm\LlmToolSchemas.cs" />
+        <Compile Include="Llm\OrcaLlmConnectionResolver.cs" />
         <Compile Include="Memory\OrcaEmbeddingClient.cs" />
         <Compile Include="Memory\OrcaRecentExperienceRecord.cs" />
         <Compile Include="Memory\OrcaLongTermMemoryService.cs" />
+        <Compile Include="Memory\OrcaMemoryStore.cs" />
+        <Compile Include="Memory\OrcaMemoryCompactor.cs" />
         <Compile Include="Memory\OrcaMemoryRecord.cs" />
         <Compile Include="Memory\OrcaMemoryKeywordIndex.cs" />
         <Compile Include="Memory\OrcaMemoryRetriever.cs" />
@@ -127,9 +132,12 @@
         <Compile Include="Ui\MainTabWindow_DeepseekOrcaDebug.cs" />
         <Compile Include="MiniJson.cs" />
         <Compile Include="Integrations\Mcp\OrcaHttpMcpClient.cs" />
+        <Compile Include="Integrations\Mcp\OrcaMcpToolSchemaSource.cs" />
+        <Compile Include="Tools\OrcaStoryToolSchemaSource.cs" />
         <Compile Include="Extensions\OrcaExtensionDefs.cs" />
         <Compile Include="Extensions\OrcaExtensionRegistry.cs" />
         <Compile Include="Agent\OrcaAgentCollaboration.cs" />
+        <Compile Include="Agent\OrcaChatAgentHub.cs" />
         <Compile Include="Agent\OrcaDecisionProvider.cs" />
         <Compile Include="Ui\OrcaChatWindow.cs" />
         <Compile Include="Ui\OrcaChatSession.cs" />
@@ -140,6 +148,7 @@
         <Compile Include="Ui\OrcaChatSession.Trace.cs" />
         <Compile Include="Ui\OrcaChatSession.ToolLoop.cs" />
         <Compile Include="Ui\OrcaChatControllerRouter.cs" />
+        <Compile Include="Ui\OrcaChatTranscript.cs" />
         <Compile Include="Ui\OrcaLocalRouteGate.cs" />
         <Compile Include="Ui\OrcaChatHistoryMaintenance.cs" />
         <Compile Include="Ui\OrcaChatPromptBuilder.cs" />
@@ -171,6 +180,7 @@
         <Compile Include="Tools\OrcaDsmlToolCallFallbackParser.cs" />
         <Compile Include="Tools\OrcaVisibleReplySanitizer.cs" />
         <Compile Include="Storyteller\OrcaNarrativeDirector.cs" />
+        <Compile Include="Storyteller\ColonyObservationNarrativeSource.cs" />
         <Compile Include="Tools\OrcaPawnSpawnUtility.cs" />
         <Compile Include="Agent\OrcaProactiveConversation.cs" />
         <Compile Include="Tools\OrcaRaidUtility.cs" />

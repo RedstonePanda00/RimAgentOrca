@@ -4,8 +4,7 @@ namespace DeepseekTheOrca
     {
         public void Clear()
         {
-            messages.Clear();
-            displayLines.Clear();
+            transcript.Clear();
             statusText = "";
             pendingRequest = null;
             pendingStreamingRequest = null;
@@ -34,7 +33,6 @@ namespace DeepseekTheOrca
             lastToolResult = "";
             specialistReturnedNoToolCalls = false;
             dialogueToolRequestRetryUsed = false;
-            conversationVersion++;
         }
     }
 }

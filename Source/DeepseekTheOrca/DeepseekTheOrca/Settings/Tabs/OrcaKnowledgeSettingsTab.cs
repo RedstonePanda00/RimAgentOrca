@@ -90,18 +90,8 @@ namespace DeepseekTheOrca
             string categories = entry.categories == null || entry.categories.Count == 0 ? "" : string.Join(", ", entry.categories.Take(5).ToArray());
             Widgets.Label(new Rect(rect.x, rect.y + 27f, rect.width, 20f), categories);
             GUI.color = Color.white;
-            Widgets.Label(new Rect(rect.x, rect.y + 46f, rect.width, 18f), Clamp(entry.text, 160));
+            Widgets.Label(new Rect(rect.x, rect.y + 46f, rect.width, 18f), OrcaSettingsWidgets.ClampText(entry.text, 160));
             TooltipHandler.TipRegion(rect, entry.text);
-        }
-
-        private static string Clamp(string text, int maxChars)
-        {
-            if (text == null)
-            {
-                return "";
-            }
-
-            return text.Length <= maxChars ? text : text.Substring(0, maxChars) + "...";
         }
     }
 }

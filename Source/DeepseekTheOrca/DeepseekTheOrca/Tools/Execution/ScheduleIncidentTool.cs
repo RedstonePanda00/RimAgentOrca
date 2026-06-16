@@ -47,5 +47,33 @@ namespace DeepseekTheOrca
                 .WithValue("pointsFactor", pointsFactor.ToString("F2"))
                 .WithValue("reason", reason ?? "");
         }
+
+        public override AiToolResult ExecuteValidated(AiToolContext context, Dictionary<string, string> arguments, List<string> processLines)
+        {
+            StorytellerComp_DeepseekOrca comp = OrcaStorytellerUtility.ActiveOrcaComp();
+            if (comp == null)
+            {
+                return AiToolResult.Fail("active storyteller does not contain StorytellerComp_DeepseekOrca");
+            }
+
+            AiIncidentPlan plan;
+            string rejectReason;
+            if (!OrcaStorytellerUtility.TryBuildIncidentPlan(arguments, "The chat agent selected this incident.", out plan, out rejectReason))
+            {
+                return AiToolResult.Fail(rejectReason);
+            }
+
+            string message;
+            string traceText;
+            bool fired = comp.TryFireIncidentNowForDebug(context == null ? null : context.target, plan, out message, out traceText);
+            if (!fired)
+            {
+                return AiToolResult.Fail(message);
+            }
+
+            return AiToolResult.Ok(message)
+                .WithValue("incidentDef", plan.incidentDefName)
+                .WithValue("reason", plan.reason ?? "");
+        }
     }
 }

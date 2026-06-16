@@ -2,8 +2,26 @@ using System.Collections.Generic;
 
 namespace DeepseekTheOrca
 {
+    // Tool schema providers register here at startup (see DeepseekTheOrcaMod)
+    // so the Llm layer never references upper-layer tool registries directly.
+    public interface ILlmToolSchemaSource
+    {
+        void AppendToolSchemas(OrcaLlmModelRole role, HashSet<string> allowedToolNames, List<Dictionary<string, object>> tools);
+        bool IsToolAllowedForRole(OrcaLlmModelRole role, string toolName);
+    }
+
     public static class LlmToolSchemas
     {
+        private static readonly List<ILlmToolSchemaSource> sources = new List<ILlmToolSchemaSource>();
+
+        public static void RegisterSource(ILlmToolSchemaSource source)
+        {
+            if (source != null && !sources.Contains(source))
+            {
+                sources.Add(source);
+            }
+        }
+
         public static List<Dictionary<string, object>> Build()
         {
             return BuildForRole(OrcaLlmModelRole.Decision);
@@ -21,19 +39,13 @@ namespace DeepseekTheOrca
 
         public static List<Dictionary<string, object>> BuildForRole(OrcaLlmModelRole role, HashSet<string> allowedToolNames)
         {
-            switch (role)
+            List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
+            for (int i = 0; i < sources.Count; i++)
             {
-                case OrcaLlmModelRole.Decision:
-                    return BuildStorytellerPlanningTools();
-                case OrcaLlmModelRole.Tool:
-                    return BuildToolModelTools(allowedToolNames);
-                case OrcaLlmModelRole.WebSearch:
-                    return BuildWebSearchTools();
-                case OrcaLlmModelRole.Vision:
-                    return BuildVisionTools();
-                default:
-                    return new List<Dictionary<string, object>>();
+                sources[i].AppendToolSchemas(role, allowedToolNames, tools);
             }
+
+            return tools;
         }
 
         public static bool IsToolAllowedForRole(OrcaLlmModelRole role, string toolName)
@@ -43,86 +55,15 @@ namespace DeepseekTheOrca
                 return false;
             }
 
-            if (role == OrcaLlmModelRole.Decision)
+            for (int i = 0; i < sources.Count; i++)
             {
-                AiToolDefinition definition;
-                return AiStoryToolRegistry.TryGetDefinition(toolName, out definition) && definition.exposeToStorytellerPlanning;
-            }
-
-            if (role == OrcaLlmModelRole.WebSearch)
-            {
-                return toolName == "web_search" && WebSearchEnabled();
-            }
-
-            if (role == OrcaLlmModelRole.Tool)
-            {
-                if (toolName == "web_search")
+                if (sources[i].IsToolAllowedForRole(role, toolName))
                 {
-                    return false;
+                    return true;
                 }
-
-                AiToolDefinition definition;
-                if (AiStoryToolRegistry.TryGetDefinition(toolName, out definition))
-                {
-                    return definition.exposeToChat;
-                }
-
-                return OrcaHttpMcpClient.IsExposedTool(toolName);
             }
 
             return false;
-        }
-
-        private static List<Dictionary<string, object>> BuildStorytellerPlanningTools()
-        {
-            List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
-            foreach (AiToolDefinition definition in AiStoryToolRegistry.StorytellerPlanningDefinitions)
-            {
-                tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
-            }
-            return tools;
-        }
-
-        private static List<Dictionary<string, object>> BuildToolModelTools(HashSet<string> allowedToolNames)
-        {
-            List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
-            foreach (AiToolDefinition definition in AiStoryToolRegistry.ChatDefinitions)
-            {
-                if (definition.Name == "web_search")
-                {
-                    continue;
-                }
-                if (allowedToolNames != null && !allowedToolNames.Contains(definition.Name))
-                {
-                    continue;
-                }
-
-                tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
-            }
-            AppendHttpMcpTools(tools, allowedToolNames);
-            return tools;
-        }
-
-        private static List<Dictionary<string, object>> BuildWebSearchTools()
-        {
-            List<Dictionary<string, object>> tools = new List<Dictionary<string, object>>();
-            if (!WebSearchEnabled())
-            {
-                return tools;
-            }
-
-            AiToolDefinition definition;
-            if (AiStoryToolRegistry.TryGetDefinition("web_search", out definition) && definition.exposeToChat)
-            {
-                tools.Add(Function(definition.Name, definition.Description, definition.parameters ?? EmptyParameters()));
-            }
-
-            return tools;
-        }
-
-        private static List<Dictionary<string, object>> BuildVisionTools()
-        {
-            return new List<Dictionary<string, object>>();
         }
 
         public static Dictionary<string, object> EmptyParameters()
@@ -134,26 +75,7 @@ namespace DeepseekTheOrca
             };
         }
 
-        private static void AppendHttpMcpTools(List<Dictionary<string, object>> tools, HashSet<string> allowedToolNames)
-        {
-            List<OrcaMcpToolDescriptor> mcpTools = OrcaHttpMcpClient.DiscoverTools();
-            for (int i = 0; i < mcpTools.Count; i++)
-            {
-                OrcaMcpToolDescriptor tool = mcpTools[i];
-                if (allowedToolNames != null && !allowedToolNames.Contains(tool.exposedName))
-                {
-                    continue;
-                }
-                tools.Add(Function(tool.exposedName, tool.description, tool.inputSchema ?? EmptyParameters()));
-            }
-        }
-
-        private static bool WebSearchEnabled()
-        {
-            return DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.UsesLocalWebSearchTool;
-        }
-
-        private static Dictionary<string, object> Function(string name, string description, Dictionary<string, object> parameters)
+        public static Dictionary<string, object> Function(string name, string description, Dictionary<string, object> parameters)
         {
             return new Dictionary<string, object>
             {

@@ -23,5 +23,15 @@ namespace DeepseekTheOrca
             Widgets.DrawBoxSolid(new Rect(rect.x, rect.y, 1f, rect.height), BorderColor);
             Widgets.DrawBoxSolid(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), BorderColor);
         }
+
+        public static string ClampText(string text, int maxChars)
+        {
+            if (text == null)
+            {
+                return "";
+            }
+
+            return text.Length <= maxChars ? text : text.Substring(0, maxChars) + "...";
+        }
     }
 }

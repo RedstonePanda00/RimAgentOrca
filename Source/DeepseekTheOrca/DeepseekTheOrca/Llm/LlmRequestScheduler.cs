@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ namespace DeepseekTheOrca
     {
         private static readonly SemaphoreSlim gate = new SemaphoreSlim(1, 1);
         private static readonly object syncRoot = new object();
+        private static readonly Queue<string> pendingDebugMessages = new Queue<string>();
         private static int waitingCount;
         private static string activeLabel = "";
 
@@ -108,7 +110,47 @@ namespace DeepseekTheOrca
         {
             if (DeepseekTheOrcaMod.Settings != null && DeepseekTheOrcaMod.Settings.debugLogging)
             {
+                lock (syncRoot)
+                {
+                    pendingDebugMessages.Enqueue(message ?? "");
+                    while (pendingDebugMessages.Count > 50)
+                    {
+                        pendingDebugMessages.Dequeue();
+                    }
+                }
+            }
+        }
+
+        public static void Tick()
+        {
+            if (DeepseekTheOrcaMod.Settings == null || !DeepseekTheOrcaMod.Settings.debugLogging)
+            {
+                ClearPendingDebugMessages();
+                return;
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                string message;
+                lock (syncRoot)
+                {
+                    if (pendingDebugMessages.Count == 0)
+                    {
+                        return;
+                    }
+
+                    message = pendingDebugMessages.Dequeue();
+                }
+
                 Log.Message("[RimAgent] LLM scheduler: " + message);
+            }
+        }
+
+        private static void ClearPendingDebugMessages()
+        {
+            lock (syncRoot)
+            {
+                pendingDebugMessages.Clear();
             }
         }
 

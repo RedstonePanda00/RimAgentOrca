@@ -71,6 +71,10 @@ namespace DeepseekTheOrca
             if (Widgets.ButtonText(selectRect, "DTO_ChatPersonaSelect".Translate()))
             {
                 DeepseekTheOrcaMod.Settings.chatPersonaDefName = profile.id;
+                if (DeepseekTheOrcaMod.Instance != null)
+                {
+                    DeepseekTheOrcaMod.Instance.WriteSettings();
+                }
                 OrcaStorytellerAppearance.Apply(profile);
                 OrcaChatWindowManager.Session.Clear();
             }
@@ -108,6 +112,7 @@ namespace DeepseekTheOrca
         private readonly OrcaChatPersonaProfile profile;
         private string labelBuffer;
         private string descriptionBuffer;
+        private string narrativeTendencyBuffer;
         private string priorityBuffer;
         private string storytellerLabelBuffer;
         private string storytellerDescriptionBuffer;
@@ -121,6 +126,7 @@ namespace DeepseekTheOrca
             this.profile = profile;
             labelBuffer = profile == null ? "" : profile.label;
             descriptionBuffer = profile == null ? "" : profile.description;
+            narrativeTendencyBuffer = profile == null ? "" : profile.narrativeTendency;
             priorityBuffer = profile == null ? "0" : profile.priority.ToString();
             OrcaChatPersonaManager.NormalizeAppearance(profile);
             storytellerLabelBuffer = profile == null ? "" : profile.storytellerLabel;
@@ -155,7 +161,7 @@ namespace DeepseekTheOrca
             Rect formRect = new Rect(inRect.x, inRect.y + 42f, inRect.width, inRect.height - 88f);
             float viewWidth = formRect.width - 16f;
             float promptHeight = Mathf.Max(260f, Text.CalcHeight(promptBuffer ?? "", viewWidth - 16f) + 56f);
-            float viewHeight = 560f + promptHeight;
+            float viewHeight = 650f + promptHeight;
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
             Widgets.BeginScrollView(formRect, ref formScrollPosition, viewRect);
 
@@ -169,6 +175,9 @@ namespace DeepseekTheOrca
             y += 66f;
 
             descriptionBuffer = DrawTextArea(new Rect(0f, y, viewWidth, 76f), "DTO_ChatPersonaDescription".Translate(), descriptionBuffer);
+            y += 88f;
+
+            narrativeTendencyBuffer = DrawTextArea(new Rect(0f, y, viewWidth, 76f), "DTO_ChatPersonaNarrativeTendency".Translate(), narrativeTendencyBuffer);
             y += 88f;
 
             Widgets.Label(new Rect(0f, y, viewWidth, 24f), "DTO_StorytellerAppearanceTitle".Translate());
@@ -208,6 +217,7 @@ namespace DeepseekTheOrca
             {
                 profile.label = labelBuffer.NullOrEmpty() ? "New Persona" : labelBuffer;
                 profile.description = descriptionBuffer ?? "";
+                profile.narrativeTendency = narrativeTendencyBuffer ?? "";
                 int priority;
                 profile.priority = int.TryParse(priorityBuffer, out priority) ? priority : 0;
                 profile.storytellerLabel = storytellerLabelBuffer ?? "";

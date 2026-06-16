@@ -122,6 +122,10 @@ namespace DeepseekTheOrca
                 if (settings != null)
                 {
                     settings.SetExternalSkillEnabled(profile.id, enabled, profile.defaultEnabled);
+                    if (DeepseekTheOrcaMod.Instance != null)
+                    {
+                        DeepseekTheOrcaMod.Instance.WriteSettings();
+                    }
                 }
             }
             else

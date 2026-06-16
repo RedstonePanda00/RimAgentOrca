@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Verse;
 
 namespace DeepseekTheOrca
@@ -96,7 +96,7 @@ namespace DeepseekTheOrca
                 {
                     status = LlmConnectionStatus.Succeeded;
                     message = messageText.NullOrEmpty() ? "Connection succeeded." : messageText;
-                    OrcaDecisionProvider.SetConnectedProvider(new LlmIncidentDecisionProvider());
+                    OrcaDecisionProvider.EnsureConnectedProvider();
                 }
             }
         }

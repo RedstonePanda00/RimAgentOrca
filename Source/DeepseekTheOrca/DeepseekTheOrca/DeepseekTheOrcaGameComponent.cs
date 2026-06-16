@@ -10,11 +10,12 @@ namespace DeepseekTheOrca
 
         public override void GameComponentTick()
         {
+            LlmRequestScheduler.Tick();
             OrcaHttpMcpClient.Tick();
-            LlmToolCallDebugRunner.Tick();
             OrcaProactiveConversationManager.Tick();
             OrcaSessionMemory.Tick();
             OrcaNarrativeHistoryMemory.Tick();
+            OrcaIncidentSchedule.Tick();
             OrcaToolBundleRouter.Tick();
         }
 
@@ -22,6 +23,7 @@ namespace DeepseekTheOrca
         {
             base.ExposeData();
             OrcaNarrativeHistoryMemory.ExposeData();
+            OrcaIncidentSchedule.ExposeData();
         }
     }
 }

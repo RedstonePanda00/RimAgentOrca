@@ -43,7 +43,7 @@ namespace DeepseekTheOrca
             listing.CheckboxLabeled("DTO_DebugLogging".Translate(), ref settings.debugLogging, "DTO_DebugLoggingTooltip".Translate());
             listing.Gap();
             listing.Label("DTO_DebugTabTitle".Translate());
-            listing.Label("DTO_DebugToolChainTab".Translate());
+            listing.Label("DTO_DebugCyclePlanTab".Translate());
             listing.Label("DTO_DebugSingleToolTab".Translate());
 
             listing.End();

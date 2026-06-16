@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,6 +14,7 @@ namespace DeepseekTheOrca
         public string label;
         public string description;
         public string prompt;
+        public string narrativeTendency;
         public string storytellerLabel;
         public string storytellerDescription;
         public string storytellerPortraitFolder;
@@ -79,6 +80,13 @@ Bad:
 ""Oh no, those poor pawns! We must save everyone!""
 ""This is a magnificent tragedy carved upon the crimson altar of fate!""
 ""LOL that was insane.""";
+        private const string BuiltInOrcaNarrativeTendency = @"Orca prefers earned tragedy: hardship should grow from the colony's current condition, recent choices, and visible narrative pressure rather than from arbitrary cruelty.
+
+When the cycle budget allows it, she tends to spend as much of it as possible on negative pressure: danger, loss, scarcity, injury, fear, obligation, or events that force the colony to reveal what it values. Positive events are still valid, but they should usually serve rhythm: a breath after harm, a tempting opportunity, a useful contrast, or a fragile kindness that gives later consequences more weight. Do not make every positive event secretly malicious.
+
+She values setbacks because she believes stories become meaningful when people must answer them. The goal is not to destroy the colony or punish the player for its own sake. Major negative events should feel prepared by context, proportionate to the colony's resilience, and capable of producing recovery, adaptation, or a memorable turn.
+
+Do not deny relief forever. After a major negative beat, allow room for recovery, reflection, or a change in direction before applying another severe pressure.";
         private static readonly List<OrcaChatPersonaProfile> localPersonas = new List<OrcaChatPersonaProfile>();
         private static bool loadedLocal;
 
@@ -155,6 +163,7 @@ Bad:
                 storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
                 priority = 0,
                 prompt = BuiltInOrcaPrompt,
+                narrativeTendency = BuiltInOrcaNarrativeTendency,
                 readOnly = true,
                 sourceMod = "Core"
             };
@@ -179,6 +188,7 @@ Bad:
                 storytellerPortraitTinyPath = DefaultStorytellerPortraitTinyPath,
                 priority = 0,
                 prompt = "Write this persona's character, voice, attitude, and roleplay preferences here.",
+                narrativeTendency = "Describe this persona's storyteller planning tendency here.",
                 readOnly = false
             };
             profile.filePath = PathFor(profile);
@@ -215,6 +225,9 @@ Bad:
             AppendText(document, root, "storytellerPortraitLargePath", profile.storytellerPortraitLargePath ?? "");
             AppendText(document, root, "storytellerPortraitTinyPath", profile.storytellerPortraitTinyPath ?? "");
             AppendText(document, root, "priority", profile.priority.ToString());
+            XmlElement narrativeTendency = document.CreateElement("narrativeTendency");
+            narrativeTendency.AppendChild(document.CreateCDataSection(profile.narrativeTendency ?? ""));
+            root.AppendChild(narrativeTendency);
             XmlElement prompt = document.CreateElement("prompt");
             prompt.AppendChild(document.CreateCDataSection(profile.prompt ?? ""));
             root.AppendChild(prompt);
@@ -239,7 +252,7 @@ Bad:
             {
                 DeepseekTheOrcaMod.Settings.chatPersonaDefName = BuiltInOrcaId;
                 OrcaStorytellerAppearance.ApplyCurrent();
-                OrcaChatWindowManager.Session.Clear();
+                OrcaChatAgentHub.ClearConversation();
             }
         }
 
@@ -318,6 +331,7 @@ Bad:
                 storytellerPortraitTinyPath = def.storytellerPortraitTinyPath,
                 priority = PriorityForDefPersona(def.defName),
                 prompt = def.prompt ?? "",
+                narrativeTendency = def.narrativeTendency ?? "",
                 readOnly = true,
                 filePath = "",
                 sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name
@@ -362,6 +376,7 @@ Bad:
                     storytellerPortraitTinyPath = ReadText(root, "storytellerPortraitTinyPath"),
                     priority = ReadInt(root, "priority", 0),
                     prompt = ReadText(root, "prompt"),
+                    narrativeTendency = ReadText(root, "narrativeTendency"),
                     readOnly = false,
                     filePath = file
                 };
@@ -547,6 +562,18 @@ Bad:
         private static string CleanTexturePath(string path)
         {
             return (path ?? "").Trim().Trim('/').Trim('\\').Replace('\\', '/');
+        }
+
+        public static string CurrentNarrativeTendency()
+        {
+            string defName = DeepseekTheOrcaMod.Settings == null ? BuiltInOrcaId : DeepseekTheOrcaMod.Settings.chatPersonaDefName;
+            OrcaChatPersonaProfile persona = Get(defName);
+            if (persona == null)
+            {
+                persona = Get(BuiltInOrcaId);
+            }
+
+            return persona == null ? "" : persona.narrativeTendency ?? "";
         }
     }
 }

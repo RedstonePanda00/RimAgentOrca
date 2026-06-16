@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -28,52 +28,35 @@ namespace DeepseekTheOrca
             }
 
             bool hasPendingWork = OrcaDecisionProvider.HasPendingWork;
-
             if (!hasPendingWork && GenDate.DaysPassedSinceSettleFloat < Props.minDaysPassed)
             {
                 yield break;
             }
 
-            float mtbDays = Props.mtbDays;
+            float cycleDays = Props.mtbDays;
             if (settings.planningMtbDays > 0f)
             {
-                mtbDays = settings.planningMtbDays;
-            }
-
-            if (!hasPendingWork && !Rand.MTBEventOccurs(mtbDays, 60000f, 1000f))
-            {
-                yield break;
-            }
-
-            int lastIncidentTick;
-            if (!hasPendingWork && lastIncidentTicksByTarget.TryGetValue(target.ConstantRandSeed, out lastIncidentTick))
-            {
-                int minSpacingTicks = GenDate.DaysToTicks(Props.minSpacingDays);
-                if (Find.TickManager.TicksGame - lastIncidentTick < minSpacingTicks)
-                {
-                    yield break;
-                }
+                cycleDays = settings.planningMtbDays;
             }
 
             AiToolContext context = new AiToolContext(target, this, Props);
-            AiIncidentPlan plan = OrcaDecisionProvider.SelectIncidentPlan(context);
-            if (plan == null && OrcaDecisionProvider.HasPendingWork)
+            if (!hasPendingWork && !OrcaIncidentSchedule.NeedsCyclePlan(context, cycleDays))
             {
                 yield break;
             }
 
-            FiringIncident firingIncident;
-            string rejectReason;
-            if (!OrcaIncidentValidator.TryBuildFiringIncident(plan, context, out firingIncident, out rejectReason))
+            OrcaIncidentCyclePlan plan = OrcaDecisionProvider.SelectIncidentCyclePlan(
+                context,
+                cycleDays,
+                OrcaIncidentCyclePlan.DefaultCycleBudget);
+            if (plan == null)
             {
-                LogDebug("No valid incident plan. " + rejectReason + "\n" + context.trace);
                 yield break;
             }
 
-            lastIncidentTicksByTarget[target.ConstantRandSeed] = Find.TickManager.TicksGame;
-            LogDebug("Scheduled " + firingIncident.def.defName + ". Reason: " + plan.reason + "\n" + context.trace);
-            OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled(plan, firingIncident, target);
-            yield return firingIncident;
+            OrcaIncidentSchedule.StoreCyclePlan(plan, context, cycleDays);
+            LogDebug("Stored cycle plan with " + plan.incidents.Count + " incident(s).\n" + context.trace);
+            yield break;
         }
 
         public bool TryFireIncidentNowForDebug(IIncidentTarget target, AiIncidentPlan plan, out string message, out string traceText)
@@ -143,6 +126,61 @@ namespace DeepseekTheOrca
             }
 
             return fired;
+        }
+
+        public bool TryFireScheduledIncident(IIncidentTarget target, OrcaScheduledIncidentPlan scheduled, out string message, out string traceText)
+        {
+            message = "";
+            traceText = "";
+
+            if (scheduled == null)
+            {
+                message = "missing scheduled incident";
+                return false;
+            }
+
+            if (target == null || target.StoryState == null)
+            {
+                message = "missing incident target";
+                return false;
+            }
+
+            if (scheduled.targetSeed != 0 && scheduled.targetSeed != target.ConstantRandSeed)
+            {
+                message = "scheduled incident target seed mismatch";
+                return false;
+            }
+
+            if (Find.Storyteller == null)
+            {
+                message = "no active storyteller";
+                return false;
+            }
+
+            AiToolContext context = new AiToolContext(target, this, Props);
+            FiringIncident firingIncident;
+            string rejectReason;
+            AiIncidentPlan plan = scheduled.ToIncidentPlan();
+            if (!OrcaIncidentValidator.TryBuildFiringIncident(plan, context, out firingIncident, out rejectReason))
+            {
+                traceText = context.trace.ToString();
+                message = "incident rejected: " + rejectReason;
+                return false;
+            }
+
+            if (!Find.Storyteller.TryFire(firingIncident))
+            {
+                traceText = context.trace.ToString();
+                message = "Storyteller.TryFire returned false for " + firingIncident.def.defName;
+                return false;
+            }
+
+            lastIncidentTicksByTarget[target.ConstantRandSeed] = Find.TickManager.TicksGame;
+            traceText = context.trace.ToString();
+            message = "scheduled incident fired: " + firingIncident.def.defName;
+            OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled(plan, firingIncident, target);
+            LogDebug("Scheduled incident fired " + firingIncident.def.defName + ". Reason: " + plan.reason + "\n" + context.trace);
+            return true;
         }
 
         public override string ToString()

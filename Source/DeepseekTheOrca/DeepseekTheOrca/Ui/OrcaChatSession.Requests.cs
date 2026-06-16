@@ -26,7 +26,7 @@ namespace DeepseekTheOrca
                 {
                     pendingStreamingLine.Text = after;
                 }
-                conversationVersion++;
+                transcript.MarkChanged();
             }
 
             if (!pendingStreamingRequest.IsCompleted)
@@ -74,15 +74,14 @@ namespace DeepseekTheOrca
 
             if (line != null)
             {
-                displayLines.Remove(line);
+                transcript.RemoveDisplayLine(line);
                 thinkingState.ForgetIfCurrent(line);
-                conversationVersion++;
             }
 
             statusText = "DTO_OrcaChatWaiting".Translate();
             pendingStage = OrcaChatRequestStage.Chat;
-            thinkingState.Ensure(displayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
-            pendingRequest = client.SendPlainChatCompletionAsync(settings, new List<LlmChatMessage>(messages), pendingRequestRole);
+            thinkingState.Ensure(transcript.DisplayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
+            pendingRequest = client.SendPlainChatCompletionAsync(settings, transcript.SnapshotMessages(), pendingRequestRole);
             NotifyAgentPhase(OrcaChatRoleUtility.PhaseForRole(pendingRequestRole), pendingRequestRole, false, "streaming failed; fallback request sent");
             AddProcess("Streaming response failed; retrying once without streaming: " + error);
             AddProcess("Fallback request sent to " + OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model: " + settings.ModelForRole(pendingRequestRole));
@@ -93,9 +92,8 @@ namespace DeepseekTheOrca
         {
             if (line != null)
             {
-                displayLines.Remove(line);
+                transcript.RemoveDisplayLine(line);
                 thinkingState.ForgetIfCurrent(line);
-                conversationVersion++;
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
@@ -114,7 +112,7 @@ namespace DeepseekTheOrca
             }
 
             dialogueToolRequestRetryUsed = true;
-            messages.Add(LlmChatMessage.System(
+            transcript.AddMessage(LlmChatMessage.System(
                 "The dialogue model attempted to request tools, but tool routing is controlled only by the controller model. "
                 + "Ignore that tool request and produce the final player-facing reply using only the existing controller context, memory summary, conversation, and tool results already supplied. "
                 + "Do not request tools. Requested tool hint was: " + OrcaToolCallFormatter.ToolCallHint(response)));
@@ -124,8 +122,8 @@ namespace DeepseekTheOrca
 
         private void StartRequest(DeepseekTheOrcaSettings settings)
         {
-            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
-            OrcaChatHistoryMaintenance.RemoveOrphanToolMessages(messages);
+            transcript.Trim(MaxConversationTurns);
+            transcript.RemoveOrphanToolMessages();
             OrcaLlmModelRole role = hasForcedNextModelRole ? forcedNextModelRole : OrcaChatRoleUtility.InitialChatModelRole(settings);
             ClearForcedNextModelRole();
             pendingRequestRole = role;
@@ -133,13 +131,13 @@ namespace DeepseekTheOrca
             currentModelRoleLabel = OrcaChatRoleUtility.ModelRoleLabel(role);
             currentModelReference = settings.ModelForRole(role);
             NotifyAgentPhase(OrcaChatRoleUtility.PhaseForRole(role), role, OrcaChatRoleUtility.ShouldStreamFinalReply(role), "request sent");
-            OrcaChatLine thinkingLine = thinkingState.Ensure(displayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
+            OrcaChatLine thinkingLine = thinkingState.Ensure(transcript.DisplayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
             if (OrcaChatRoleUtility.ShouldStreamFinalReply(role))
             {
                 pendingStreamingLine = thinkingLine;
                 pendingStreamingRequest = client.StartStreamingPlainChatCompletion(
                     settings,
-                    new List<LlmChatMessage>(messages),
+                    transcript.SnapshotMessages(),
                     900,
                     0.85f,
                     role);
@@ -156,7 +154,7 @@ namespace DeepseekTheOrca
                 }
                 pendingRequest = client.SendChatCompletionWithToolsAsync(
                     settings,
-                    new List<LlmChatMessage>(messages),
+                    transcript.SnapshotMessages(),
                     LlmToolSchemas.BuildForRole(role, allowedToolNames),
                     900,
                     0.85f,
@@ -173,7 +171,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            displayLines.Remove(line);
+            transcript.RemoveDisplayLine(line);
             if (pendingStreamingLine == line)
             {
                 pendingStreamingLine = null;

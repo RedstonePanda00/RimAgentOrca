@@ -9,6 +9,7 @@ namespace DeepseekTheOrca
     public class OrcaChatPersonaDef : Def
     {
         public string prompt = "";
+        public string narrativeTendency = "";
         public string storytellerLabel = "";
         public string storytellerDescription = "";
         public string storytellerPortraitFolder = "";
@@ -348,6 +349,13 @@ namespace DeepseekTheOrca
         }
 
         public abstract AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments);
+
+        // Execution tools (def.isExecutionTool) override this to perform the
+        // real action after Invoke has validated and the extension gate passed.
+        public virtual AiToolResult ExecuteValidated(AiToolContext context, Dictionary<string, string> arguments, List<string> processLines)
+        {
+            return AiToolResult.Fail("tool does not implement execution: " + (def == null ? GetType().Name : def.ToolName));
+        }
     }
 
     public class OrcaToolDef : Def

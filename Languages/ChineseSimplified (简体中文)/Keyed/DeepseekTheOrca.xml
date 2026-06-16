@@ -115,6 +115,7 @@
   <DTO_ChatPersonaDeleteConfirm>删除人格“{0}”？</DTO_ChatPersonaDeleteConfirm>
   <DTO_ChatPersonaName>名称</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>描述</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaNarrativeTendency>周期规划叙事倾向</DTO_ChatPersonaNarrativeTendency>
   <DTO_ChatPersonaPriority>默认优先级</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>人格提示词</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>保存</DTO_ChatPersonaSave>
@@ -200,6 +201,7 @@
   <DTO_DebugNoCurrentMap>没有当前地图</DTO_DebugNoCurrentMap>
   <DTO_DebugPlanningEnabled>规划已启用</DTO_DebugPlanningEnabled>
   <DTO_DebugPlanningDisabled>规划未启用或 API 密钥为空</DTO_DebugPlanningDisabled>
+  <DTO_DebugCyclePlanTab>周期规划</DTO_DebugCyclePlanTab>
   <DTO_DebugToolChainTab>工具调用链</DTO_DebugToolChainTab>
   <DTO_DebugSingleToolTab>单工具测试</DTO_DebugSingleToolTab>
   <DTO_DebugSelectTool>选择工具</DTO_DebugSelectTool>

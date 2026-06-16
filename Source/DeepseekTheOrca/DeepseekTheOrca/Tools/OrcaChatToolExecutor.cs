@@ -37,17 +37,9 @@ namespace DeepseekTheOrca
             {
                 execution.result = AiToolResult.Fail("tool is disabled for proactive trigger turns");
             }
-            else if (toolName == "schedule_incident")
+            else if (AiStoryToolRegistry.IsExecutionTool(toolName))
             {
-                execution.result = InvokeScheduleIncidentFromChat(chatSession, session, arguments, execution.ProcessLines);
-            }
-            else if (toolName == "trigger_raid")
-            {
-                execution.result = InvokeTriggerRaidFromChat(chatSession, session, arguments, execution.ProcessLines);
-            }
-            else if (toolName == "spawn_pawns")
-            {
-                execution.result = InvokeSpawnPawnsFromChat(chatSession, session, arguments, execution.ProcessLines);
+                execution.result = InvokeExecutionToolFromChat(chatSession, session, context, toolName, arguments, execution.ProcessLines);
             }
             else
             {
@@ -68,116 +60,33 @@ namespace DeepseekTheOrca
             return AiStoryToolRegistry.IsExposedToChat(toolName) || OrcaHttpMcpClient.IsExposedTool(toolName);
         }
 
-        private static AiToolResult InvokeScheduleIncidentFromChat(
+        private static AiToolResult InvokeExecutionToolFromChat(
             OrcaChatSession chatSession,
             AiToolSession session,
+            AiToolContext context,
+            string toolName,
             Dictionary<string, string> arguments,
             List<string> processLines)
         {
-            AiToolResult validationResult = session.Invoke("schedule_incident", arguments);
+            AiToolResult validationResult = session.Invoke(toolName, arguments);
             if (!validationResult.success)
             {
                 return validationResult;
             }
 
             AiToolResult gateResult;
-            if (!ExtensionAllowsExecutionTool(chatSession, "schedule_incident", arguments, processLines, out gateResult))
+            if (!ExtensionAllowsExecutionTool(chatSession, toolName, arguments, processLines, out gateResult))
             {
                 return gateResult;
             }
 
-            StorytellerComp_DeepseekOrca comp = ActiveOrcaComp();
-            if (comp == null)
+            OrcaToolWorker worker = AiStoryToolRegistry.WorkerFor(toolName);
+            if (worker == null)
             {
-                return AiToolResult.Fail("active storyteller does not contain StorytellerComp_DeepseekOrca");
+                return AiToolResult.Fail("execution tool worker is unavailable: " + toolName);
             }
 
-            AiIncidentPlan plan;
-            string rejectReason;
-            if (!TryBuildPlan(arguments, out plan, out rejectReason))
-            {
-                return AiToolResult.Fail(rejectReason);
-            }
-
-            string message;
-            string traceText;
-            bool fired = comp.TryFireIncidentNowForDebug(Find.CurrentMap, plan, out message, out traceText);
-            if (!fired)
-            {
-                return AiToolResult.Fail(message);
-            }
-
-            return AiToolResult.Ok(message)
-                .WithValue("incidentDef", plan.incidentDefName)
-                .WithValue("reason", plan.reason ?? "");
-        }
-
-        private static AiToolResult InvokeTriggerRaidFromChat(
-            OrcaChatSession chatSession,
-            AiToolSession session,
-            Dictionary<string, string> arguments,
-            List<string> processLines)
-        {
-            AiToolResult validationResult = session.Invoke("trigger_raid", arguments);
-            if (!validationResult.success)
-            {
-                return validationResult;
-            }
-
-            AiToolResult gateResult;
-            if (!ExtensionAllowsExecutionTool(chatSession, "trigger_raid", arguments, processLines, out gateResult))
-            {
-                return gateResult;
-            }
-
-            StorytellerComp_DeepseekOrca comp = ActiveOrcaComp();
-            if (comp == null)
-            {
-                return AiToolResult.Fail("active storyteller does not contain StorytellerComp_DeepseekOrca");
-            }
-
-            string message;
-            string traceText;
-            bool fired = comp.TryFireRaidNowForDebug(Find.CurrentMap, arguments, out message, out traceText);
-            if (!traceText.NullOrEmpty())
-            {
-                processLines.Add("Trigger raid trace: " + traceText.Replace("\n", " | "));
-            }
-            if (!fired)
-            {
-                return AiToolResult.Fail(message);
-            }
-
-            return AiToolResult.Ok(message);
-        }
-
-        private static AiToolResult InvokeSpawnPawnsFromChat(
-            OrcaChatSession chatSession,
-            AiToolSession session,
-            Dictionary<string, string> arguments,
-            List<string> processLines)
-        {
-            AiToolResult validationResult = session.Invoke("spawn_pawns", arguments);
-            if (!validationResult.success)
-            {
-                return validationResult;
-            }
-
-            AiToolResult gateResult;
-            if (!ExtensionAllowsExecutionTool(chatSession, "spawn_pawns", arguments, processLines, out gateResult))
-            {
-                return gateResult;
-            }
-
-            AiToolContext context = new AiToolContext(Find.CurrentMap, null, null);
-            string message;
-            bool spawned = OrcaPawnSpawnUtility.TrySpawnPawns(context, arguments, out message);
-            if (!spawned)
-            {
-                return AiToolResult.Fail(message);
-            }
-
-            return AiToolResult.Ok(message);
+            return worker.ExecuteValidated(context, arguments, processLines);
         }
 
         private static bool ToolAllowsDuringProactive(string toolName)
@@ -211,50 +120,6 @@ namespace DeepseekTheOrca
             }
 
             result = null;
-            return true;
-        }
-
-        private static StorytellerComp_DeepseekOrca ActiveOrcaComp()
-        {
-            if (Find.Storyteller == null || Find.Storyteller.storytellerComps == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < Find.Storyteller.storytellerComps.Count; i++)
-            {
-                StorytellerComp_DeepseekOrca comp = Find.Storyteller.storytellerComps[i] as StorytellerComp_DeepseekOrca;
-                if (comp != null)
-                {
-                    return comp;
-                }
-            }
-
-            return null;
-        }
-
-        private static bool TryBuildPlan(Dictionary<string, string> arguments, out AiIncidentPlan plan, out string rejectReason)
-        {
-            plan = null;
-            rejectReason = null;
-
-            string incidentDef;
-            if (arguments == null || !arguments.TryGetValue("incidentDef", out incidentDef) || incidentDef.NullOrEmpty())
-            {
-                rejectReason = "missing argument: incidentDef";
-                return false;
-            }
-
-            float pointsFactor = 1f;
-            string pointsFactorText;
-            if (arguments.TryGetValue("pointsFactor", out pointsFactorText))
-            {
-                float.TryParse(pointsFactorText, out pointsFactor);
-            }
-
-            string reason;
-            arguments.TryGetValue("reason", out reason);
-            plan = AiIncidentPlan.For(incidentDef, reason ?? "The chat agent selected this incident.", pointsFactor);
             return true;
         }
 

@@ -32,5 +32,29 @@ namespace DeepseekTheOrca
                 .WithValue("spawnCenter", parms.spawnCenter.IsValid ? parms.spawnCenter.ToString() : "")
                 .WithValue("points", parms.points.ToString("F0"));
         }
+
+        public override AiToolResult ExecuteValidated(AiToolContext context, Dictionary<string, string> arguments, List<string> processLines)
+        {
+            StorytellerComp_DeepseekOrca comp = OrcaStorytellerUtility.ActiveOrcaComp();
+            if (comp == null)
+            {
+                return AiToolResult.Fail("active storyteller does not contain StorytellerComp_DeepseekOrca");
+            }
+
+            string message;
+            string traceText;
+            bool fired = comp.TryFireRaidNowForDebug(context == null ? null : context.target, arguments, out message, out traceText);
+            if (!string.IsNullOrEmpty(traceText) && processLines != null)
+            {
+                processLines.Add("Trigger raid trace: " + traceText.Replace("\n", " | "));
+            }
+
+            if (!fired)
+            {
+                return AiToolResult.Fail(message);
+            }
+
+            return AiToolResult.Ok(message);
+        }
     }
 }

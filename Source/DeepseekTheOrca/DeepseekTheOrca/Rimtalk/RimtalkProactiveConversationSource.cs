@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -106,19 +106,16 @@ namespace DeepseekTheOrca.Rimtalk
         {
             if (!OrcaProactiveConversationManager.AmbientEnabled)
             {
-                Debug("RimTalk proactive skipped because ambient proactive dialogue is disabled: " + Describe(record) + ".");
                 return false;
             }
 
             if (!IsConversationStarter(record))
             {
-                Debug("RimTalk proactive skipped non-starter record: " + Describe(record) + ".");
                 return false;
             }
 
             if (record.entryKind == "pending_ai_request")
             {
-                Debug("RimTalk proactive skipped pending request: " + Describe(record) + ".");
                 return false;
             }
 
@@ -126,7 +123,6 @@ namespace DeepseekTheOrca.Rimtalk
             int cooldownTicks = settings == null ? DefaultCooldownTicks : settings.rimtalkProactiveCooldownTicks;
             if (cooldownTicks > 0 && ticksGame - lastTriggerTick < cooldownTicks)
             {
-                Debug("RimTalk proactive skipped cooldown: " + Describe(record) + ".");
                 return false;
             }
 

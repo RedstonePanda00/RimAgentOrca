@@ -29,5 +29,17 @@ namespace DeepseekTheOrca
                 .WithValue("spawnCell", request.spawnCell)
                 .WithValue("radius", request.radius);
         }
+
+        public override AiToolResult ExecuteValidated(AiToolContext context, Dictionary<string, string> arguments, List<string> processLines)
+        {
+            string message;
+            bool spawned = OrcaPawnSpawnUtility.TrySpawnPawns(context, arguments, out message);
+            if (!spawned)
+            {
+                return AiToolResult.Fail(message);
+            }
+
+            return AiToolResult.Ok(message);
+        }
     }
 }

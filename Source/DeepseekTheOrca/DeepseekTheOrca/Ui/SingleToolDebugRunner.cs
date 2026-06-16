@@ -66,7 +66,7 @@ namespace DeepseekTheOrca
 
         private static void FireScheduledIncident(Dictionary<string, string> arguments)
         {
-            StorytellerComp_DeepseekOrca comp = ActiveOrcaComp();
+            StorytellerComp_DeepseekOrca comp = OrcaStorytellerUtility.ActiveOrcaComp();
             if (comp == null)
             {
                 AddLog("Execute: failed - active storyteller does not contain StorytellerComp_DeepseekOrca");
@@ -75,7 +75,7 @@ namespace DeepseekTheOrca
 
             AiIncidentPlan plan;
             string rejectReason;
-            if (!TryBuildPlan(arguments, out plan, out rejectReason))
+            if (!OrcaStorytellerUtility.TryBuildIncidentPlan(arguments, "manual single tool debug", out plan, out rejectReason))
             {
                 AddLog("Execute: failed - " + rejectReason);
                 return;
@@ -93,7 +93,7 @@ namespace DeepseekTheOrca
 
         private static void FireTriggeredRaid(Dictionary<string, string> arguments)
         {
-            StorytellerComp_DeepseekOrca comp = ActiveOrcaComp();
+            StorytellerComp_DeepseekOrca comp = OrcaStorytellerUtility.ActiveOrcaComp();
             if (comp == null)
             {
                 AddLog("Execute: failed - active storyteller does not contain StorytellerComp_DeepseekOrca");
@@ -116,50 +116,6 @@ namespace DeepseekTheOrca
             string message;
             bool spawned = OrcaPawnSpawnUtility.TrySpawnPawns(context, arguments, out message);
             AddLog("Execute: " + (spawned ? "ok" : "failed") + " - " + message);
-        }
-
-        private static StorytellerComp_DeepseekOrca ActiveOrcaComp()
-        {
-            if (Find.Storyteller == null || Find.Storyteller.storytellerComps == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < Find.Storyteller.storytellerComps.Count; i++)
-            {
-                StorytellerComp_DeepseekOrca comp = Find.Storyteller.storytellerComps[i] as StorytellerComp_DeepseekOrca;
-                if (comp != null)
-                {
-                    return comp;
-                }
-            }
-
-            return null;
-        }
-
-        private static bool TryBuildPlan(Dictionary<string, string> arguments, out AiIncidentPlan plan, out string rejectReason)
-        {
-            plan = null;
-            rejectReason = null;
-
-            string incidentDef;
-            if (arguments == null || !arguments.TryGetValue("incidentDef", out incidentDef) || incidentDef.NullOrEmpty())
-            {
-                rejectReason = "missing argument: incidentDef";
-                return false;
-            }
-
-            float pointsFactor = 1f;
-            string pointsFactorText;
-            if (arguments.TryGetValue("pointsFactor", out pointsFactorText))
-            {
-                float.TryParse(pointsFactorText, out pointsFactor);
-            }
-
-            string reason;
-            arguments.TryGetValue("reason", out reason);
-            plan = AiIncidentPlan.For(incidentDef, reason ?? "manual single tool debug", pointsFactor);
-            return true;
         }
 
         private static string FormatArguments(Dictionary<string, string> arguments)

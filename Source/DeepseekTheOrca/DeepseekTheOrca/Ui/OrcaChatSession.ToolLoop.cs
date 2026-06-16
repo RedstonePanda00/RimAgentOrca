@@ -17,7 +17,7 @@ namespace DeepseekTheOrca
             toolRoundsUsed++;
             statusText = "DTO_OrcaChatUsingTools".Translate();
             AddProcess("Received " + response.toolCalls.Count + " tool call(s), round " + toolRoundsUsed + ".");
-            messages.Add(LlmChatMessage.Assistant(response.content, response.toolCalls));
+            transcript.AddMessage(LlmChatMessage.Assistant(response.content, response.toolCalls));
             bool toolCallBudgetExhausted = false;
 
             for (int i = 0; i < response.toolCalls.Count; i++)
@@ -53,7 +53,7 @@ namespace DeepseekTheOrca
                 {
                     OrcaSessionMemory.Add("tool_" + toolCall.name, OrcaToolResultFormatter.MemoryText(result));
                 }
-                messages.Add(LlmChatMessage.Tool(toolCall.id, OrcaToolResultFormatter.Serialize(result)));
+                transcript.AddMessage(LlmChatMessage.Tool(toolCall.id, OrcaToolResultFormatter.Serialize(result)));
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
@@ -71,7 +71,7 @@ namespace DeepseekTheOrca
             }
 
             specialistReturnedNoToolCalls = false;
-            messages.Add(LlmChatMessage.System(
+            transcript.AddMessage(LlmChatMessage.System(
                 "Specialist tool results have been supplied. Return control to the controller model so it can decide whether to gather more data or route to dialogue."));
             StartControllerReviewOrDialogue(settings, "tool results supplied");
         }
@@ -100,7 +100,7 @@ namespace DeepseekTheOrca
             }
 
             AddProcess("Tool budget exhausted; routing to dialogue model with existing tool results. Reason: " + reason + ".");
-            messages.Add(LlmChatMessage.System(
+            transcript.AddMessage(LlmChatMessage.System(
                 "Tool budget is exhausted. Use only the existing conversation and tool results already supplied. "
                 + "Do not request or call more tools. The next assistant response must be exactly one JSON object and no extra text. "
                 + "JSON schema: " + OrcaChatPromptBuilder.ChatReplyJsonSchema() + "."));

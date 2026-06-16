@@ -261,74 +261,12 @@ namespace DeepseekTheOrca
 
         public string ModelForRole(OrcaLlmModelRole role)
         {
-            OrcaLlmRequestConfig config = RequestConfigForRole(role);
-            if (config != null)
-            {
-                return config.model;
-            }
-
-            string roleModel = "";
-            switch (role)
-            {
-                case OrcaLlmModelRole.Decision:
-                    roleModel = decisionModel;
-                    break;
-                case OrcaLlmModelRole.Controller:
-                    roleModel = controllerModel;
-                    break;
-                case OrcaLlmModelRole.Dialogue:
-                    roleModel = dialogueModel;
-                    break;
-                case OrcaLlmModelRole.Tool:
-                    roleModel = toolModel;
-                    break;
-                case OrcaLlmModelRole.Vision:
-                    roleModel = visionModel;
-                    break;
-                case OrcaLlmModelRole.WebSearch:
-                    roleModel = webSearchModel;
-                    break;
-                case OrcaLlmModelRole.Embedding:
-                    roleModel = embeddingModel;
-                    break;
-                case OrcaLlmModelRole.Memory:
-                    roleModel = memoryModel;
-                    break;
-            }
-
-            if (!roleModel.NullOrEmpty())
-            {
-                return roleModel;
-            }
-
-            if (role == OrcaLlmModelRole.Embedding || role == OrcaLlmModelRole.Memory)
-            {
-                return "";
-            }
-
-            return model ?? "";
+            return OrcaLlmConnectionResolver.ModelForRole(this, role);
         }
 
         public OrcaLlmRequestConfig RequestConfigForRole(OrcaLlmModelRole role)
         {
-            EnsureLlmConnections();
-            string selected = ModelReferenceForRole(role);
-            OrcaLlmRequestConfig config = RequestConfigForModelReference(selected);
-            if (config != null)
-            {
-                return config;
-            }
-
-            if (role != OrcaLlmModelRole.Fallback && role != OrcaLlmModelRole.Embedding && role != OrcaLlmModelRole.Memory)
-            {
-                config = RequestConfigForModelReference(model);
-                if (config != null)
-                {
-                    return config;
-                }
-            }
-
-            return null;
+            return OrcaLlmConnectionResolver.RequestConfigForRole(this, role);
         }
 
         public string ModelReferenceForRole(OrcaLlmModelRole role)
@@ -392,72 +330,12 @@ namespace DeepseekTheOrca
 
         public OrcaLlmRequestConfig RequestConfigForModelReference(string reference)
         {
-            EnsureLlmConnections();
-            string connectionId;
-            string modelId;
-            if (!TryParseModelReference(reference, out connectionId, out modelId))
-            {
-                modelId = reference;
-            }
-
-            OrcaLlmConnectionSettings connection = null;
-            if (!connectionId.NullOrEmpty())
-            {
-                connection = FindConnection(connectionId);
-            }
-
-            if (connection == null && !modelId.NullOrEmpty())
-            {
-                connection = FindFirstEnabledConnectionContainingModel(modelId);
-            }
-
-            if (connection == null)
-            {
-                connection = FirstUsableConnection();
-            }
-
-            if (connection == null || modelId.NullOrEmpty() || connection.apiKey.NullOrEmpty() || connection.ActiveBaseUrl.NullOrEmpty())
-            {
-                return null;
-            }
-
-            return new OrcaLlmRequestConfig
-            {
-                apiKey = connection.apiKey,
-                openAiOrganization = connection.openAiOrganization,
-                openAiProject = connection.openAiProject,
-                proxyUrl = connection.proxyUrl,
-                model = modelId,
-                baseUrl = connection.ActiveBaseUrl,
-                providerId = connection.provider
-            };
+            return OrcaLlmConnectionResolver.RequestConfigForModelReference(this, reference);
         }
 
         public List<OrcaModelOption> AvailableModelOptions()
         {
-            EnsureLlmConnections();
-            List<OrcaModelOption> options = new List<OrcaModelOption>();
-            foreach (OrcaLlmConnectionSettings connection in llmConnections)
-            {
-                if (connection == null || !connection.enabled || connection.activeModels == null)
-                {
-                    continue;
-                }
-
-                for (int i = 0; i < connection.activeModels.Count; i++)
-                {
-                    string modelId = connection.activeModels[i];
-                    if (modelId.NullOrEmpty())
-                    {
-                        continue;
-                    }
-
-                    string label = connection.name + " / " + modelId;
-                    options.Add(new OrcaModelOption(MakeModelReference(connection.id, modelId), label, modelId, connection));
-                }
-            }
-
-            return options;
+            return OrcaLlmConnectionResolver.AvailableModelOptions(this);
         }
 
         public bool IsExternalSkillEnabled(string skillId, bool defaultEnabled)
@@ -485,10 +363,18 @@ namespace DeepseekTheOrca
             return IsDefToggleEnabled(defName, defaultEnabled, enabledDefTools, disabledDefTools);
         }
 
+        // Assigned by the mod composition root; lets the Tools layer react to
+        // def tool overrides without the settings class referencing it.
+        public static System.Action OnDefToolOverridesChanged;
+
         public void SetDefToolEnabled(string defName, bool enabled, bool defaultEnabled)
         {
             SetDefToggleEnabled(defName, enabled, defaultEnabled, ref enabledDefTools, ref disabledDefTools);
-            AiStoryToolRegistry.Reset();
+            System.Action handler = OnDefToolOverridesChanged;
+            if (handler != null)
+            {
+                handler();
+            }
         }
 
         private static bool IsDefToggleEnabled(string defName, bool defaultEnabled, List<string> enabledOverrides, List<string> disabledOverrides)
@@ -546,25 +432,7 @@ namespace DeepseekTheOrca
 
         public string ModelReferenceLabel(string reference)
         {
-            OrcaLlmRequestConfig config = RequestConfigForModelReference(reference);
-            if (config == null)
-            {
-                return reference.NullOrEmpty() ? "-" : reference;
-            }
-
-            string connectionId;
-            string modelId;
-            if (TryParseModelReference(reference, out connectionId, out modelId))
-            {
-                OrcaLlmConnectionSettings connection = FindConnection(connectionId);
-                if (connection != null)
-                {
-                    return connection.name + " / " + modelId;
-                }
-            }
-
-            OrcaLlmConnectionSettings byModel = FindFirstEnabledConnectionContainingModel(config.model);
-            return byModel == null ? config.model : byModel.name + " / " + config.model;
+            return OrcaLlmConnectionResolver.ModelReferenceLabel(this, reference);
         }
 
         public void EnsureLlmConnections()
@@ -627,88 +495,12 @@ namespace DeepseekTheOrca
 
         public static string MakeModelReference(string connectionId, string modelId)
         {
-            return (connectionId ?? "") + "|" + (modelId ?? "");
+            return OrcaLlmConnectionResolver.MakeModelReference(connectionId, modelId);
         }
 
         public static bool TryParseModelReference(string reference, out string connectionId, out string modelId)
         {
-            connectionId = "";
-            modelId = "";
-            if (reference.NullOrEmpty())
-            {
-                return false;
-            }
-
-            int separator = reference.IndexOf('|');
-            if (separator < 0)
-            {
-                return false;
-            }
-
-            connectionId = reference.Substring(0, separator);
-            modelId = reference.Substring(separator + 1);
-            return !connectionId.NullOrEmpty() && !modelId.NullOrEmpty();
-        }
-
-        private OrcaLlmConnectionSettings FindConnection(string connectionId)
-        {
-            if (connectionId.NullOrEmpty() || llmConnections == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < llmConnections.Count; i++)
-            {
-                if (llmConnections[i] != null && llmConnections[i].id == connectionId)
-                {
-                    return llmConnections[i];
-                }
-            }
-
-            return null;
-        }
-
-        private OrcaLlmConnectionSettings FindFirstEnabledConnectionContainingModel(string modelId)
-        {
-            if (modelId.NullOrEmpty() || llmConnections == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < llmConnections.Count; i++)
-            {
-                OrcaLlmConnectionSettings connection = llmConnections[i];
-                if (connection == null || !connection.enabled || connection.availableModels == null)
-                {
-                    continue;
-                }
-
-                if (connection.availableModels.Contains(modelId))
-                {
-                    return connection;
-                }
-            }
-
-            return null;
-        }
-
-        private OrcaLlmConnectionSettings FirstUsableConnection()
-        {
-            if (llmConnections == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < llmConnections.Count; i++)
-            {
-                OrcaLlmConnectionSettings connection = llmConnections[i];
-                if (connection != null && connection.enabled && !connection.apiKey.NullOrEmpty() && !connection.ActiveBaseUrl.NullOrEmpty())
-                {
-                    return connection;
-                }
-            }
-
-            return null;
+            return OrcaLlmConnectionResolver.TryParseModelReference(reference, out connectionId, out modelId);
         }
 
         public override void ExposeData()

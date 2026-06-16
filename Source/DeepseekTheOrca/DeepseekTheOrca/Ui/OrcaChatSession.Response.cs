@@ -23,14 +23,14 @@ namespace DeepseekTheOrca
             }
             AddProcess("Final response received.");
 
-            messages.Add(LlmChatMessage.Assistant(parsed.HistoryContent(), null));
+            transcript.AddMessage(LlmChatMessage.Assistant(parsed.HistoryContent(), null));
             if (existingLine != null)
             {
                 existingLine.Text = parsed.reply;
             }
             else
             {
-                displayLines.Add(new OrcaChatLine(OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), parsed.reply));
+                transcript.AddDisplayLine(new OrcaChatLine(OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), parsed.reply));
             }
 
             string memoryText = parsed.reply;
@@ -46,9 +46,9 @@ namespace DeepseekTheOrca
                 currentTurn.ReplyText = parsed.reply;
             }
 
-            conversationVersion++;
+            transcript.MarkChanged();
             NotifyAgentPhase(OrcaAgentPhase.Completed, pendingRequestRole, false, "final reply received");
-            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
+            transcript.Trim(MaxConversationTurns);
             statusText = "DTO_OrcaChatReady".Translate();
         }
     }

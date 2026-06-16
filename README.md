@@ -44,6 +44,10 @@ Open RimWorld mod settings for `AI Storyteller Expand: Deepseek The Orca`.
 
 Web search, HTTP MCP, mood, proactive dialogue, persona, skill, and debug settings are also configured from the mod settings window.
 
+## Mod Integration
+
+External mods can ship Orca knowledge base entries with XML Defs. See `Docs/ExternalKnowledgeSupport.md` for the supported fields, matching behavior, and a copyable template.
+
 ## Privacy And Network Use
 
 This mod can send data outside the game when you enable external providers or tools.
@@ -71,6 +75,12 @@ C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Manage
 ```
 
 If your RimWorld installation is elsewhere, update the reference hint paths in `Source/DeepseekTheOrca/DeepseekTheOrca/DeepseekTheOrca.csproj`.
+
+### Behavior Changes In The Structure Refactor
+
+- Scheduled storyteller incidents now notify the narrative system through `OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled`, so narrative history and proactive dialogue share one path.
+- Switching the active persona and toggling external skills now persist immediately via `WriteSettings`.
+- The storyteller planning tool whitelist is now driven solely by the `exposeToStorytellerPlanning` flag in `OrcaToolDef` XML; tools marked in XML are actually exposed to the planning stage.
 
 ## Repository Layout
 

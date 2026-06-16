@@ -103,13 +103,15 @@ namespace DeepseekTheOrca
     {
         private enum DebugPage
         {
-            ToolChain,
+            CyclePlan,
             SingleTool,
             ChatLog
         }
 
         private DebugPage page;
         private Vector2 logScrollPosition;
+        private Vector2 cyclePlanScrollPosition;
+        private Vector2 toolSelectorScrollPosition;
         private Vector2 parameterScrollPosition;
         private Vector2 chatHistoryScrollPosition;
         private Vector2 chatDetailScrollPosition;
@@ -188,7 +190,7 @@ namespace DeepseekTheOrca
         {
             Text.Font = GameFont.Small;
             float y = rect.y;
-            DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "DTO_DebugToolChainTab".Translate(), DebugPage.ToolChain);
+            DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "DTO_DebugCyclePlanTab".Translate(), DebugPage.CyclePlan);
             y += 42f;
             DrawOptionButton(new Rect(rect.x, y, rect.width, 34f), "DTO_DebugSingleToolTab".Translate(), DebugPage.SingleTool);
             y += 42f;
@@ -202,16 +204,18 @@ namespace DeepseekTheOrca
             {
                 page = target;
                 logScrollPosition = Vector2.zero;
+                cyclePlanScrollPosition = Vector2.zero;
                 parameterScrollPosition = Vector2.zero;
+                toolSelectorScrollPosition = Vector2.zero;
                 chatDetailScrollPosition = Vector2.zero;
             }
         }
 
         private void DrawSelectedPage(Rect rect)
         {
-            if (page == DebugPage.ToolChain)
+            if (page == DebugPage.CyclePlan)
             {
-                DrawToolChainPage(rect);
+                DrawCyclePlanPage(rect);
             }
             else if (page == DebugPage.SingleTool)
             {
@@ -223,27 +227,11 @@ namespace DeepseekTheOrca
             }
         }
 
-        private void DrawToolChainPage(Rect rect)
+        private void DrawCyclePlanPage(Rect rect)
         {
-            float y = rect.y;
-            Rect runRect = new Rect(rect.x, y, 220f, 32f);
-            if (Widgets.ButtonText(runRect, LlmToolCallDebugRunner.IsRunning ? "DTO_DebugToolCallRunningButton".Translate() : "DTO_DebugToolCallTest".Translate()))
-            {
-                LlmToolCallDebugRunner.Start();
-            }
-
-            Rect clearRect = new Rect(runRect.xMax + 10f, y, 140f, 32f);
-            if (Widgets.ButtonText(clearRect, "DTO_DebugClearLog".Translate()))
-            {
-                LlmToolCallDebugRunner.ClearLog();
-            }
-
-            y += 42f;
-            Widgets.Label(new Rect(rect.x, y, rect.width, 24f), "DTO_DebugToolCallStatus".Translate() + ": " + LlmToolCallDebugRunner.StatusText());
-            y += 32f;
-
-            Rect logRect = new Rect(rect.x, y, rect.width, rect.yMax - y);
-            DrawScrollableLog(logRect, LlmToolCallDebugRunner.LogLines);
+            DrawPanel(rect);
+            Rect inner = rect.ContractedBy(8f);
+            Widgets.LabelScrollable(inner, OrcaIncidentSchedule.DebugText(), ref cyclePlanScrollPosition, longLabel: true);
         }
 
         private void DrawSingleToolPage(Rect rect)
@@ -263,17 +251,21 @@ namespace DeepseekTheOrca
             float selectorY = selector.y;
             Widgets.Label(new Rect(selector.x, selectorY, selector.width, 24f), "DTO_DebugSelectTool".Translate());
             selectorY += 28f;
+            Rect selectorList = new Rect(selector.x, selectorY, selector.width, selector.yMax - selectorY);
+            float rowHeight = 32f;
+            Rect selectorView = new Rect(0f, 0f, selectorList.width - 16f, specs.Count * rowHeight);
+            Widgets.BeginScrollView(selectorList, ref toolSelectorScrollPosition, selectorView);
             for (int i = 0; i < specs.Count; i++)
             {
                 string toolName = specs[i].Name;
-                Rect row = new Rect(selector.x, selectorY, selector.width, 28f);
+                Rect row = new Rect(0f, i * rowHeight, selectorView.width, 28f);
                 if (Widgets.ButtonText(row, toolName, selectedTool == toolName))
                 {
                     selectedTool = toolName;
                     parameterScrollPosition = Vector2.zero;
                 }
-                selectorY += 32f;
             }
+            Widgets.EndScrollView();
 
             float y = detail.y;
             Widgets.Label(new Rect(detail.x, y, detail.width, 24f), selectedTool);
@@ -769,11 +761,6 @@ namespace DeepseekTheOrca
             if (OrcaChatWindowManager.Session.IsWaiting)
             {
                 return "waiting";
-            }
-
-            if (LlmToolCallDebugRunner.IsRunning)
-            {
-                return "debug running";
             }
 
             return "idle";

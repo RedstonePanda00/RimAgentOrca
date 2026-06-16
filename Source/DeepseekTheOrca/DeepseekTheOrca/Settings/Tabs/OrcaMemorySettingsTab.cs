@@ -109,7 +109,7 @@ namespace DeepseekTheOrca
 
             Widgets.Label(new Rect(rect.x, rect.y + 3f, rect.width, 20f), "DTO_MemoryRecent".Translate() + " | " + record.source);
             GUI.color = new Color(0.74f, 0.78f, 0.82f, 1f);
-            Widgets.Label(new Rect(rect.x, rect.y + 24f, rect.width, 20f), Clamp(record.text, 180));
+            Widgets.Label(new Rect(rect.x, rect.y + 24f, rect.width, 20f), OrcaSettingsWidgets.ClampText(record.text, 180));
             GUI.color = Color.white;
             TooltipHandler.TipRegion(rect, record.text);
         }
@@ -140,18 +140,8 @@ namespace DeepseekTheOrca
             string saves = record.saveIds == null || record.saveIds.Count == 0 ? "" : " | saves: " + record.saveIds.Count;
             Widgets.Label(new Rect(rect.x, rect.y + 27f, textWidth, 20f), tags + saves);
             GUI.color = Color.white;
-            Widgets.Label(new Rect(rect.x, rect.y + 50f, textWidth, 24f), Clamp(record.DisplayText, 160));
+            Widgets.Label(new Rect(rect.x, rect.y + 50f, textWidth, 24f), OrcaSettingsWidgets.ClampText(record.DisplayText, 160));
             TooltipHandler.TipRegion(rect, record.DisplayText + "\n\nCluster: " + record.clusterId + "\n\nExemplar:\n" + record.exemplarText);
-        }
-
-        private static string Clamp(string text, int maxChars)
-        {
-            if (text == null)
-            {
-                return "";
-            }
-
-            return text.Length <= maxChars ? text : text.Substring(0, maxChars) + "...";
         }
     }
 }

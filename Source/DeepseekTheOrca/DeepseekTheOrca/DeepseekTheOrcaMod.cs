@@ -17,8 +17,15 @@ namespace DeepseekTheOrca
         {
             Instance = this;
             Settings = GetSettings<DeepseekTheOrcaSettings>();
+
+            // Composition root: wire lower layers to upper-layer implementations.
+            LlmToolSchemas.RegisterSource(new OrcaStoryToolSchemaSource());
+            LlmToolSchemas.RegisterSource(new OrcaMcpToolSchemaSource());
+            DeepseekTheOrcaSettings.OnDefToolOverridesChanged = AiStoryToolRegistry.Reset;
+
             LongEventHandler.ExecuteWhenFinished(delegate
             {
+                OrcaChatWindowManager.EnsureInitialized();
                 OrcaChatPersonaManager.ApplyDefaultPersonaSelection(Settings);
                 OrcaStorytellerAppearance.ApplyCurrent();
             });

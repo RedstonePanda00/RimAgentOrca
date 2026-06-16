@@ -13,6 +13,17 @@ namespace DeepseekTheOrca
     {
         private static readonly OrcaChatSession session = new OrcaChatSession();
 
+        static OrcaChatWindowManager()
+        {
+            OrcaChatAgentHub.Register(session);
+        }
+
+        // Forces static initialization so the chat agent is registered with
+        // OrcaChatAgentHub before any Agent/Memory code queries it.
+        public static void EnsureInitialized()
+        {
+        }
+
         public static OrcaChatSession Session
         {
             get { return session; }

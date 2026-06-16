@@ -81,6 +81,15 @@ namespace DeepseekTheOrca
             return controllerMessages;
         }
 
+        // Parses the raw controller output and resolves the target model role in
+        // one step, so the session does not need to combine the two manually.
+        public static OrcaControllerDecision ResolveDecision(string content, DeepseekTheOrcaSettings settings, out OrcaLlmModelRole role)
+        {
+            OrcaControllerDecision decision = ParseDecision(content);
+            role = ModelRoleForRoute(decision.route, settings);
+            return decision;
+        }
+
         public static OrcaControllerDecision ParseDecision(string content)
         {
             OrcaControllerDecision decision = new OrcaControllerDecision();

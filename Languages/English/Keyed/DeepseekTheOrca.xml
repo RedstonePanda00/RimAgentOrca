@@ -121,6 +121,7 @@
   <DTO_ChatPersonaDeleteConfirm>Delete persona "{0}"?</DTO_ChatPersonaDeleteConfirm>
   <DTO_ChatPersonaName>Name</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>Description</DTO_ChatPersonaDescription>
+  <DTO_ChatPersonaNarrativeTendency>Narrative tendency for cycle planning</DTO_ChatPersonaNarrativeTendency>
   <DTO_ChatPersonaPriority>Default priority</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>Persona prompt</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>Save</DTO_ChatPersonaSave>
@@ -230,6 +231,7 @@
   <DTO_DebugNoCurrentMap>No current map</DTO_DebugNoCurrentMap>
   <DTO_DebugPlanningEnabled>planning enabled</DTO_DebugPlanningEnabled>
   <DTO_DebugPlanningDisabled>planning disabled or API key missing</DTO_DebugPlanningDisabled>
+  <DTO_DebugCyclePlanTab>Cycle plan</DTO_DebugCyclePlanTab>
   <DTO_DebugToolChainTab>Tool-call chain</DTO_DebugToolChainTab>
   <DTO_DebugSingleToolTab>Single tool</DTO_DebugSingleToolTab>
   <DTO_DebugSelectTool>Select tool</DTO_DebugSelectTool>

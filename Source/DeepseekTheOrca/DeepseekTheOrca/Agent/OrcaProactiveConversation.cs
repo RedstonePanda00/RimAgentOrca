@@ -76,13 +76,13 @@ namespace DeepseekTheOrca
                 sources[i].Tick();
             }
 
-            if (pendingRequests.Count == 0 || OrcaChatWindowManager.Session.IsWaiting)
+            if (pendingRequests.Count == 0 || OrcaChatAgentHub.IsChatBusy)
             {
                 return;
             }
 
             OrcaProactiveConversationRequest request = pendingRequests.Peek();
-            if (OrcaChatWindowManager.Session.TryStartProactive(request))
+            if (OrcaChatAgentHub.TryStartProactive(request))
             {
                 pendingRequests.Dequeue();
             }

@@ -8,7 +8,7 @@ using UnityEngine;
 using Verse;
 namespace DeepseekTheOrca
 {
-    public sealed partial class OrcaChatSession
+    public sealed partial class OrcaChatSession : IOrcaChatAgent
     {
         private const int MaxConversationTurns = 12;
         private const int MaxTurnLogs = 50;
@@ -22,14 +22,12 @@ namespace DeepseekTheOrca
         }
 
         private readonly LlmApiClient client = new LlmApiClient();
-        private readonly List<LlmChatMessage> messages = new List<LlmChatMessage>();
-        private readonly List<OrcaChatLine> displayLines = new List<OrcaChatLine>();
+        private readonly OrcaChatTranscript transcript = new OrcaChatTranscript();
         private readonly OrcaChatThinkingState thinkingState = new OrcaChatThinkingState();
         private Task<LlmChatResponse> pendingRequest;
         private LlmStreamingChatRequest pendingStreamingRequest;
         private OrcaChatLine pendingStreamingLine;
         private string statusText = "";
-        private int conversationVersion;
         private int toolRoundsUsed;
         private int toolCallsUsedThisTurn;
         private readonly List<OrcaChatTurnLog> turnLogs = new List<OrcaChatTurnLog>();
@@ -60,6 +58,16 @@ namespace DeepseekTheOrca
             get { return pendingRequest != null || pendingStreamingRequest != null; }
         }
 
+        bool IOrcaChatAgent.IsBusy
+        {
+            get { return IsWaiting; }
+        }
+
+        void IOrcaChatAgent.ClearConversation()
+        {
+            Clear();
+        }
+
         public string StatusText
         {
             get { return statusText; }
@@ -67,15 +75,12 @@ namespace DeepseekTheOrca
 
         public int ConversationVersion
         {
-            get { return conversationVersion; }
+            get { return transcript.Version; }
         }
 
         public string DisplayText
         {
-            get
-            {
-                return string.Join("\n\n", displayLines.Select(line => line.Speaker + ": " + line.Text).ToArray());
-            }
+            get { return transcript.DisplayText; }
         }
 
         public string LastUserText
@@ -168,11 +173,11 @@ namespace DeepseekTheOrca
             OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, "player_chat", playerName, userText, contextTags, false);
             OrcaExtensionManager.NotifyChatTurnStarting(turnContext);
             AddProcessLines(turnContext.ProcessLines);
-            messages.Add(LlmChatMessage.User(OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, null)));
+            transcript.AddMessage(LlmChatMessage.User(OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, null)));
             OrcaSessionMemory.Add("player_message", playerName + ": " + userText);
-            displayLines.Add(new OrcaChatLine(playerName, userText));
-            conversationVersion++;
-            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
+            transcript.AddDisplayLine(new OrcaChatLine(playerName, userText));
+            transcript.MarkChanged();
+            transcript.Trim(MaxConversationTurns);
 
             statusText = "DTO_OrcaChatWaiting".Translate();
             toolRoundsUsed = 0;
@@ -203,10 +208,10 @@ namespace DeepseekTheOrca
             OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, request.source, "", request.title + "\n" + request.body, contextTags, true);
             OrcaExtensionManager.NotifyChatTurnStarting(turnContext);
             AddProcessLines(turnContext.ProcessLines);
-            messages.Add(LlmChatMessage.User(OrcaChatPromptBuilder.BuildProactiveMessage(request, turnContext)));
+            transcript.AddMessage(LlmChatMessage.User(OrcaChatPromptBuilder.BuildProactiveMessage(request, turnContext)));
             OrcaSessionMemory.Add("proactive_trigger", request.source + " | " + request.title + " | " + request.body);
-            conversationVersion++;
-            OrcaChatHistoryMaintenance.TrimConversation(messages, displayLines, MaxConversationTurns);
+            transcript.MarkChanged();
+            transcript.Trim(MaxConversationTurns);
 
             if (request.openChatWindow)
             {
@@ -296,7 +301,7 @@ namespace DeepseekTheOrca
 
                 specialistReturnedNoToolCalls = true;
                 AddProcess(OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model produced no further tool calls; returning control to controller review.");
-                messages.Add(LlmChatMessage.System(
+                transcript.AddMessage(LlmChatMessage.System(
                     OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole)
                     + " model produced no further tool calls or tool results. The controller must decide whether existing context is enough."));
                 StartControllerReviewOrDialogue(settings, "specialist model produced no tool calls");
@@ -308,12 +313,7 @@ namespace DeepseekTheOrca
 
         private void EnsureSystemPrompt()
         {
-            if (messages.Count > 0)
-            {
-                return;
-            }
-
-            messages.Add(LlmChatMessage.System(OrcaChatPromptBuilder.BuildSystemPrompt()));
+            transcript.EnsureSystemPrompt(OrcaChatPromptBuilder.BuildSystemPrompt);
         }
 
         private void NotifyAgentPhase(OrcaAgentPhase phase, OrcaLlmModelRole role, bool streaming, string reason)
@@ -335,7 +335,7 @@ namespace DeepseekTheOrca
 
         private void MarkConversationChanged()
         {
-            conversationVersion++;
+            transcript.MarkChanged();
         }
     }
 }

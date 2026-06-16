@@ -187,6 +187,11 @@ namespace DeepseekTheOrca
             get { return def == null ? "" : def.ToolDescription; }
         }
 
+        public OrcaToolWorker Worker
+        {
+            get { return def == null ? null : def.Worker; }
+        }
+
         public AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             if (def == null)
@@ -288,6 +293,18 @@ namespace DeepseekTheOrca
             return TryGetDefinition(name, out definition) && definition.isExecutionTool;
         }
 
+        public static OrcaToolWorker WorkerFor(string name)
+        {
+            IAiStoryTool tool;
+            if (!TryGet(name, out tool))
+            {
+                return null;
+            }
+
+            DefBackedAiStoryTool defTool = tool as DefBackedAiStoryTool;
+            return defTool == null ? null : defTool.Worker;
+        }
+
         public static bool RequiresCurrentMap(string name)
         {
             AiToolDefinition definition;
@@ -329,10 +346,7 @@ namespace DeepseekTheOrca
                     continue;
                 }
 
-                bool enabled = DeepseekTheOrcaMod.Settings == null
-                    ? def.defaultEnabled
-                    : DeepseekTheOrcaMod.Settings.IsDefToolEnabled(def.defName, def.defaultEnabled);
-                if (!enabled)
+                if (!OrcaToolToggles.IsEnabled(def))
                 {
                     continue;
                 }
