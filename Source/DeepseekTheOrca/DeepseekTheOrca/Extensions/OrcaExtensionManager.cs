@@ -86,14 +86,14 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static string ControllerRoutingHint()
+        public static string ControllerRoutingHint(OrcaControllerRoutingContext context)
         {
             List<string> hints = new List<string>();
             OrcaExtensionRegistry registry = BuildRegistry();
-            for (int i = 0; i < registry.controllerRoutingHintHandlers.Count; i++)
+            for (int i = 0; i < registry.controllerRoutingContextHintHandlers.Count; i++)
             {
-                OrcaExtensionHandler<Func<string>> entry = registry.controllerRoutingHintHandlers[i];
-                string hint = Invoke(entry, "Extension routing hook", handler => handler(), "");
+                OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>> entry = registry.controllerRoutingContextHintHandlers[i];
+                string hint = Invoke(entry, "Extension routing hook", handler => handler(context), "");
                 if (!hint.NullOrEmpty())
                 {
                     hints.Add(hint);

@@ -31,7 +31,7 @@ namespace DeepseekTheOrca
         {
             pendingStage = OrcaChatRequestStage.Controller;
             thinkingState.Ensure(transcript.DisplayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
-            pendingRequest = client.SendPlainChatCompletionAsync(settings, OrcaChatControllerRouter.BuildControllerMessages(transcript.Messages, lastUserText), OrcaLlmModelRole.Controller);
+            pendingRequest = client.SendPlainChatCompletionAsync(settings, OrcaChatControllerRouter.BuildControllerMessages(this, transcript.Messages, lastUserText), OrcaLlmModelRole.Controller);
             currentModelRoleLabel = OrcaChatRoleUtility.ModelRoleLabel(OrcaLlmModelRole.Controller);
             currentModelReference = settings.ModelForRole(OrcaLlmModelRole.Controller);
             AddProcess("Request sent to controller model: " + settings.ModelForRole(OrcaLlmModelRole.Controller));
@@ -45,6 +45,7 @@ namespace DeepseekTheOrca
             pendingRequest = client.SendPlainChatCompletionAsync(
                 settings,
                 OrcaChatControllerRouter.BuildControllerReviewMessages(
+                    this,
                     transcript.Messages,
                     lastUserText,
                     toolRoundsUsed,

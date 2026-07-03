@@ -122,6 +122,7 @@
   <DTO_ChatPersonaName>Name</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>Description</DTO_ChatPersonaDescription>
   <DTO_ChatPersonaNarrativeTendency>Narrative tendency for cycle planning</DTO_ChatPersonaNarrativeTendency>
+  <DTO_ChatPersonaControllerRoutingTendency>Controller routing tendency</DTO_ChatPersonaControllerRoutingTendency>
   <DTO_ChatPersonaPriority>Default priority</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>Persona prompt</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>Save</DTO_ChatPersonaSave>
@@ -188,14 +189,6 @@
   <DTO_PluginStateEnabled>Enabled</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>Disabled</DTO_PluginStateDisabled>
   <DTO_EnableExtension>Enable {0}</DTO_EnableExtension>
-  <DTO_MoodPluginName>Orca mood</DTO_MoodPluginName>
-  <DTO_MoodPluginCategory>Dialogue state</DTO_MoodPluginCategory>
-  <DTO_MoodPluginDescription>Adds an internal mood value to Orca dialogue and lets the model return moodDelta with each reply.</DTO_MoodPluginDescription>
-  <DTO_MoodPluginDetails>When enabled, Orca chat receives mood state, replies must include moodDelta, and mood can affect event execution willingness. When disabled, replies only need a reply field and execution tools are not randomly refused because of mood.</DTO_MoodPluginDetails>
-  <DTO_EnableMoodPlugin>Enable mood plugin</DTO_EnableMoodPlugin>
-  <DTO_EnableMoodPluginTooltip>Inject Orca mood state into dialogue, ask the model for moodDelta, and let mood affect event willingness.</DTO_EnableMoodPluginTooltip>
-  <DTO_MoodPluginNote>When disabled, Orca chat does not receive mood state, replies only need a reply field, and execution tools are not randomly refused because of mood.</DTO_MoodPluginNote>
-  <DTO_MoodPluginDisabled>disabled</DTO_MoodPluginDisabled>
   <DTO_ProactivePluginName>Ambient proactive dialogue</DTO_ProactivePluginName>
   <DTO_ProactivePluginCategory>Conversation triggers</DTO_ProactivePluginCategory>
   <DTO_ProactivePluginDescription>Lets Orca speak proactively about colony observations and RimTalk player-initiated conversations.</DTO_ProactivePluginDescription>
@@ -262,7 +255,6 @@
   <DTO_OrcaChatNoApiKey>API key is empty.</DTO_OrcaChatNoApiKey>
   <DTO_OrcaChatStatus>Status</DTO_OrcaChatStatus>
   <DTO_OrcaChatStatusIdle>Idle.</DTO_OrcaChatStatusIdle>
-  <DTO_OrcaChatMood>Mood</DTO_OrcaChatMood>
   <DTO_OrcaChatWillingness>Event willingness</DTO_OrcaChatWillingness>
   <DTO_OrcaChatSpeakerOrca>Orca</DTO_OrcaChatSpeakerOrca>
   <DTO_OrcaChatLogEmpty>No Orca chat request has been recorded yet.</DTO_OrcaChatLogEmpty>

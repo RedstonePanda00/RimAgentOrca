@@ -116,6 +116,7 @@
   <DTO_ChatPersonaName>名称</DTO_ChatPersonaName>
   <DTO_ChatPersonaDescription>描述</DTO_ChatPersonaDescription>
   <DTO_ChatPersonaNarrativeTendency>周期规划叙事倾向</DTO_ChatPersonaNarrativeTendency>
+  <DTO_ChatPersonaControllerRoutingTendency>Controller 工具路由倾向</DTO_ChatPersonaControllerRoutingTendency>
   <DTO_ChatPersonaPriority>默认优先级</DTO_ChatPersonaPriority>
   <DTO_ChatPersonaPrompt>人格提示词</DTO_ChatPersonaPrompt>
   <DTO_ChatPersonaSave>保存</DTO_ChatPersonaSave>
@@ -158,14 +159,6 @@
   <DTO_PluginStateEnabled>已启用</DTO_PluginStateEnabled>
   <DTO_PluginStateDisabled>已关闭</DTO_PluginStateDisabled>
   <DTO_EnableExtension>启用 {0}</DTO_EnableExtension>
-  <DTO_MoodPluginName>奥卡心情</DTO_MoodPluginName>
-  <DTO_MoodPluginCategory>对话状态</DTO_MoodPluginCategory>
-  <DTO_MoodPluginDescription>为奥卡对话添加内部心情值，并允许模型在每次回复中返回 moodDelta。</DTO_MoodPluginDescription>
-  <DTO_MoodPluginDetails>启用后，奥卡对话会收到心情状态，回复必须包含 moodDelta，心情也会影响事件执行意愿。关闭后，回复只需要 reply 字段，执行工具不会因为心情随机拒绝。</DTO_MoodPluginDetails>
-  <DTO_EnableMoodPlugin>启用心情插件</DTO_EnableMoodPlugin>
-  <DTO_EnableMoodPluginTooltip>向对话注入奥卡心情状态，要求模型返回 moodDelta，并让心情影响事件执行意愿。</DTO_EnableMoodPluginTooltip>
-  <DTO_MoodPluginNote>关闭后，奥卡对话不会收到心情状态，回复只需要 reply 字段，执行工具也不会因为心情随机拒绝。</DTO_MoodPluginNote>
-  <DTO_MoodPluginDisabled>已关闭</DTO_MoodPluginDisabled>
   <DTO_ProactivePluginName>环境主动对话</DTO_ProactivePluginName>
   <DTO_ProactivePluginCategory>对话触发器</DTO_ProactivePluginCategory>
   <DTO_ProactivePluginDescription>允许奥卡针对殖民地观察和 RimTalk 玩家发起对话进行主动发言。</DTO_ProactivePluginDescription>
@@ -232,7 +225,6 @@
   <DTO_OrcaChatStatus>状态</DTO_OrcaChatStatus>
   <DTO_OrcaChatStatusIdle>空闲。</DTO_OrcaChatStatusIdle>
   <DTO_OrcaChatSpeakerOrca>奥卡</DTO_OrcaChatSpeakerOrca>
-  <DTO_OrcaChatMood>心情值</DTO_OrcaChatMood>
   <DTO_OrcaChatUsingTools>正在使用工具...</DTO_OrcaChatUsingTools>
   <DTO_OrcaChatToolBudgetReached>工具调用预算已耗尽。</DTO_OrcaChatToolBudgetReached>
   <DTO_OrcaChatWillingness>事件意愿</DTO_OrcaChatWillingness>

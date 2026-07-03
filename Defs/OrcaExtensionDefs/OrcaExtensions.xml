@@ -1,29 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
   <DeepseekTheOrca.OrcaExtensionDef>
-    <defName>DTO_Extension_Mood</defName>
-    <label>DTO_MoodPluginName</label>
-    <description>DTO_MoodPluginDescription</description>
-    <author>RimAgent: Orca</author>
-    <category>DTO_MoodPluginCategory</category>
-    <details>DTO_MoodPluginDetails</details>
-    <capabilities>
-      <li>prompt</li>
-      <li>chat_lifecycle</li>
-      <li>execution_gate</li>
-      <li>main_tab_status</li>
-    </capabilities>
-    <permissions>
-      <li>modify_prompt</li>
-      <li>read_chat_session</li>
-      <li>block_execution_tools</li>
-    </permissions>
-    <workerClass>DeepseekTheOrca.OrcaMoodExtensionWorker</workerClass>
-    <defaultEnabled>true</defaultEnabled>
-    <order>10</order>
-  </DeepseekTheOrca.OrcaExtensionDef>
-
-  <DeepseekTheOrca.OrcaExtensionDef>
     <defName>DTO_Extension_AmbientProactiveDialogue</defName>
     <label>DTO_ProactivePluginName</label>
     <description>DTO_ProactivePluginDescription</description>

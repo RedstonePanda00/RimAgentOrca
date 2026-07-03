@@ -64,9 +64,9 @@ namespace DeepseekTheOrca
             return builder.ToString().TrimEnd();
         }
 
-        public static string FormatPluginControllerRoutingHint()
+        public static string FormatPluginControllerRoutingHint(OrcaControllerRoutingContext context)
         {
-            return OrcaExtensionManager.ControllerRoutingHint();
+            return OrcaExtensionManager.ControllerRoutingHint(context);
         }
 
     }

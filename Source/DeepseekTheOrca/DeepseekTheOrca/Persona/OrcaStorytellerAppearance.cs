@@ -1,4 +1,5 @@
 ﻿using RimWorld;
+using System.Reflection;
 using UnityEngine;
 using Verse;
 
@@ -7,6 +8,8 @@ namespace DeepseekTheOrca
     public static class OrcaStorytellerAppearance
     {
         public const string StorytellerDefName = "DTO_DeepseekTheOrca";
+        private static readonly FieldInfo portraitLargePathField = typeof(StorytellerDef).GetField("portraitLarge", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo portraitTinyPathField = typeof(StorytellerDef).GetField("portraitTiny", BindingFlags.Instance | BindingFlags.NonPublic);
 
         public static void ApplyCurrent()
         {
@@ -42,6 +45,8 @@ namespace DeepseekTheOrca
 
             string largePath = profile.storytellerPortraitLargePath;
             string tinyPath = profile.storytellerPortraitTinyPath;
+            SetDefPortraitPathFields(def, largePath, tinyPath);
+
             Texture2D large = ContentFinder<Texture2D>.Get(largePath, false);
             Texture2D tiny = ContentFinder<Texture2D>.Get(tinyPath, false);
 
@@ -61,6 +66,24 @@ namespace DeepseekTheOrca
             else
             {
                 LogWarningOnce("Could not find storyteller tiny portrait texture: " + tinyPath);
+            }
+        }
+
+        private static void SetDefPortraitPathFields(StorytellerDef def, string largePath, string tinyPath)
+        {
+            if (def == null)
+            {
+                return;
+            }
+
+            if (portraitLargePathField != null && !largePath.NullOrEmpty())
+            {
+                portraitLargePathField.SetValue(def, largePath);
+            }
+
+            if (portraitTinyPathField != null && !tinyPath.NullOrEmpty())
+            {
+                portraitTinyPathField.SetValue(def, tinyPath);
             }
         }
 

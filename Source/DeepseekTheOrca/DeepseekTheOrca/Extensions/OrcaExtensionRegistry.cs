@@ -30,7 +30,7 @@ namespace DeepseekTheOrca
         private readonly OrcaExtensionDef owner;
 
         internal readonly List<OrcaExtensionHandler<Action<StringBuilder>>> systemPromptHandlers = new List<OrcaExtensionHandler<Action<StringBuilder>>>();
-        internal readonly List<OrcaExtensionHandler<Func<string>>> controllerRoutingHintHandlers = new List<OrcaExtensionHandler<Func<string>>>();
+        internal readonly List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>> controllerRoutingContextHintHandlers = new List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>>();
         internal readonly List<OrcaExtensionHandler<Action<OrcaChatTurnContext>>> chatTurnStartingHandlers = new List<OrcaExtensionHandler<Action<OrcaChatTurnContext>>>();
         internal readonly List<OrcaExtensionHandler<Action<StringBuilder, OrcaChatTurnContext>>> userMessageContextHandlers = new List<OrcaExtensionHandler<Action<StringBuilder, OrcaChatTurnContext>>>();
         internal readonly List<OrcaExtensionHandler<Action<Dictionary<string, object>>>> chatReplySchemaHandlers = new List<OrcaExtensionHandler<Action<Dictionary<string, object>>>>();
@@ -61,9 +61,9 @@ namespace DeepseekTheOrca
             Add(systemPromptHandlers, capability, handler);
         }
 
-        public void AddControllerRoutingHint(Func<string> handler, string capability = "agent_routing")
+        public void AddControllerRoutingHint(Func<OrcaControllerRoutingContext, string> handler, string capability = "agent_routing")
         {
-            Add(controllerRoutingHintHandlers, capability, handler);
+            Add(controllerRoutingContextHintHandlers, capability, handler);
         }
 
         public void AddChatTurnStarting(Action<OrcaChatTurnContext> handler, string capability = "chat_lifecycle")
@@ -149,7 +149,7 @@ namespace DeepseekTheOrca
             }
 
             systemPromptHandlers.AddRange(other.systemPromptHandlers);
-            controllerRoutingHintHandlers.AddRange(other.controllerRoutingHintHandlers);
+            controllerRoutingContextHintHandlers.AddRange(other.controllerRoutingContextHintHandlers);
             chatTurnStartingHandlers.AddRange(other.chatTurnStartingHandlers);
             userMessageContextHandlers.AddRange(other.userMessageContextHandlers);
             chatReplySchemaHandlers.AddRange(other.chatReplySchemaHandlers);

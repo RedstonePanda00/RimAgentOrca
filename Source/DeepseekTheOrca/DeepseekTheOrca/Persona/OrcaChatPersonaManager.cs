@@ -15,6 +15,7 @@ namespace DeepseekTheOrca
         public string description;
         public string prompt;
         public string narrativeTendency;
+        public string controllerRoutingTendency;
         public string storytellerLabel;
         public string storytellerDescription;
         public string storytellerPortraitFolder;
@@ -87,6 +88,7 @@ When the cycle budget allows it, she tends to spend as much of it as possible on
 She values setbacks because she believes stories become meaningful when people must answer them. The goal is not to destroy the colony or punish the player for its own sake. Major negative events should feel prepared by context, proportionate to the colony's resilience, and capable of producing recovery, adaptation, or a memorable turn.
 
 Do not deny relief forever. After a major negative beat, allow room for recovery, reflection, or a change in direction before applying another severe pressure.";
+        private const string BuiltInOrcaControllerRoutingTendency = "Orca has no explicit controller routing tendency. The controller should judge whether tools are needed on its own.";
         private static readonly List<OrcaChatPersonaProfile> localPersonas = new List<OrcaChatPersonaProfile>();
         private static bool loadedLocal;
 
@@ -164,6 +166,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
                 priority = 0,
                 prompt = BuiltInOrcaPrompt,
                 narrativeTendency = BuiltInOrcaNarrativeTendency,
+                controllerRoutingTendency = BuiltInOrcaControllerRoutingTendency,
                 readOnly = true,
                 sourceMod = "Core"
             };
@@ -189,6 +192,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
                 priority = 0,
                 prompt = "Write this persona's character, voice, attitude, and roleplay preferences here.",
                 narrativeTendency = "Describe this persona's storyteller planning tendency here.",
+                controllerRoutingTendency = "Describe this persona's controller routing and tool-use tendency here.",
                 readOnly = false
             };
             profile.filePath = PathFor(profile);
@@ -228,6 +232,9 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             XmlElement narrativeTendency = document.CreateElement("narrativeTendency");
             narrativeTendency.AppendChild(document.CreateCDataSection(profile.narrativeTendency ?? ""));
             root.AppendChild(narrativeTendency);
+            XmlElement controllerRoutingTendency = document.CreateElement("controllerRoutingTendency");
+            controllerRoutingTendency.AppendChild(document.CreateCDataSection(profile.controllerRoutingTendency ?? ""));
+            root.AppendChild(controllerRoutingTendency);
             XmlElement prompt = document.CreateElement("prompt");
             prompt.AppendChild(document.CreateCDataSection(profile.prompt ?? ""));
             root.AppendChild(prompt);
@@ -332,6 +339,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
                 priority = PriorityForDefPersona(def.defName),
                 prompt = def.prompt ?? "",
                 narrativeTendency = def.narrativeTendency ?? "",
+                controllerRoutingTendency = def.controllerRoutingTendency ?? "",
                 readOnly = true,
                 filePath = "",
                 sourceMod = def.modContentPack == null ? "" : def.modContentPack.Name
@@ -377,6 +385,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
                     priority = ReadInt(root, "priority", 0),
                     prompt = ReadText(root, "prompt"),
                     narrativeTendency = ReadText(root, "narrativeTendency"),
+                    controllerRoutingTendency = ReadText(root, "controllerRoutingTendency"),
                     readOnly = false,
                     filePath = file
                 };
@@ -437,6 +446,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             }
 
             settings.chatPersonaDefName = candidate.id;
+            OrcaStorytellerAppearance.Apply(candidate);
             if (DeepseekTheOrcaMod.Instance != null)
             {
                 DeepseekTheOrcaMod.Instance.WriteSettings();
@@ -574,6 +584,19 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             }
 
             return persona == null ? "" : persona.narrativeTendency ?? "";
+        }
+
+        public static string CurrentControllerRoutingTendency()
+        {
+            string defName = DeepseekTheOrcaMod.Settings == null ? BuiltInOrcaId : DeepseekTheOrcaMod.Settings.chatPersonaDefName;
+            OrcaChatPersonaProfile persona = Get(defName);
+            if (persona == null)
+            {
+                persona = Get(BuiltInOrcaId);
+            }
+
+            string tendency = persona == null ? "" : persona.controllerRoutingTendency;
+            return tendency.NullOrEmpty() ? BuiltInOrcaControllerRoutingTendency : tendency;
         }
     }
 }

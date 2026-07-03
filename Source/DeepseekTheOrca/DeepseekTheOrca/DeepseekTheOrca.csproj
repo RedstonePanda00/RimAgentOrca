@@ -166,7 +166,6 @@
         <Compile Include="OrcaLanguageUtility.cs" />
         <Compile Include="Ui\OrcaLlmConnectionManager.cs" />
         <Compile Include="Ui\OrcaModelSelectionWindow.cs" />
-        <Compile Include="Extensions\OrcaMoodPlugin.cs" />
         <Compile Include="Persona\OrcaStorytellerAppearance.cs" />
         <Compile Include="Persona\OrcaChatPersonaManager.cs" />
         <Compile Include="Persona\OrcaPersonaManagerWindow.cs" />

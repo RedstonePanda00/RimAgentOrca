@@ -10,7 +10,10 @@ namespace DeepseekTheOrca
     {
         public string prompt = "";
         public string narrativeTendency = "";
+        public string controllerRoutingTendency = "";
+        [MustTranslate]
         public string storytellerLabel = "";
+        [MustTranslate]
         public string storytellerDescription = "";
         public string storytellerPortraitFolder = "";
         public string storytellerPortraitLargeName = "";
@@ -118,6 +121,38 @@ namespace DeepseekTheOrca
             {
                 processLines.Add(line);
             }
+        }
+    }
+
+    public sealed class OrcaControllerRoutingContext
+    {
+        public readonly OrcaChatSession session;
+        public readonly string latestUserText;
+        public readonly bool isReview;
+        public readonly int toolRoundsUsed;
+        public readonly int maxToolGatheringRounds;
+        public readonly int toolCallsUsed;
+        public readonly int maxToolCalls;
+        public readonly bool specialistReturnedNoToolCalls;
+
+        public OrcaControllerRoutingContext(
+            OrcaChatSession session,
+            string latestUserText,
+            bool isReview,
+            int toolRoundsUsed,
+            int maxToolGatheringRounds,
+            int toolCallsUsed,
+            int maxToolCalls,
+            bool specialistReturnedNoToolCalls)
+        {
+            this.session = session;
+            this.latestUserText = latestUserText ?? "";
+            this.isReview = isReview;
+            this.toolRoundsUsed = toolRoundsUsed;
+            this.maxToolGatheringRounds = maxToolGatheringRounds;
+            this.toolCallsUsed = toolCallsUsed;
+            this.maxToolCalls = maxToolCalls;
+            this.specialistReturnedNoToolCalls = specialistReturnedNoToolCalls;
         }
     }
 

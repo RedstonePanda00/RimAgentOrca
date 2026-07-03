@@ -8,12 +8,19 @@ namespace DeepseekTheOrca
     {
         public static List<LlmChatMessage> BuildControllerMessages(List<LlmChatMessage> chatMessages, string lastUserText)
         {
+            return BuildControllerMessages(null, chatMessages, lastUserText);
+        }
+
+        public static List<LlmChatMessage> BuildControllerMessages(OrcaChatSession session, List<LlmChatMessage> chatMessages, string lastUserText)
+        {
             string latestUserContent = LatestUserContent(chatMessages);
             List<LlmChatMessage> controllerMessages = new List<LlmChatMessage>();
             string skillRoutingHint = OrcaSkillManager.FormatControllerRoutingHint();
             string skillSelectionCatalog = OrcaSkillManager.FormatSkillSelectionCatalog();
-            string pluginRoutingHint = DeepseekTheOrcaMod.FormatPluginControllerRoutingHint();
+            string personaRoutingTendency = OrcaChatPersonaManager.CurrentControllerRoutingTendency();
             string queryText = lastUserText.NullOrEmpty() ? latestUserContent : lastUserText;
+            OrcaControllerRoutingContext routingContext = new OrcaControllerRoutingContext(session, queryText, false, 0, 0, 0, 0, false);
+            string pluginRoutingHint = DeepseekTheOrcaMod.FormatPluginControllerRoutingHint(routingContext);
             string knowledgeContext = OrcaChatPromptBuilder.KnowledgeContextForPrompt(queryText);
             string memoryContext = OrcaChatPromptBuilder.MemoryContextForPrompt(queryText);
             controllerMessages.Add(LlmChatMessage.System(
@@ -27,7 +34,8 @@ namespace DeepseekTheOrca
                 + "If current game state might matter, prefer tool over guessing. "
                 + AppendControllerHint(skillRoutingHint)
                 + AppendControllerHint(skillSelectionCatalog)
-                + AppendControllerHint(pluginRoutingHint)));
+                + AppendControllerHint(pluginRoutingHint)
+                + AppendControllerHint(FormatPersonaControllerRoutingTendency(personaRoutingTendency))));
             controllerMessages.Add(LlmChatMessage.User(
                 "Latest player request:\n"
                 + queryText
@@ -45,12 +53,27 @@ namespace DeepseekTheOrca
             int maxToolCalls,
             bool specialistReturnedNoToolCalls)
         {
+            return BuildControllerReviewMessages(null, chatMessages, lastUserText, toolRoundsUsed, maxToolGatheringRounds, toolCallsUsed, maxToolCalls, specialistReturnedNoToolCalls);
+        }
+
+        public static List<LlmChatMessage> BuildControllerReviewMessages(
+            OrcaChatSession session,
+            List<LlmChatMessage> chatMessages,
+            string lastUserText,
+            int toolRoundsUsed,
+            int maxToolGatheringRounds,
+            int toolCallsUsed,
+            int maxToolCalls,
+            bool specialistReturnedNoToolCalls)
+        {
             string latestUserContent = LatestUserContent(chatMessages);
             List<LlmChatMessage> controllerMessages = new List<LlmChatMessage>();
             string skillRoutingHint = OrcaSkillManager.FormatControllerRoutingHint();
             string skillSelectionCatalog = OrcaSkillManager.FormatSkillSelectionCatalog();
-            string pluginRoutingHint = DeepseekTheOrcaMod.FormatPluginControllerRoutingHint();
+            string personaRoutingTendency = OrcaChatPersonaManager.CurrentControllerRoutingTendency();
             string queryText = lastUserText.NullOrEmpty() ? latestUserContent : lastUserText;
+            OrcaControllerRoutingContext routingContext = new OrcaControllerRoutingContext(session, queryText, true, toolRoundsUsed, maxToolGatheringRounds, toolCallsUsed, maxToolCalls, specialistReturnedNoToolCalls);
+            string pluginRoutingHint = DeepseekTheOrcaMod.FormatPluginControllerRoutingHint(routingContext);
             string knowledgeContext = OrcaChatPromptBuilder.KnowledgeContextForPrompt(queryText);
             string memoryContext = OrcaChatPromptBuilder.MemoryContextForPrompt(queryText);
             controllerMessages.Add(LlmChatMessage.System(
@@ -65,7 +88,8 @@ namespace DeepseekTheOrca
                 + "If the previous specialist produced no tool calls, choose dialogue unless a different specialist is clearly required. "
                 + AppendControllerHint(skillRoutingHint)
                 + AppendControllerHint(skillSelectionCatalog)
-                + AppendControllerHint(pluginRoutingHint)));
+                + AppendControllerHint(pluginRoutingHint)
+                + AppendControllerHint(FormatPersonaControllerRoutingTendency(personaRoutingTendency))));
 
             controllerMessages.Add(LlmChatMessage.User(
                 "Latest player request:\n"
@@ -303,6 +327,16 @@ namespace DeepseekTheOrca
             }
 
             return "\n" + hint.Trim() + "\n";
+        }
+
+        private static string FormatPersonaControllerRoutingTendency(string tendency)
+        {
+            if (tendency.NullOrEmpty())
+            {
+                return "";
+            }
+
+            return "Current persona controller routing tendency:\n" + tendency.Trim();
         }
     }
 

@@ -42,7 +42,7 @@ Open RimWorld mod settings for `AI Storyteller Expand: Deepseek The Orca`.
 5. Select models for the roles you want to use.
 6. Enable AI planning if you want Orca to choose incidents automatically.
 
-Web search, HTTP MCP, mood, proactive dialogue, persona, skill, and debug settings are also configured from the mod settings window.
+Web search, HTTP MCP, proactive dialogue, persona, skill, plugin, and debug settings are also configured from the mod settings window. Optional sub-mods can add more plugins to the same plugin settings page.
 
 ## Mod Integration
 
