@@ -4,13 +4,13 @@
   <DTO_EnableAiPlanningTooltip>允许已配置的 LLM 提供方在连接后运行。没有提供方连接时，AI 组件保持沉默。</DTO_EnableAiPlanningTooltip>
   <DTO_DebugLogging>启用调试日志</DTO_DebugLogging>
   <DTO_DebugLoggingTooltip>把工具调用、事件选择和拒绝原因写入 RimWorld 日志。</DTO_DebugLoggingTooltip>
-  <DTO_EnableWebSearch>启用奥卡联网搜索</DTO_EnableWebSearch>
-  <DTO_EnableWebSearchTooltip>向奥卡对话暴露公网搜索工具。当前本地提供方为 Tavily，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
+  <DTO_EnableWebSearch>启用 LLM 联网搜索</DTO_EnableWebSearch>
+  <DTO_EnableWebSearchTooltip>向 LLM 对话暴露公网搜索工具。当前本地提供方为 Tavily，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>联网搜索提供方</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily 本地工具</DTO_WebSearchProviderTavily>
   <DTO_WebSearchProviderTooltip>使用 Tavily 作为本地联网搜索工具。</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API 密钥</DTO_TavilyApiKey>
-  <DTO_TavilyApiKeyTooltip>仅在启用奥卡联网搜索时需要。保存在 RimWorld mod 设置内。</DTO_TavilyApiKeyTooltip>
+  <DTO_TavilyApiKeyTooltip>仅在启用联网搜索时需要。保存在 RimWorld mod 设置内。</DTO_TavilyApiKeyTooltip>
   <DTO_TavilyMaxResults>Tavily 最大结果数</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily 搜索深度</DTO_TavilySearchDepth>
   <DTO_SettingsPageLlm>Agent 模型</DTO_SettingsPageLlm>
@@ -25,7 +25,7 @@
   <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
   <DTO_SettingsPageDebug>调试</DTO_SettingsPageDebug>
   <DTO_EnableHttpMcp>启用外部 HTTP MCP</DTO_EnableHttpMcp>
-  <DTO_EnableHttpMcpTooltip>把一个由玩家配置的 HTTP MCP 服务器工具暴露给奥卡对话。此模组本身不提供 MCP 工具。</DTO_EnableHttpMcpTooltip>
+  <DTO_EnableHttpMcpTooltip>把一个由玩家配置的 HTTP MCP 服务器工具暴露给LLM。此模组本身不提供 MCP 工具。</DTO_EnableHttpMcpTooltip>
   <DTO_HttpMcpUrl>HTTP MCP 端点 URL</DTO_HttpMcpUrl>
   <DTO_HttpMcpUrlTooltip>例如 http://127.0.0.1:3333/mcp。建议只使用你信任的本地端点。</DTO_HttpMcpUrlTooltip>
   <DTO_HttpMcpBearerToken>HTTP MCP Bearer 令牌</DTO_HttpMcpBearerToken>
@@ -37,7 +37,7 @@
   <DTO_HttpMcpServer>服务器</DTO_HttpMcpServer>
   <DTO_HttpMcpServerEnabled>启用此服务器</DTO_HttpMcpServerEnabled>
   <DTO_HttpMcpServerName>服务器名称</DTO_HttpMcpServerName>
-  <DTO_HttpMcpNote>MCP 工具会从配置的服务器发现，并以 mcp_ 前缀暴露给奥卡对话。启用多个服务器时，暴露的工具名会包含服务器名称。请只使用你信任的服务器。</DTO_HttpMcpNote>
+  <DTO_HttpMcpNote>MCP 工具会从配置的服务器发现，并以 mcp_ 前缀暴露给LLM。启用多个服务器时，暴露的工具名会包含服务器名称。请只使用你信任的服务器。</DTO_HttpMcpNote>
   <DTO_ApiProvider>LLM 提供方</DTO_ApiProvider>
   <DTO_ApiProviderTooltip>点击循环切换提供方。内置预设只使用 DeepSeek 和 OpenAI 官方端点。OpenRouter、硅基流动、本地服务等第三方 OpenAI-compatible API 请使用自定义提供方。</DTO_ApiProviderTooltip>
   <DTO_CustomBaseUrl>自定义基础 URL</DTO_CustomBaseUrl>
@@ -66,13 +66,13 @@
   <DTO_ModelFallback>兜底模型</DTO_ModelFallback>
   <DTO_ModelFallbackTooltip>某个角色模型留空时使用这个模型。它不是主控模型。</DTO_ModelFallbackTooltip>
   <DTO_ModelController>主控模型</DTO_ModelController>
-  <DTO_ModelControllerTooltip>可选。每轮奥卡聊天先由它路由到对话、工具、识图或联网搜索专门模型，再由专门模型回复。</DTO_ModelControllerTooltip>
+  <DTO_ModelControllerTooltip>可选。每轮 LLM 聊天先由它路由到对话、工具、识图或联网搜索专门模型，再由专门模型回复。</DTO_ModelControllerTooltip>
   <DTO_ModelDecision>决策模型</DTO_ModelDecision>
   <DTO_ModelDecisionTooltip>用于自动叙事者规划，也就是选择故事事件。</DTO_ModelDecisionTooltip>
   <DTO_ModelDialogue>对话模型</DTO_ModelDialogue>
-  <DTO_ModelDialogueTooltip>用于奥卡聊天回复和记忆压缩。</DTO_ModelDialogueTooltip>
+  <DTO_ModelDialogueTooltip>用于 LLM 聊天回复和记忆压缩。</DTO_ModelDialogueTooltip>
   <DTO_ModelTool>工具模型</DTO_ModelTool>
-  <DTO_ModelToolTooltip>可选。填写后，奥卡聊天的第一轮可工具调用请求使用此模型；工具结果返回后再交给对话模型。</DTO_ModelToolTooltip>
+  <DTO_ModelToolTooltip>可选。填写后，LLM 聊天的第一轮可工具调用请求使用此模型；工具结果返回后再交给对话模型。</DTO_ModelToolTooltip>
   <DTO_ModelVision>识图模型</DTO_ModelVision>
   <DTO_ModelVisionTooltip>用于可识图请求。留空则回退到兜底模型。</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>联网搜索模型</DTO_ModelWebSearch>
@@ -161,10 +161,10 @@
   <DTO_EnableExtension>启用 {0}</DTO_EnableExtension>
   <DTO_ProactivePluginName>环境主动对话</DTO_ProactivePluginName>
   <DTO_ProactivePluginCategory>对话触发器</DTO_ProactivePluginCategory>
-  <DTO_ProactivePluginDescription>允许奥卡针对殖民地观察和 RimTalk 玩家发起对话进行主动发言。</DTO_ProactivePluginDescription>
-  <DTO_ProactivePluginDetails>奥卡自己选择的叙事事件仍会单独触发主动对话。这里的设置只影响环境观察：新信件、殖民地状态变化和 RimTalk 记录。信件和殖民地状态变化会合并为同一个殖民地观察流。</DTO_ProactivePluginDetails>
+  <DTO_ProactivePluginDescription>允许LLM针对殖民地观察和 RimTalk 玩家发起对话进行主动发言。</DTO_ProactivePluginDescription>
+  <DTO_ProactivePluginDetails>LLM自己选择的叙事事件仍会单独触发主动对话。这里的设置只影响环境观察：新信件、殖民地状态变化和 RimTalk 记录。信件和殖民地状态变化会合并为同一个殖民地观察流。</DTO_ProactivePluginDetails>
   <DTO_EnableAmbientProactiveDialogue>启用环境主动对话</DTO_EnableAmbientProactiveDialogue>
-  <DTO_EnableAmbientProactiveDialogueTooltip>关闭后，只有奥卡自己选择的叙事事件会自动触发主动对话。</DTO_EnableAmbientProactiveDialogueTooltip>
+  <DTO_EnableAmbientProactiveDialogueTooltip>关闭后，只有LLM自己选择的叙事事件会自动触发主动对话。</DTO_EnableAmbientProactiveDialogueTooltip>
   <DTO_ProactivePluginSettings>触发概率</DTO_ProactivePluginSettings>
   <DTO_ColonyObservationSpeakChanceMultiplier>殖民地观察开口概率倍率 (0-2)</DTO_ColonyObservationSpeakChanceMultiplier>
   <DTO_RimtalkProactiveBaseChance>RimTalk 基础概率 (0-1)</DTO_RimtalkProactiveBaseChance>
@@ -209,8 +209,8 @@
   <DTO_MaxToolCalls>最大工具调用次数</DTO_MaxToolCalls>
   <DTO_PlanningMtbDays>规划器 MTB 天数</DTO_PlanningMtbDays>
   <DTO_OfflineNote>离线行为：AI 决策层直接返回。直到 LLM 提供方连接前，故事事件只由 XML 中定义的原版叙事者组件生成。</DTO_OfflineNote>
-  <DTO_OrcaChatOpen>打开奥卡对话</DTO_OrcaChatOpen>
-  <DTO_OrcaChatClose>关闭奥卡对话</DTO_OrcaChatClose>
+  <DTO_OrcaChatOpen>打开对话栏</DTO_OrcaChatOpen>
+  <DTO_OrcaChatClose>关闭对话栏</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>悬浮对话；可读取工具，并可按请求触发事件。</DTO_OrcaChatNote>
   <DTO_OrcaChatTitle>「深度求索」奥卡</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>背景透明度</DTO_OrcaChatAlpha>
@@ -228,10 +228,10 @@
   <DTO_OrcaChatUsingTools>正在使用工具...</DTO_OrcaChatUsingTools>
   <DTO_OrcaChatToolBudgetReached>工具调用预算已耗尽。</DTO_OrcaChatToolBudgetReached>
   <DTO_OrcaChatWillingness>事件意愿</DTO_OrcaChatWillingness>
-  <DTO_OrcaChatLogEmpty>尚未记录奥卡对话请求。</DTO_OrcaChatLogEmpty>
+  <DTO_OrcaChatLogEmpty>尚未记录对话请求。</DTO_OrcaChatLogEmpty>
   <DTO_OrcaChatLogUser>1. 用户发言</DTO_OrcaChatLogUser>
-  <DTO_OrcaChatLogProcess>2. 奥卡的运行过程</DTO_OrcaChatLogProcess>
-  <DTO_OrcaChatLogReply>3. 奥卡的回复</DTO_OrcaChatLogReply>
+  <DTO_OrcaChatLogProcess>2. LLM 运行过程</DTO_OrcaChatLogProcess>
+  <DTO_OrcaChatLogReply>3. LLM 回复</DTO_OrcaChatLogReply>
   <DTO_OrcaChatLogError>4. 错误原因</DTO_OrcaChatLogError>
   <DTO_SettingsPageMemory>Memory</DTO_SettingsPageMemory>
   <DTO_SettingsPageKnowledge>知识库</DTO_SettingsPageKnowledge>

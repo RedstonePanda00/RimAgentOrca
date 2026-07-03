@@ -4,13 +4,13 @@
   <DTO_EnableAiPlanningTooltip>Allow the configured LLM provider to run once a provider is connected. When no provider is connected, the AI comp stays silent.</DTO_EnableAiPlanningTooltip>
   <DTO_DebugLogging>Enable debug logging</DTO_DebugLogging>
   <DTO_DebugLoggingTooltip>Write tool calls, selected incidents, and rejection reasons to the RimWorld log.</DTO_DebugLoggingTooltip>
-  <DTO_EnableWebSearch>Enable Orca web search</DTO_EnableWebSearch>
-  <DTO_EnableWebSearchTooltip>Expose a public web search tool to Orca chat. Current local provider is Tavily and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
+  <DTO_EnableWebSearch>Enable LLM web search</DTO_EnableWebSearch>
+  <DTO_EnableWebSearchTooltip>Expose a public web search tool to LLM chat. Current local provider is Tavily and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>Web search provider</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily local tool</DTO_WebSearchProviderTavily>
   <DTO_WebSearchProviderTooltip>Use Tavily as the local web search tool.</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API key</DTO_TavilyApiKey>
-  <DTO_TavilyApiKeyTooltip>Required only when Orca web search is enabled. Stored in RimWorld mod settings.</DTO_TavilyApiKeyTooltip>
+  <DTO_TavilyApiKeyTooltip>Required only when web search is enabled. Stored in RimWorld mod settings.</DTO_TavilyApiKeyTooltip>
   <DTO_TavilyMaxResults>Tavily max results</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily search depth</DTO_TavilySearchDepth>
   <DTO_SettingsPageLlm>Agent models</DTO_SettingsPageLlm>
@@ -27,7 +27,7 @@
   <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
   <DTO_SettingsPageDebug>Debug</DTO_SettingsPageDebug>
   <DTO_EnableHttpMcp>Enable external HTTP MCP</DTO_EnableHttpMcp>
-  <DTO_EnableHttpMcpTooltip>Expose tools from one player-configured HTTP MCP server to Orca chat. This mod does not provide MCP tools by itself.</DTO_EnableHttpMcpTooltip>
+  <DTO_EnableHttpMcpTooltip>Expose tools from one player-configured HTTP MCP server to LLM chat. This mod does not provide MCP tools by itself.</DTO_EnableHttpMcpTooltip>
   <DTO_HttpMcpUrl>HTTP MCP endpoint URL</DTO_HttpMcpUrl>
   <DTO_HttpMcpUrlTooltip>For example http://127.0.0.1:3333/mcp. Prefer local endpoints you control.</DTO_HttpMcpUrlTooltip>
   <DTO_HttpMcpBearerToken>HTTP MCP bearer token</DTO_HttpMcpBearerToken>
@@ -39,7 +39,7 @@
   <DTO_HttpMcpServer>Server</DTO_HttpMcpServer>
   <DTO_HttpMcpServerEnabled>Enable this server</DTO_HttpMcpServerEnabled>
   <DTO_HttpMcpServerName>Server name</DTO_HttpMcpServerName>
-  <DTO_HttpMcpNote>MCP tools are discovered from configured servers and exposed to Orca chat with an mcp_ prefix. If more than one server is enabled, exposed tool names include the server name. Use only servers you trust.</DTO_HttpMcpNote>
+  <DTO_HttpMcpNote>MCP tools are discovered from configured servers and exposed to LLM chat with an mcp_ prefix. If more than one server is enabled, exposed tool names include the server name. Use only servers you trust.</DTO_HttpMcpNote>
   <DTO_ApiProvider>LLM provider</DTO_ApiProvider>
   <DTO_ApiProviderTooltip>Click to cycle providers. Built-in presets use official DeepSeek and OpenAI endpoints. Use Custom for third-party OpenAI-compatible APIs such as OpenRouter, SiliconFlow, or local servers.</DTO_ApiProviderTooltip>
   <DTO_CustomBaseUrl>Custom base URL</DTO_CustomBaseUrl>
@@ -68,13 +68,13 @@
   <DTO_ModelFallback>Fallback model</DTO_ModelFallback>
   <DTO_ModelFallbackTooltip>Used when a role-specific model is empty. This is not the controller model.</DTO_ModelFallbackTooltip>
   <DTO_ModelController>Controller model</DTO_ModelController>
-  <DTO_ModelControllerTooltip>Optional. Routes each Orca chat turn to dialogue, tool, vision, or web-search specialists before the specialist model replies.</DTO_ModelControllerTooltip>
+  <DTO_ModelControllerTooltip>Optional. Routes each LLM chat turn to dialogue, tool, vision, or web-search specialists before the specialist model replies.</DTO_ModelControllerTooltip>
   <DTO_ModelDecision>Decision model</DTO_ModelDecision>
   <DTO_ModelDecisionTooltip>Used by the automatic storyteller planner that chooses incidents.</DTO_ModelDecisionTooltip>
   <DTO_ModelDialogue>Dialogue model</DTO_ModelDialogue>
-  <DTO_ModelDialogueTooltip>Used for Orca chat replies and memory compression.</DTO_ModelDialogueTooltip>
+  <DTO_ModelDialogueTooltip>Used for LLM chat replies and memory compression.</DTO_ModelDialogueTooltip>
   <DTO_ModelTool>Tool model</DTO_ModelTool>
-  <DTO_ModelToolTooltip>Optional. When set, Orca chat uses this model for the first tool-capable pass, then the dialogue model after tool results.</DTO_ModelToolTooltip>
+  <DTO_ModelToolTooltip>Optional. When set, LLM chat uses this model for the first tool-capable pass, then the dialogue model after tool results.</DTO_ModelToolTooltip>
   <DTO_ModelVision>Vision model</DTO_ModelVision>
   <DTO_ModelVisionTooltip>Used by vision-capable requests when available. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>Web-search model</DTO_ModelWebSearch>
@@ -191,10 +191,10 @@
   <DTO_EnableExtension>Enable {0}</DTO_EnableExtension>
   <DTO_ProactivePluginName>Ambient proactive dialogue</DTO_ProactivePluginName>
   <DTO_ProactivePluginCategory>Conversation triggers</DTO_ProactivePluginCategory>
-  <DTO_ProactivePluginDescription>Lets Orca speak proactively about colony observations and RimTalk player-initiated conversations.</DTO_ProactivePluginDescription>
-  <DTO_ProactivePluginDetails>Storyteller events selected by Orca still trigger proactive dialogue separately. These settings only affect ambient observations: new letters, colony state changes, and RimTalk records. Letters and colony state changes are merged into one colony observation stream.</DTO_ProactivePluginDetails>
+  <DTO_ProactivePluginDescription>Lets LLM speak proactively about colony observations and RimTalk player-initiated conversations.</DTO_ProactivePluginDescription>
+  <DTO_ProactivePluginDetails>Storyteller events selected by LLM still trigger proactive dialogue separately. These settings only affect ambient observations: new letters, colony state changes, and RimTalk records. Letters and colony state changes are merged into one colony observation stream.</DTO_ProactivePluginDetails>
   <DTO_EnableAmbientProactiveDialogue>Enable ambient proactive dialogue</DTO_EnableAmbientProactiveDialogue>
-  <DTO_EnableAmbientProactiveDialogueTooltip>When disabled, only Orca-selected storyteller events can trigger proactive dialogue automatically.</DTO_EnableAmbientProactiveDialogueTooltip>
+  <DTO_EnableAmbientProactiveDialogueTooltip>When disabled, only LLM-selected storyteller events can trigger proactive dialogue automatically.</DTO_EnableAmbientProactiveDialogueTooltip>
   <DTO_ProactivePluginSettings>Trigger probabilities</DTO_ProactivePluginSettings>
   <DTO_ColonyObservationSpeakChanceMultiplier>Colony observation chance multiplier (0-2)</DTO_ColonyObservationSpeakChanceMultiplier>
   <DTO_RimtalkProactiveBaseChance>RimTalk base chance (0-1)</DTO_RimtalkProactiveBaseChance>
@@ -240,8 +240,8 @@
   <DTO_PlanningMtbDays>Planner MTB days</DTO_PlanningMtbDays>
   <DTO_OrcaChatTab>RimAgent</DTO_OrcaChatTab>
   <DTO_OrcaChatHistoryTab>Chat history</DTO_OrcaChatHistoryTab>
-  <DTO_OrcaChatOpen>Open Orca chat</DTO_OrcaChatOpen>
-  <DTO_OrcaChatClose>Close Orca chat</DTO_OrcaChatClose>
+  <DTO_OrcaChatOpen>Open chat</DTO_OrcaChatOpen>
+  <DTO_OrcaChatClose>Close chat</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>Floating chat; can read tools and trigger incidents on request.</DTO_OrcaChatNote>
   <DTO_OrcaChatTitle>Orca Deepseek</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>Background alpha</DTO_OrcaChatAlpha>
@@ -257,10 +257,10 @@
   <DTO_OrcaChatStatusIdle>Idle.</DTO_OrcaChatStatusIdle>
   <DTO_OrcaChatWillingness>Event willingness</DTO_OrcaChatWillingness>
   <DTO_OrcaChatSpeakerOrca>Orca</DTO_OrcaChatSpeakerOrca>
-  <DTO_OrcaChatLogEmpty>No Orca chat request has been recorded yet.</DTO_OrcaChatLogEmpty>
+  <DTO_OrcaChatLogEmpty>No chat request has been recorded yet.</DTO_OrcaChatLogEmpty>
   <DTO_OrcaChatLogUser>1. User message</DTO_OrcaChatLogUser>
-  <DTO_OrcaChatLogProcess>2. Orca process</DTO_OrcaChatLogProcess>
-  <DTO_OrcaChatLogReply>3. Orca reply</DTO_OrcaChatLogReply>
+  <DTO_OrcaChatLogProcess>2. LLM process</DTO_OrcaChatLogProcess>
+  <DTO_OrcaChatLogReply>3. LLM reply</DTO_OrcaChatLogReply>
   <DTO_OrcaChatLogError>4. Error</DTO_OrcaChatLogError>
   <DTO_OfflineNote>Offline behavior: the AI decision layer returns immediately. Story events are generated only by the XML-defined vanilla storyteller comps until an LLM provider is connected.</DTO_OfflineNote>
 </LanguageData>
