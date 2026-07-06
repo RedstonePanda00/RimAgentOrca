@@ -25,8 +25,16 @@ namespace DeepseekTheOrca
         private readonly OrcaChatTranscript transcript = new OrcaChatTranscript();
         private readonly OrcaChatThinkingState thinkingState = new OrcaChatThinkingState();
         private Task<LlmChatResponse> pendingRequest;
+        private Task<LlmChatResponse> pendingParallelToolRequest;
         private LlmStreamingChatRequest pendingStreamingRequest;
         private OrcaChatLine pendingStreamingLine;
+        private List<LlmChatMessage> parallelToolMessages;
+        private string parallelToolInstruction = "";
+        private int parallelToolRoundsUsed;
+        private bool parallelToolExecutionSucceeded;
+        private readonly List<string> parallelToolResultSummaries = new List<string>();
+        private bool finalReplyReceivedThisTurn;
+        private bool turnCompletionNotified;
         private string statusText = "";
         private int toolRoundsUsed;
         private int toolCallsUsedThisTurn;
@@ -52,10 +60,11 @@ namespace DeepseekTheOrca
         private string lastToolResult = "";
         private bool specialistReturnedNoToolCalls;
         private bool dialogueToolRequestRetryUsed;
+        private List<string> selectedSkillIdsThisTurn = new List<string>();
 
         public bool IsWaiting
         {
-            get { return pendingRequest != null || pendingStreamingRequest != null; }
+            get { return pendingRequest != null || pendingStreamingRequest != null || pendingParallelToolRequest != null; }
         }
 
         bool IOrcaChatAgent.IsBusy
@@ -185,6 +194,9 @@ namespace DeepseekTheOrca
             allowExecutionToolsThisTurn = true;
             specialistReturnedNoToolCalls = false;
             dialogueToolRequestRetryUsed = false;
+            ResetParallelToolState();
+            finalReplyReceivedThisTurn = false;
+            turnCompletionNotified = false;
             ClearForcedNextModelRole();
             StartControllerOrChatRequest(settings);
         }
@@ -224,6 +236,9 @@ namespace DeepseekTheOrca
             allowExecutionToolsThisTurn = false;
             specialistReturnedNoToolCalls = false;
             dialogueToolRequestRetryUsed = false;
+            ResetParallelToolState();
+            finalReplyReceivedThisTurn = false;
+            turnCompletionNotified = false;
             ClearForcedNextModelRole();
             ForceNextModelRole(OrcaLlmModelRole.Dialogue);
             StartRequest(settings);
@@ -233,6 +248,7 @@ namespace DeepseekTheOrca
         public void Tick()
         {
             TickStreamingRequest();
+            TickParallelToolRequest();
 
             if (pendingStreamingRequest != null)
             {

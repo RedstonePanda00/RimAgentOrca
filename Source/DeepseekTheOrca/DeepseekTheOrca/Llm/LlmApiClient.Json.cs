@@ -121,7 +121,14 @@ namespace DeepseekTheOrca
             return result;
         }
 
-        private static LlmChatResponse ParseChatResponse(string responseText)
+        private static bool AllowDsmlToolCallFallback(OrcaLlmModelRole role)
+        {
+            return role == OrcaLlmModelRole.Tool
+                || role == OrcaLlmModelRole.WebSearch
+                || role == OrcaLlmModelRole.Decision;
+        }
+
+        private static LlmChatResponse ParseChatResponse(string responseText, OrcaLlmModelRole role)
         {
             try
             {
@@ -211,7 +218,7 @@ namespace DeepseekTheOrca
                     }
                 }
 
-                if (parsed.toolCalls.Count == 0 && !string.IsNullOrEmpty(parsed.content))
+                if (AllowDsmlToolCallFallback(role) && parsed.toolCalls.Count == 0 && !string.IsNullOrEmpty(parsed.content))
                 {
                     List<LlmToolCall> dsmlToolCalls = OrcaDsmlToolCallFallbackParser.ParseToolCalls(parsed.content);
                     if (dsmlToolCalls.Count > 0)

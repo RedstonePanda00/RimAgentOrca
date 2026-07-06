@@ -11,6 +11,7 @@ namespace DeepseekTheOrca
             lastErrorText = "";
             processLines.Clear();
             lastProcessText = "";
+            selectedSkillIdsThisTurn.Clear();
             currentTurn = new OrcaChatTurnLog(turnLogs.Count + 1, userText);
             turnLogs.Add(currentTurn);
             while (turnLogs.Count > MaxTurnLogs)

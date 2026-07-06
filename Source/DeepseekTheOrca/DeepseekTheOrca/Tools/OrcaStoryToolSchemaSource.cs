@@ -25,7 +25,9 @@ namespace DeepseekTheOrca
             if (role == OrcaLlmModelRole.Decision)
             {
                 AiToolDefinition definition;
-                return AiStoryToolRegistry.TryGetDefinition(toolName, out definition) && definition.exposeToStorytellerPlanning;
+                return AiStoryToolRegistry.TryGetDefinition(toolName, out definition)
+                    && definition.exposeToStorytellerPlanning
+                    && AiStoryToolRegistry.IsAllowedForCurrentPersona(definition);
             }
 
             if (role == OrcaLlmModelRole.WebSearch)
@@ -41,7 +43,9 @@ namespace DeepseekTheOrca
                 }
 
                 AiToolDefinition definition;
-                return AiStoryToolRegistry.TryGetDefinition(toolName, out definition) && definition.exposeToChat;
+                return AiStoryToolRegistry.TryGetDefinition(toolName, out definition)
+                    && definition.exposeToChat
+                    && AiStoryToolRegistry.IsAllowedForCurrentPersona(definition);
             }
 
             return false;
@@ -66,6 +70,10 @@ namespace DeepseekTheOrca
                     continue;
                 }
                 if (allowedToolNames != null && !allowedToolNames.Contains(definition.Name))
+                {
+                    continue;
+                }
+                if (!AiStoryToolRegistry.IsAllowedForCurrentPersona(definition))
                 {
                     continue;
                 }

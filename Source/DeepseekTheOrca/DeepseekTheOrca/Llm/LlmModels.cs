@@ -106,6 +106,7 @@ namespace DeepseekTheOrca
         public string role = "";
         public string model = "";
         public string providerId = "";
+        public bool allowDsmlToolCallFallback;
 
         public bool IsCompleted
         {
@@ -217,7 +218,7 @@ namespace DeepseekTheOrca
                     response = LlmChatResponse.Failure("Streaming response was empty.");
                 }
 
-                if (response.success && !string.IsNullOrEmpty(response.content))
+                if (allowDsmlToolCallFallback && response.success && !string.IsNullOrEmpty(response.content))
                 {
                     List<LlmToolCall> dsmlToolCalls = OrcaDsmlToolCallFallbackParser.ParseToolCalls(response.content);
                     if (dsmlToolCalls.Count > 0)

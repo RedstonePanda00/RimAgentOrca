@@ -132,12 +132,13 @@ namespace DeepseekTheOrca
             currentModelReference = settings.ModelForRole(role);
             NotifyAgentPhase(OrcaChatRoleUtility.PhaseForRole(role), role, OrcaChatRoleUtility.ShouldStreamFinalReply(role), "request sent");
             OrcaChatLine thinkingLine = thinkingState.Ensure(transcript.DisplayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
+            List<LlmChatMessage> requestMessages = SnapshotMessagesForRole(role);
             if (OrcaChatRoleUtility.ShouldStreamFinalReply(role))
             {
                 pendingStreamingLine = thinkingLine;
                 pendingStreamingRequest = client.StartStreamingPlainChatCompletion(
                     settings,
-                    transcript.SnapshotMessages(),
+                    requestMessages,
                     900,
                     0.85f,
                     role);
@@ -146,7 +147,7 @@ namespace DeepseekTheOrca
             else
             {
                 HashSet<string> allowedToolNames = role == OrcaLlmModelRole.Tool
-                    ? OrcaToolBundleRouter.SelectToolNames(lastUserText, role, allowExecutionToolsThisTurn)
+                    ? AllowedToolNamesForToolRequest(includeExecutionPlanningTools: false)
                     : null;
                 if (role == OrcaLlmModelRole.Tool)
                 {
@@ -154,12 +155,76 @@ namespace DeepseekTheOrca
                 }
                 pendingRequest = client.SendChatCompletionWithToolsAsync(
                     settings,
-                    transcript.SnapshotMessages(),
+                    requestMessages,
                     LlmToolSchemas.BuildForRole(role, allowedToolNames),
                     900,
                     0.85f,
                     role);
                 AddProcess("Request sent to " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model: " + settings.ModelForRole(role));
+            }
+        }
+
+        private HashSet<string> AllowedToolNamesForToolRequest(bool includeExecutionPlanningTools)
+        {
+            return AllowedToolNamesForToolRequest(includeExecutionPlanningTools, lastUserText);
+        }
+
+        private HashSet<string> AllowedToolNamesForToolRequest(bool includeExecutionPlanningTools, string queryText)
+        {
+            HashSet<string> allowedToolNames = OrcaToolBundleRouter.SelectToolNames(queryText, OrcaLlmModelRole.Tool, allowExecutionToolsThisTurn);
+            foreach (string toolName in OrcaSkillManager.AllowedToolsForSkillIds(selectedSkillIdsThisTurn))
+            {
+                if (!toolName.NullOrEmpty())
+                {
+                    allowedToolNames.Add(toolName.Trim());
+                }
+            }
+
+            if (includeExecutionPlanningTools && allowExecutionToolsThisTurn)
+            {
+                allowedToolNames.Add("list_available_incidents");
+                allowedToolNames.Add("can_fire_incident");
+                allowedToolNames.Add("propose_incident");
+                allowedToolNames.Add("schedule_incident");
+                allowedToolNames.Add("trigger_raid");
+                allowedToolNames.Add("spawn_pawns");
+            }
+
+            if (!allowExecutionToolsThisTurn)
+            {
+                allowedToolNames.RemoveWhere(toolName => AiStoryToolRegistry.IsExecutionTool(toolName));
+            }
+
+            return allowedToolNames;
+        }
+
+        private List<LlmChatMessage> SnapshotMessagesForRole(OrcaLlmModelRole role)
+        {
+            List<LlmChatMessage> messages = role == OrcaLlmModelRole.Dialogue
+                ? OrcaChatHistoryMaintenance.SnapshotForFinalDialogue(transcript.Messages)
+                : transcript.SnapshotMessages();
+            ApplySelectedSkillPromptForRole(messages, role);
+            return messages;
+        }
+
+        private void ApplySelectedSkillPromptForRole(List<LlmChatMessage> messages, OrcaLlmModelRole role)
+        {
+            if (messages == null || selectedSkillIdsThisTurn == null || selectedSkillIdsThisTurn.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = messages.Count - 1; i >= 0; i--)
+            {
+                if (messages[i] == null || messages[i].role != "user")
+                {
+                    continue;
+                }
+
+                List<string> contextTags = OrcaChatPromptBuilder.PlayerContextTags(lastUserText);
+                OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, "player_chat", lastPlayerName, lastUserText, contextTags, false);
+                messages[i].content = OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, selectedSkillIdsThisTurn, role);
+                return;
             }
         }
 

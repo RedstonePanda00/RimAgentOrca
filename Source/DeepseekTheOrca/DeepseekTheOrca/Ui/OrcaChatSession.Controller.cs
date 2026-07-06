@@ -76,10 +76,17 @@ namespace DeepseekTheOrca
             OrcaExtensionManager.ModifyAgentRouting(routingContext);
             string route = routingContext.route;
             role = routingContext.requestedRole;
-            lastControllerRoute = route;
-            ForceNextModelRole(role);
             ApplyControllerSkillSelection(decision.skillIds);
             ApplyControllerContextSummary(decision.contextSummary, "controller route");
+            bool startParallelTool = CanStartParallelToolExecution(settings, decision);
+            if (startParallelTool)
+            {
+                route = "dialogue+tool";
+                role = OrcaLlmModelRole.Dialogue;
+            }
+
+            lastControllerRoute = route;
+            ForceNextModelRole(role);
             AddProcess("Controller route: " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
             if (routingContext.Changed)
             {
@@ -87,6 +94,10 @@ namespace DeepseekTheOrca
             }
 
             StartRequest(settings);
+            if (startParallelTool)
+            {
+                TryStartParallelToolExecution(settings, decision.parallelToolInstruction, "controller route");
+            }
         }
 
         private void HandleControllerReviewResponse(LlmChatResponse response)
@@ -105,6 +116,12 @@ namespace DeepseekTheOrca
             OrcaExtensionManager.ModifyAgentRouting(routingContext);
             string route = routingContext.route;
             role = routingContext.requestedRole;
+            bool startParallelTool = CanStartParallelToolExecution(settings, decision);
+            if (startParallelTool)
+            {
+                route = "dialogue+tool";
+                role = OrcaLlmModelRole.Dialogue;
+            }
 
             if (role != OrcaLlmModelRole.Dialogue && !CanContinueSpecialistGathering(settings))
             {
@@ -122,6 +139,10 @@ namespace DeepseekTheOrca
 
             lastControllerRoute = "review:" + route;
             specialistReturnedNoToolCalls = false;
+            if (decision.skillIds.Count > 0)
+            {
+                ApplyControllerSkillSelection(decision.skillIds);
+            }
             ApplyControllerContextSummary(decision.contextSummary, "controller review");
             AddProcess("Controller review route: " + route + " -> " + OrcaChatRoleUtility.ModelRoleLabel(role) + " model.");
             if (routingContext.Changed)
@@ -132,6 +153,10 @@ namespace DeepseekTheOrca
             if (role == OrcaLlmModelRole.Dialogue)
             {
                 RouteToDialogueAfterControllerReview(settings, "controller review found enough context");
+                if (startParallelTool)
+                {
+                    TryStartParallelToolExecution(settings, decision.parallelToolInstruction, "controller review");
+                }
                 return;
             }
 
@@ -146,20 +171,11 @@ namespace DeepseekTheOrca
         private void ApplyControllerSkillSelection(IEnumerable<string> skillIds)
         {
             List<string> selected = OrcaSkillManager.ValidEnabledSkillIds(skillIds);
+            selectedSkillIdsThisTurn = selected;
             if (selected.Count > 0)
             {
                 AddProcess("Controller selected skill(s): " + string.Join(", ", selected.ToArray()));
             }
-
-            int userIndex = transcript.LatestUserMessageIndex();
-            if (userIndex < 0)
-            {
-                return;
-            }
-
-            List<string> contextTags = OrcaChatPromptBuilder.PlayerContextTags(lastUserText);
-            OrcaChatTurnContext turnContext = new OrcaChatTurnContext(this, "player_chat", lastPlayerName, lastUserText, contextTags, false);
-            transcript.Messages[userIndex].content = OrcaChatPromptBuilder.BuildPlayerMessage(turnContext, selected);
         }
 
         private void ApplyControllerContextSummary(string contextSummary, string source)

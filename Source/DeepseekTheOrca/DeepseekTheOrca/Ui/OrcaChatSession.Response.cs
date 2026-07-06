@@ -47,7 +47,25 @@ namespace DeepseekTheOrca
             }
 
             transcript.MarkChanged();
-            NotifyAgentPhase(OrcaAgentPhase.Completed, pendingRequestRole, false, "final reply received");
+            finalReplyReceivedThisTurn = true;
+            CompleteTurnIfIdle("final reply received");
+        }
+
+        private void CompleteTurnIfIdle(string reason)
+        {
+            if (turnCompletionNotified || !finalReplyReceivedThisTurn)
+            {
+                return;
+            }
+
+            if (pendingRequest != null || pendingStreamingRequest != null || pendingParallelToolRequest != null)
+            {
+                statusText = pendingParallelToolRequest != null ? "DTO_OrcaChatUsingTools".Translate() : "DTO_OrcaChatWaiting".Translate();
+                return;
+            }
+
+            turnCompletionNotified = true;
+            NotifyAgentPhase(OrcaAgentPhase.Completed, pendingRequestRole, false, reason);
             transcript.Trim(MaxConversationTurns);
             statusText = "DTO_OrcaChatReady".Translate();
         }

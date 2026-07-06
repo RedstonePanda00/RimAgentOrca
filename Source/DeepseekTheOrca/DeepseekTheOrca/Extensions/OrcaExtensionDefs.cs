@@ -403,6 +403,7 @@ namespace DeepseekTheOrca
         public bool allowDuringProactive = true;
         public bool isExecutionTool;
         public bool defaultEnabled = true;
+        public List<string> personaIds = new List<string>();
         public List<OrcaToolParameterDef> parameters = new List<OrcaToolParameterDef>();
 
         private OrcaToolWorker workerInt;

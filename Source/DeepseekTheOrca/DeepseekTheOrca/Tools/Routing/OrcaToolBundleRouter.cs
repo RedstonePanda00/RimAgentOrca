@@ -245,7 +245,7 @@ namespace DeepseekTheOrca
         private static List<OrcaToolBundleDef> BundlesForRole(OrcaLlmModelRole role)
         {
             List<OrcaToolBundleDef> defs = DefDatabase<OrcaToolBundleDef>.AllDefsListForReading ?? new List<OrcaToolBundleDef>();
-            return defs.Where(bundle => bundle != null && bundle.ExposesToRole(role)).OrderByDescending(bundle => bundle.priority).ToList();
+            return defs.Where(bundle => bundle != null && bundle.ExposesToRole(role) && bundle.AllowsCurrentPersona()).OrderByDescending(bundle => bundle.priority).ToList();
         }
 
         private static void AddTools(HashSet<string> selected, OrcaToolBundleDef bundle)

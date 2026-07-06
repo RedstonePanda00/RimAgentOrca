@@ -598,5 +598,51 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             string tendency = persona == null ? "" : persona.controllerRoutingTendency;
             return tendency.NullOrEmpty() ? BuiltInOrcaControllerRoutingTendency : tendency;
         }
+
+        public static string CurrentPersonaId()
+        {
+            return NormalizePersonaId(DeepseekTheOrcaMod.Settings == null ? BuiltInOrcaId : DeepseekTheOrcaMod.Settings.chatPersonaDefName);
+        }
+
+        public static bool PersonaIdListAllowsCurrent(List<string> personaIds)
+        {
+            if (personaIds == null || personaIds.Count == 0)
+            {
+                return true;
+            }
+
+            string current = CurrentPersonaId();
+            for (int i = 0; i < personaIds.Count; i++)
+            {
+                if (NormalizePersonaId(personaIds[i]) == current)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static string NormalizePersonaId(string personaId)
+        {
+            string value = (personaId ?? "").Trim();
+            if (value.NullOrEmpty())
+            {
+                return "";
+            }
+
+            if (value == BuiltInOrcaId || value.StartsWith(LocalPrefix, StringComparison.Ordinal))
+            {
+                return value;
+            }
+
+            if (value.StartsWith(DefPrefix, StringComparison.Ordinal))
+            {
+                string defName = value.Substring(DefPrefix.Length);
+                return defName.NullOrEmpty() ? "" : DefPrefix + defName;
+            }
+
+            return DefPrefix + value;
+        }
     }
 }

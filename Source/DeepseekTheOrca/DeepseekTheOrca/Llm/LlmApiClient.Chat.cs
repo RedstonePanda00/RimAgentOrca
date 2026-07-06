@@ -61,6 +61,7 @@ namespace DeepseekTheOrca
             request.role = role.ToString();
             request.model = config.model == null ? "" : config.model.Trim();
             request.providerId = config.providerId;
+            request.allowDsmlToolCallFallback = AllowDsmlToolCallFallback(role);
             Task.Run(async delegate
             {
                 await SendStreamingChatCompletionAsync(
@@ -317,7 +318,7 @@ namespace DeepseekTheOrca
                                     "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error));
                             }
 
-                            LlmChatResponse parsed = ParseChatResponse(responseText);
+                            LlmChatResponse parsed = ParseChatResponse(responseText, role);
                             parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
                             parsed.role = role.ToString();
                             parsed.model = model.Trim();

@@ -9,6 +9,7 @@ namespace DeepseekTheOrca
             pendingRequest = null;
             pendingStreamingRequest = null;
             pendingStreamingLine = null;
+            ResetParallelToolState();
             thinkingState.Clear();
             pendingStage = OrcaChatRequestStage.Chat;
             pendingRequestRole = OrcaLlmModelRole.Fallback;
@@ -33,6 +34,9 @@ namespace DeepseekTheOrca
             lastToolResult = "";
             specialistReturnedNoToolCalls = false;
             dialogueToolRequestRetryUsed = false;
+            finalReplyReceivedThisTurn = false;
+            turnCompletionNotified = false;
+            selectedSkillIdsThisTurn.Clear();
         }
     }
 }

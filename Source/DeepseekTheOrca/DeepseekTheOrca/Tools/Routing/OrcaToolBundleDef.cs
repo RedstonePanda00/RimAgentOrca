@@ -9,6 +9,7 @@ namespace DeepseekTheOrca
         public string toolBundleId = "";
         public List<string> aliases = new List<string>();
         public List<string> toolNames = new List<string>();
+        public List<string> personaIds = new List<string>();
         public float priority;
         public bool topKEligible = true;
         public bool includeByDefault;
@@ -44,6 +45,11 @@ namespace DeepseekTheOrca
 
             string roleText = OrcaChatRoleUtility.ModelRoleLabel(role).ToLowerInvariant();
             return exposeToRoles.Any(item => string.Equals((item ?? "").Trim(), roleText, System.StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool AllowsCurrentPersona()
+        {
+            return OrcaChatPersonaManager.PersonaIdListAllowsCurrent(personaIds);
         }
 
         public override IEnumerable<string> ConfigErrors()

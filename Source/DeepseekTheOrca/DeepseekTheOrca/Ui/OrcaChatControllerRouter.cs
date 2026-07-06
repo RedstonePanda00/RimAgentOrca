@@ -27,9 +27,10 @@ namespace DeepseekTheOrca
                 ControllerPromptPreamble()
                 + "You are handling the first routing decision for the latest player turn. "
                 + "Choose dialogue directly for greetings, brief social chat, style-only requests, or when the request can be answered from the conversation plus relevant controller-summarized knowledge or memory without more specialist data. "
-                + "Choose tool when current RimWorld game state, pawns, incidents, RimTalk history, MCP tools, or event execution data may be needed. "
+                + "Choose tool when current RimWorld game state, pawns, incidents, RimTalk history, MCP tools, or event execution data may be needed before any final reply. "
                 + "Choose web_search only when current external public-web information outside the game is needed. "
                 + "Choose vision only when image recognition is needed. "
+                + "When the player clearly asks the persona to cause a concrete in-game event or game-state change and no more player clarification is needed, route the visible reply to dialogue and set parallelToolInstruction to the exact tool-side execution goal. "
                 + "For factual questions, do not choose dialogue with an unsupported answer. If no available source can answer, choose dialogue with contextSummary instructing the dialogue model to say it does not know. "
                 + "If current game state might matter, prefer tool over guessing. "
                 + AppendControllerHint(skillRoutingHint)
@@ -80,9 +81,10 @@ namespace DeepseekTheOrca
                 ControllerPromptPreamble()
                 + "You are reviewing specialist results and deciding the next stage. "
                 + "Choose dialogue when the supplied conversation, controller summaries, and specialist results are enough for a final player-facing answer. "
-                + "Choose tool only if more current RimWorld game state, pawns, incidents, RimTalk history, MCP tools, or event execution data is still required. "
+                + "Choose tool only if more current RimWorld game state, pawns, incidents, RimTalk history, MCP tools, or event execution data is still required before any final reply. "
                 + "Choose web_search only if more current public-web information outside the game is still required. "
                 + "Choose vision only if more image recognition is still required. "
+                + "When specialist results are enough and the player clearly asked the persona to cause a concrete in-game event or game-state change, route the visible reply to dialogue and set parallelToolInstruction to the exact tool-side execution goal. "
                 + "Respect the budget values in the user message. If the budget is exhausted or nearly exhausted, choose dialogue. "
                 + "When choosing dialogue after budget exhaustion or missing evidence, make contextSummary explicitly say that the dialogue model should answer that it does not know or lacks enough information. "
                 + "If the previous specialist produced no tool calls, choose dialogue unless a different specialist is clearly required. "
@@ -134,6 +136,16 @@ namespace DeepseekTheOrca
                 if (!contextSummary.NullOrEmpty())
                 {
                     decision.contextSummary = contextSummary.Trim();
+                }
+
+                string parallelToolInstruction = GetParsedString(parsed, "parallelToolInstruction");
+                if (parallelToolInstruction.NullOrEmpty())
+                {
+                    parallelToolInstruction = GetParsedString(parsed, "parallel_tool_instruction");
+                }
+                if (!parallelToolInstruction.NullOrEmpty())
+                {
+                    decision.parallelToolInstruction = parallelToolInstruction.Trim();
                 }
 
                 object skillIdsObj;
@@ -205,11 +217,14 @@ namespace DeepseekTheOrca
         private static string ControllerPromptPreamble()
         {
             return "You are the central controller for a RimWorld chat agent. "
-                + "You decide whether more information is needed and route to exactly one next stage. "
+                + "You decide whether more information is needed and route to one primary visible next stage. "
                 + "Return exactly one JSON object and no extra text. "
-                + "Schema: {\"route\":\"dialogue|tool|web_search|vision\",\"skillIds\":[\"enabled skill id\"],\"reason\":\"short reason\",\"contextSummary\":\"relevant facts and constraints for the next model; not final prose\"}. "
+                + "Schema: {\"route\":\"dialogue|tool|web_search|vision\",\"skillIds\":[\"enabled skill id\"],\"reason\":\"short reason\",\"contextSummary\":\"relevant facts and constraints for the next model; not final prose\",\"parallelToolInstruction\":\"optional exact tool-side execution goal, or empty string\"}. "
                 + "Never write the final player-facing reply yourself. Dialogue is the only final wording stage. "
                 + "The dialogue model must not decide whether to call tools; that decision belongs to you. "
+                + "parallelToolInstruction starts an independent tool branch while dialogue writes the visible reply. Use it only for explicit player requests to cause concrete in-game events or game-state changes, not for ordinary information gathering. "
+                + "Examples include arranging a wanderer or stranger to join, sending visitors, spawning pawns, triggering a raid, scheduling an incident, or creating another concrete RimWorld event. "
+                + "When using parallelToolInstruction, keep route as dialogue unless another specialist is still required before the visible reply. "
                 + "Use contextSummary to pass only relevant facts, constraints, knowledge, memory, tool/search/vision results, uncertainty, and unresolved needs to the next model. "
                 + "Do not include final prose in contextSummary. Do not copy irrelevant raw memory or noisy tool output. "
                 + "For factual, lore, game-state, current-events, or user-specific questions, require support from conversation, controller knowledge context, controller memory context, specialist results, or web/vision/tool data. If support is absent and no route can gather it, choose dialogue and set contextSummary to tell the dialogue model to say it does not know. "
@@ -344,6 +359,12 @@ namespace DeepseekTheOrca
     {
         public string route = "dialogue";
         public string contextSummary = "";
+        public string parallelToolInstruction = "";
         public readonly List<string> skillIds = new List<string>();
+
+        public bool HasParallelToolInstruction
+        {
+            get { return !parallelToolInstruction.NullOrEmpty(); }
+        }
     }
 }

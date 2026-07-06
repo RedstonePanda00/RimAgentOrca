@@ -9,11 +9,12 @@ namespace DeepseekTheOrca
 {
     public static class LlmRequestScheduler
     {
-        private static readonly SemaphoreSlim gate = new SemaphoreSlim(1, 1);
+        private const int MaxConcurrentRequests = 2;
+        private static readonly SemaphoreSlim gate = new SemaphoreSlim(MaxConcurrentRequests, MaxConcurrentRequests);
         private static readonly object syncRoot = new object();
         private static readonly Queue<string> pendingDebugMessages = new Queue<string>();
+        private static readonly List<string> activeLabels = new List<string>();
         private static int waitingCount;
-        private static string activeLabel = "";
 
         public static int WaitingCount
         {
@@ -32,7 +33,7 @@ namespace DeepseekTheOrca
             {
                 lock (syncRoot)
                 {
-                    return activeLabel;
+                    return string.Join(", ", activeLabels.ToArray());
                 }
             }
         }
@@ -83,7 +84,7 @@ namespace DeepseekTheOrca
             lock (syncRoot)
             {
                 waitingCount--;
-                activeLabel = label;
+                activeLabels.Add(label);
             }
 
             Debug("Started " + label + WaitSuffix(waitTimer.ElapsedMilliseconds) + ".");
@@ -99,7 +100,7 @@ namespace DeepseekTheOrca
         {
             lock (syncRoot)
             {
-                activeLabel = "";
+                activeLabels.Remove(label);
             }
 
             Debug("Finished " + label + ".");

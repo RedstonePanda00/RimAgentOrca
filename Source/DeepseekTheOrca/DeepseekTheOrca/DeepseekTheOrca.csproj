@@ -143,6 +143,7 @@
         <Compile Include="Ui\OrcaChatSession.cs" />
         <Compile Include="Ui\OrcaChatSession.Controller.cs" />
         <Compile Include="Ui\OrcaChatSession.Lifecycle.cs" />
+        <Compile Include="Ui\OrcaChatSession.ParallelTool.cs" />
         <Compile Include="Ui\OrcaChatSession.Requests.cs" />
         <Compile Include="Ui\OrcaChatSession.Response.cs" />
         <Compile Include="Ui\OrcaChatSession.Trace.cs" />

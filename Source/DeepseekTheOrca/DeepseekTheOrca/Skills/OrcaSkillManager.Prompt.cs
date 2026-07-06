@@ -11,7 +11,7 @@ namespace DeepseekTheOrca
     {
         public static string FormatEnabledSkillPrompt()
         {
-            return FormatSkillPrompt(EnabledSkills(), "Enabled skill modules:", "", null);
+            return FormatSkillPrompt(EnabledSkills(), "Enabled skill modules:", "", null, OrcaLlmModelRole.Fallback);
         }
 
         public static string FormatActiveSkillPrompt(string turnText)
@@ -21,12 +21,17 @@ namespace DeepseekTheOrca
 
         public static string FormatActiveSkillPrompt(string turnText, IEnumerable<string> contextTags)
         {
-            return FormatSkillPrompt(ActiveSkillsFor(turnText, contextTags), "Active skill context for this turn:", turnText, contextTags);
+            return FormatSkillPrompt(ActiveSkillsFor(turnText, contextTags), "Active skill context for this turn:", turnText, contextTags, OrcaLlmModelRole.Fallback);
         }
 
         public static string FormatSelectedSkillPrompt(IEnumerable<string> skillIds, string turnText)
         {
-            return FormatSkillPrompt(SelectedSkillsForIds(skillIds), "Selected skill context for this turn:", turnText, null);
+            return FormatSelectedSkillPrompt(skillIds, turnText, OrcaLlmModelRole.Fallback);
+        }
+
+        public static string FormatSelectedSkillPrompt(IEnumerable<string> skillIds, string turnText, OrcaLlmModelRole role)
+        {
+            return FormatSkillPrompt(SelectedSkillsForIds(skillIds), SelectedSkillHeader(role), turnText, null, role);
         }
 
         public static string FormatSkillSelectionCatalog()
@@ -62,6 +67,25 @@ namespace DeepseekTheOrca
         public static List<string> ValidEnabledSkillIds(IEnumerable<string> skillIds)
         {
             return SelectedSkillsForIds(skillIds).Select(skill => skill.id).ToList();
+        }
+
+        public static HashSet<string> AllowedToolsForSkillIds(IEnumerable<string> skillIds)
+        {
+            HashSet<string> result = new HashSet<string>();
+            List<OrcaSkillProfile> skills = SelectedSkillsForIds(skillIds);
+            for (int i = 0; i < skills.Count; i++)
+            {
+                OrcaSkillProfile skill = skills[i];
+                foreach (string toolName in skill.allowedTools ?? new List<string>())
+                {
+                    if (!toolName.NullOrEmpty())
+                    {
+                        result.Add(toolName.Trim());
+                    }
+                }
+            }
+
+            return result;
         }
 
         public static List<OrcaSkillProfile> ActiveSkillsFor(string turnText)
@@ -112,7 +136,7 @@ namespace DeepseekTheOrca
             return result;
         }
 
-        private static string FormatSkillPrompt(List<OrcaSkillProfile> skills, string header, string turnText, IEnumerable<string> contextTags)
+        private static string FormatSkillPrompt(List<OrcaSkillProfile> skills, string header, string turnText, IEnumerable<string> contextTags, OrcaLlmModelRole role)
         {
             if (skills.Count == 0)
             {
@@ -123,7 +147,14 @@ namespace DeepseekTheOrca
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(header);
             builder.AppendLine("Agent skills are lightweight capability folders with metadata and instructions. Use a skill only when it is relevant to the latest player message, proactive trigger, tool results, or game context. A skill changes how you perform that task; it is not a persona.");
-            builder.AppendLine("If a skill lists allowed tools, prefer those tools while handling that skill and avoid unrelated execution tools unless the player explicitly asks or the story context clearly requires them.");
+            if (role == OrcaLlmModelRole.Dialogue)
+            {
+                builder.AppendLine("This is the final dialogue stage. Skill instructions affect player-facing wording and interpretation only; do not request, call, or describe tool calls.");
+            }
+            else
+            {
+                builder.AppendLine("If a skill lists allowed tools, prefer those tools while handling that skill and avoid unrelated execution tools unless the player explicitly asks or the story context clearly requires them.");
+            }
             if (tags.Count > 0)
             {
                 builder.AppendLine("Current context tags: " + string.Join(", ", tags.ToArray()));
@@ -145,7 +176,7 @@ namespace DeepseekTheOrca
                 {
                     builder.AppendLine("Skill contexts: " + string.Join(", ", skill.contexts.ToArray()));
                 }
-                if (skill.allowedTools != null && skill.allowedTools.Count > 0)
+                if (role != OrcaLlmModelRole.Dialogue && skill.allowedTools != null && skill.allowedTools.Count > 0)
                 {
                     builder.AppendLine("Allowed/recommended tools: " + string.Join(", ", skill.allowedTools.ToArray()));
                 }
@@ -156,7 +187,7 @@ namespace DeepseekTheOrca
                 if (!skill.prompt.NullOrEmpty())
                 {
                     builder.AppendLine("Instructions:");
-                    builder.AppendLine(skill.prompt.Trim());
+                    builder.AppendLine(RoleSpecificSkillPrompt(skill.prompt, role));
                 }
                 if (!skill.folderPath.NullOrEmpty())
                 {
@@ -166,6 +197,52 @@ namespace DeepseekTheOrca
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static string SelectedSkillHeader(OrcaLlmModelRole role)
+        {
+            return role == OrcaLlmModelRole.Dialogue
+                ? "Selected skill style context for final dialogue:"
+                : "Selected skill context for this turn:";
+        }
+
+        private static string RoleSpecificSkillPrompt(string prompt, OrcaLlmModelRole role)
+        {
+            if (prompt.NullOrEmpty() || role != OrcaLlmModelRole.Dialogue)
+            {
+                return prompt == null ? "" : prompt.Trim();
+            }
+
+            string[] paragraphs = Regex.Split(prompt.Trim(), @"\r?\n\s*\r?\n");
+            List<string> kept = new List<string>();
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                string paragraph = paragraphs[i].Trim();
+                if (paragraph.NullOrEmpty() || IsToolExecutionInstruction(paragraph))
+                {
+                    continue;
+                }
+
+                kept.Add(paragraph);
+            }
+
+            return string.Join("\n\n", kept.ToArray()).Trim();
+        }
+
+        private static bool IsToolExecutionInstruction(string paragraph)
+        {
+            string lower = (paragraph ?? "").ToLowerInvariant();
+            return lower.Contains("allowed/recommended tools")
+                || lower.Contains("may call execution tool")
+                || lower.Contains("call execution tool")
+                || lower.Contains("request tool")
+                || lower.Contains("request or call")
+                || lower.Contains("execution tools on their own initiative")
+                || lower.Contains("do not use execution tools")
+                || lower.Contains("before any event, raid, or pawn spawn is executed")
+                || lower.Contains("if an execution tool")
+                || lower.Contains("execution tool succeeds")
+                || lower.Contains("execution tool fails");
         }
 
         public static string FormatControllerRoutingHint()

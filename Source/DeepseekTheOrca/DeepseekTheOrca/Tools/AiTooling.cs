@@ -56,6 +56,7 @@ namespace DeepseekTheOrca
         public readonly bool requiresCurrentMap;
         public readonly bool allowDuringProactive;
         public readonly bool isExecutionTool;
+        public readonly List<string> personaIds;
 
         public AiToolDefinition(
             IAiStoryTool tool,
@@ -64,7 +65,8 @@ namespace DeepseekTheOrca
             bool exposeToChat,
             bool requiresCurrentMap,
             bool allowDuringProactive,
-            bool isExecutionTool)
+            bool isExecutionTool,
+            List<string> personaIds)
         {
             this.tool = tool;
             this.parameters = parameters;
@@ -73,6 +75,7 @@ namespace DeepseekTheOrca
             this.requiresCurrentMap = requiresCurrentMap;
             this.allowDuringProactive = allowDuringProactive;
             this.isExecutionTool = isExecutionTool;
+            this.personaIds = personaIds ?? new List<string>();
         }
 
         public string Name
@@ -284,7 +287,7 @@ namespace DeepseekTheOrca
         public static bool IsExposedToChat(string name)
         {
             AiToolDefinition definition;
-            return TryGetDefinition(name, out definition) && definition.exposeToChat;
+            return TryGetDefinition(name, out definition) && definition.exposeToChat && IsAllowedForCurrentPersona(definition);
         }
 
         public static bool IsExecutionTool(string name)
@@ -374,8 +377,19 @@ namespace DeepseekTheOrca
                     continue;
                 }
 
-                Register(tool, def.BuildInputSchema(), def.exposeToStorytellerPlanning, def.exposeToChat, def.requiresCurrentMap, def.allowDuringProactive, def.isExecutionTool);
+                Register(tool, def.BuildInputSchema(), def.exposeToStorytellerPlanning, def.exposeToChat, def.requiresCurrentMap, def.allowDuringProactive, def.isExecutionTool, def.personaIds);
             }
+        }
+
+        public static bool IsAllowedForCurrentPersona(string name)
+        {
+            AiToolDefinition definition;
+            return TryGetDefinition(name, out definition) && IsAllowedForCurrentPersona(definition);
+        }
+
+        public static bool IsAllowedForCurrentPersona(AiToolDefinition definition)
+        {
+            return definition != null && OrcaChatPersonaManager.PersonaIdListAllowsCurrent(definition.personaIds);
         }
 
         private static void Register(
@@ -385,10 +399,11 @@ namespace DeepseekTheOrca
             bool exposeToChat,
             bool requiresCurrentMap = true,
             bool allowDuringProactive = true,
-            bool isExecutionTool = false)
+            bool isExecutionTool = false,
+            List<string> personaIds = null)
         {
             tools[tool.Name] = tool;
-            definitions[tool.Name] = new AiToolDefinition(tool, parameters, exposeToStorytellerPlanning, exposeToChat, requiresCurrentMap, allowDuringProactive, isExecutionTool);
+            definitions[tool.Name] = new AiToolDefinition(tool, parameters, exposeToStorytellerPlanning, exposeToChat, requiresCurrentMap, allowDuringProactive, isExecutionTool, personaIds);
         }
     }
 

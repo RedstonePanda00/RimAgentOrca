@@ -9,6 +9,11 @@ namespace DeepseekTheOrca
     {
         public static string BuildPlayerMessage(OrcaChatTurnContext context, IEnumerable<string> selectedSkillIds)
         {
+            return BuildPlayerMessage(context, selectedSkillIds, OrcaLlmModelRole.Fallback);
+        }
+
+        public static string BuildPlayerMessage(OrcaChatTurnContext context, IEnumerable<string> selectedSkillIds, OrcaLlmModelRole role)
+        {
             StringBuilder builder = new StringBuilder();
             OrcaExtensionManager.AppendUserMessageContext(builder, context);
             string playerName = context == null ? "" : context.playerName;
@@ -17,7 +22,7 @@ namespace DeepseekTheOrca
             builder.AppendLine("Current game language: " + OrcaLanguageUtility.CurrentGameLanguage());
             builder.AppendLine("Reply language requirement: reply in the player's message language unless the player asks otherwise; if ambiguous, use the current game language. Translate knowledge, memory, controller summaries, and tool results instead of copying their source language.");
             AppendContextTags(builder, context == null ? null : context.contextTags);
-            AppendSelectedSkillContext(builder, selectedSkillIds, userText);
+            AppendSelectedSkillContext(builder, selectedSkillIds, userText, role);
             builder.AppendLine("Player message:");
             builder.Append(userText);
             return builder.ToString();
@@ -148,9 +153,9 @@ namespace DeepseekTheOrca
             builder.AppendLine(skillPrompt);
         }
 
-        private static void AppendSelectedSkillContext(StringBuilder builder, IEnumerable<string> selectedSkillIds, string turnText)
+        private static void AppendSelectedSkillContext(StringBuilder builder, IEnumerable<string> selectedSkillIds, string turnText, OrcaLlmModelRole role)
         {
-            string skillPrompt = OrcaSkillManager.FormatSelectedSkillPrompt(selectedSkillIds, turnText);
+            string skillPrompt = OrcaSkillManager.FormatSelectedSkillPrompt(selectedSkillIds, turnText, role);
             if (skillPrompt.NullOrEmpty())
             {
                 return;
