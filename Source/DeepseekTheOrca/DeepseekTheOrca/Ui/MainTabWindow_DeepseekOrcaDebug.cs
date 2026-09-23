@@ -46,6 +46,13 @@ namespace DeepseekTheOrca
             Widgets.Label(new Rect(toggleRect.xMax + 10f, y + 5f, inRect.width - toggleRect.width - 50f, 24f), "DTO_OrcaChatNote".Translate());
             y += 46f;
 
+            if (NovelGameComponent.Current != null)
+            {
+                if (Widgets.ButtonText(new Rect(0f, y, 220f, 32f), "DTO_NovelOpen".Translate()))
+                    Find.WindowStack.Add(new NovelReaderWindow(NovelGameComponent.Current));
+                y += 42f;
+            }
+
             OrcaChatWindowManager.Session.Tick();
             string status = OrcaChatWindowManager.Session.StatusText;
             if (status.NullOrEmpty())

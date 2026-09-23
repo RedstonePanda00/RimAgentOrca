@@ -17,7 +17,11 @@ namespace DeepseekTheOrca
             AiToolContext context = new AiToolContext(Find.CurrentMap, null, null);
             AiToolSession session = new AiToolSession(context);
 
-            if (!IsToolExposedToChat(toolName))
+            if (GeminiHissService.IsCoolingDown && AiStoryToolRegistry.IsExecutionTool(toolName))
+            {
+                execution.result = AiToolResult.Fail("Gemini is sulking and will not execute chat requests");
+            }
+            else if (!IsToolExposedToChat(toolName))
             {
                 execution.result = AiToolResult.Fail("tool is not exposed to chat: " + toolName);
             }

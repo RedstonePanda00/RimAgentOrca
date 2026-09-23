@@ -8,10 +8,19 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 namespace DeepseekTheOrca
 {
     public sealed partial class LlmApiClient
     {
+        // A captured config, no tools, one transport attempt, and low-priority admission.
+        public Task<LlmChatResponse> SendNovelCompletionAsync(OrcaLlmRequestConfig config, List<LlmChatMessage> messages, int maxTokens, CancellationToken cancellation)
+        {
+            if (config == null) return Task.FromResult(LlmChatResponse.Failure("No dialogue model is configured."));
+            return SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle,
+                messages, null, maxTokens, 0.8f, config.providerId, config.openAiOrganization, config.openAiProject,
+                config.proxyUrl, OrcaLlmModelRole.Dialogue, true, cancellation);
+        }
         public async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages)
         {
             return await SendChatCompletionAsync(apiKey, model, messages, includeTools: true, maxTokens: 512, temperature: 0.7f).ConfigureAwait(false);
@@ -236,7 +245,7 @@ namespace DeepseekTheOrca
             return await SendChatCompletionAsync(apiKey, model, baseUrl, includeThinkingToggle, messages, tools, maxTokens, temperature, providerId, openAiOrganization, openAiProject, proxyUrl, OrcaLlmModelRole.Fallback).ConfigureAwait(false);
         }
 
-        private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, string baseUrl, bool includeThinkingToggle, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, string providerId, string openAiOrganization, string openAiProject, string proxyUrl, OrcaLlmModelRole role)
+        private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, string baseUrl, bool includeThinkingToggle, List<LlmChatMessage> messages, List<Dictionary<string, object>> tools, int maxTokens, float temperature, string providerId, string openAiOrganization, string openAiProject, string proxyUrl, OrcaLlmModelRole role, bool background = false, CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(apiKey))
             {
@@ -253,11 +262,12 @@ namespace DeepseekTheOrca
                 return LlmChatResponse.Failure("Base URL is empty.");
             }
 
-            return await LlmRequestScheduler.RunAsync("chat completion " + role, async delegate
+            int attempts = background ? 1 : MaxTransportAttempts;
+            return await LlmRequestScheduler.RunAsync((background ? "novel " : "chat completion ") + role, async delegate
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
-                for (int attempt = 1; attempt <= MaxTransportAttempts; attempt++)
+                for (int attempt = 1; attempt <= attempts; attempt++)
                 {
                     using (HttpClient client = CreateHttpClient(proxyUrl))
                     {
@@ -280,7 +290,7 @@ namespace DeepseekTheOrca
                             }
                             catch (TaskCanceledException)
                             {
-                                if (attempt < MaxTransportAttempts)
+                                if (attempt < attempts)
                                 {
                                     LlmConnectionTester.ReportFailedCall("Connection timed out on attempt " + attempt + "; retrying once.");
                                     await Task.Delay(250).ConfigureAwait(false);
@@ -293,7 +303,7 @@ namespace DeepseekTheOrca
                             catch (Exception ex)
                             {
                                 stopwatch.Stop();
-                                if (IsTransientTransportException(ex) && attempt < MaxTransportAttempts)
+                                if (IsTransientTransportException(ex) && attempt < attempts)
                                 {
                                     LlmConnectionTester.ReportFailedCall(TransientRetryMessage(ex, attempt));
                                     await Task.Delay(250).ConfigureAwait(false);
@@ -335,7 +345,7 @@ namespace DeepseekTheOrca
                 }
 
                 return LlmChatResponse.Failure("Transport failed after retry.");
-            }).ConfigureAwait(false);
+            }, background, cancellation).ConfigureAwait(false);
         }
 
         private async Task SendStreamingChatCompletionAsync(

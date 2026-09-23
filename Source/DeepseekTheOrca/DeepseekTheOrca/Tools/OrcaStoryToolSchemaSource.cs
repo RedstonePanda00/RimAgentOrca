@@ -57,6 +57,7 @@ namespace DeepseekTheOrca
             // source of truth for which tools the cycle planner may call.
             foreach (AiToolDefinition definition in AiStoryToolRegistry.StorytellerPlanningDefinitions)
             {
+                if (!AiStoryToolRegistry.IsAllowedForCurrentPersona(definition)) continue;
                 tools.Add(LlmToolSchemas.Function(definition.Name, definition.Description, definition.parameters ?? LlmToolSchemas.EmptyParameters()));
             }
         }

@@ -16,6 +16,13 @@ namespace DeepseekTheOrca
         private static string pendingBundleId = "";
         private static int lastPrewarmTick = -MaxSemanticPrewarmIntervalTicks;
 
+        public static void ResetRuntime()
+        {
+            pendingBundleEmbedding = null;
+            pendingBundleId = "";
+            lastPrewarmTick = -MaxSemanticPrewarmIntervalTicks;
+        }
+
         public static HashSet<string> SelectToolNames(string query, OrcaLlmModelRole role, bool allowExecutionTools)
         {
             List<OrcaToolBundleDef> bundles = BundlesForRole(role);

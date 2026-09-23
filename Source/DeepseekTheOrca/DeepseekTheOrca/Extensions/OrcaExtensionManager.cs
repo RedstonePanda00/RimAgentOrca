@@ -13,6 +13,10 @@ namespace DeepseekTheOrca
         private const float MaxSingleExtraWidth = 360f;
         private static OrcaExtensionRegistry cachedRegistry;
         private static bool registryDirty = true;
+        public static List<Func<INovelSource>> NovelSourceFactories()
+        {
+            return BuildRegistry().novelSources.Select(entry => entry.handler).ToList();
+        }
 
         public static List<OrcaExtensionDef> AllExtensionDefs()
         {

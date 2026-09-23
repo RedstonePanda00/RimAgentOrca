@@ -81,7 +81,7 @@ namespace DeepseekTheOrca
             statusText = "DTO_OrcaChatWaiting".Translate();
             pendingStage = OrcaChatRequestStage.Chat;
             thinkingState.Ensure(transcript.DisplayLines, OrcaChatPromptBuilder.CurrentPersonaSpeakerName(), MarkConversationChanged);
-            pendingRequest = client.SendPlainChatCompletionAsync(settings, transcript.SnapshotMessages(), pendingRequestRole);
+            pendingRequest = client.SendPlainChatCompletionAsync(settings, SnapshotMessagesForRole(pendingRequestRole), pendingRequestRole);
             NotifyAgentPhase(OrcaChatRoleUtility.PhaseForRole(pendingRequestRole), pendingRequestRole, false, "streaming failed; fallback request sent");
             AddProcess("Streaming response failed; retrying once without streaming: " + error);
             AddProcess("Fallback request sent to " + OrcaChatRoleUtility.ModelRoleLabel(pendingRequestRole) + " model: " + settings.ModelForRole(pendingRequestRole));
@@ -204,6 +204,8 @@ namespace DeepseekTheOrca
                 ? OrcaChatHistoryMaintenance.SnapshotForFinalDialogue(transcript.Messages)
                 : transcript.SnapshotMessages();
             ApplySelectedSkillPromptForRole(messages, role);
+            string mood = GeminiHissService.RuntimePrompt();
+            if (!mood.NullOrEmpty()) messages.Add(LlmChatMessage.System(mood));
             return messages;
         }
 

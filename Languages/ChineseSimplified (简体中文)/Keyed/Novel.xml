@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_NovelName>殖民地小说</DTO_NovelName>
+  <DTO_NovelDescription>由当前叙事者根据殖民地的实际记录续写小说，沿用对话模型。默认关闭。</DTO_NovelDescription>
+  <DTO_NovelPeriod>章节周期（游戏日）</DTO_NovelPeriod>
+  <DTO_NovelLength>每章目标篇幅（中文按字数，其他语言按词数）</DTO_NovelLength>
+  <DTO_NovelLogInterval>高级：日志扫描间隔（tick，默认 250）</DTO_NovelLogInterval>
+  <DTO_NovelStateInterval>高级：状态扫描间隔（tick，默认 2500）</DTO_NovelStateInterval>
+  <DTO_NovelSettingsHelp>本地采集不调用模型。开启后自动生成前言，此后通常每章调用两次。失败后暂停，需手动恢复。不设固定输入 Token 上限。周期调整影响下一个尚未划分的时间段；篇幅调整影响尚未开始生成的章节。</DTO_NovelSettingsHelp>
+  <DTO_NovelOpen>阅读殖民地小说</DTO_NovelOpen>
+  <DTO_NovelOff>已关闭采集和写作</DTO_NovelOff>
+  <DTO_NovelCollecting>正在采集素材／补建人物档案</DTO_NovelCollecting>
+  <DTO_NovelPaused>写作已暂停</DTO_NovelPaused>
+  <DTO_NovelWaiting>等待下一章</DTO_NovelWaiting>
+  <DTO_NovelWriting>正在撰写章节</DTO_NovelWriting>
+  <DTO_NovelOrganizing>正在整理章节素材</DTO_NovelOrganizing>
+  <DTO_NovelCounts>已完成 {0} 章 · {1} 条素材</DTO_NovelCounts>
+  <DTO_NovelResume>恢复／重试</DTO_NovelResume>
+  <DTO_NovelPreface>前言</DTO_NovelPreface>
+  <DTO_NovelChapter>第 {0} 章</DTO_NovelChapter>
+  <DTO_NovelRange>游戏第 {0:0.##}–{1:0.##} 日</DTO_NovelRange>
+  <DTO_NovelEmpty>在 RimAgent 的插件设置中启用“殖民地小说”，即可开始采集并生成前言。</DTO_NovelEmpty>
+  <DTO_NovelPending>本章尚未完成，正在等待生成。</DTO_NovelPending>
+  <DTO_NovelError>写作已停止，素材和已成功的步骤均已保留：</DTO_NovelError>
+  <DTO_NovelSourceWarnings>部分素材来源暂时无法读取：</DTO_NovelSourceWarnings>
+  <DTO_NovelExportTxt>导出 TXT</DTO_NovelExportTxt>
+  <DTO_NovelExportMd>导出 Markdown</DTO_NovelExportMd>
+  <DTO_NovelNoModel>尚未配置可用的对话模型。配置后，请手动恢复写作。</DTO_NovelNoModel>
+  <DTO_NovelConnectionChanged>本章原先使用的模型连接已被关闭、删除或更改了接口地址。请恢复该连接后继续；不会自动改用其他连接。</DTO_NovelConnectionChanged>
+  <DTO_NovelInterrupted>保存此存档时有模型请求尚未返回，无法确认其最终结果。请手动恢复，从存档中最后成功的步骤继续。</DTO_NovelInterrupted>
+  <DTO_NovelDiagnostics>诊断信息（{0}）</DTO_NovelDiagnostics>
+  <DTO_NovelDiagnosticsTitle>素材采集与生成诊断</DTO_NovelDiagnosticsTitle>
+  <DTO_NovelNoDiagnostics>没有素材来源警告。</DTO_NovelNoDiagnostics>
+  <DTO_NovelPawnCacheMissing>立即补采后，人物档案仍不完整，已暂停写作。请查看诊断信息，处理后点击恢复再次尝试。</DTO_NovelPawnCacheMissing>
+  <DTO_NovelRegenerate>重新生成最新一段</DTO_NovelRegenerate>
+  <DTO_NovelRegenerating>正在重新生成最新一段，旧文本仍保留</DTO_NovelRegenerating>
+  <DTO_NovelRegenerateHelp>使用当前人格、对话模型、篇幅和小说 skill，在原有时间范围内重新生成《{0}》。正常会重新调用模型两次。新文本成功前仍可阅读旧文本；成功后会清除并重建后续未完成的提纲。插件须已启用，且没有正在执行的请求或重生成任务。</DTO_NovelRegenerateHelp>
+  <DTO_NovelRegenerateStarted>已安排重新生成，新文本成功前旧文本仍保留。</DTO_NovelRegenerateStarted>
+  <DTO_NovelRegenerateUnavailable>需要先启用插件、完成至少一段，并等待当前请求结束。同一时间只能执行一个重生成任务。</DTO_NovelRegenerateUnavailable>
+</LanguageData>

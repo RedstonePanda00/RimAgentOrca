@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <DeepseekTheOrca.OrcaExtensionDef>
+    <defName>DTO_Extension_Novel</defName>
+    <label>DTO_NovelName</label>
+    <description>DTO_NovelDescription</description>
+    <author>RimAgent</author>
+    <category>DTO_NovelName</category>
+    <capabilities><li>novel_source</li><li>novel_writing</li></capabilities>
+    <permissions><li>read_colony_observations</li><li>generate_novel</li><li>export_novel</li></permissions>
+    <workerClass>DeepseekTheOrca.NovelExtensionWorker</workerClass>
+    <settingsWorkerClass>DeepseekTheOrca.NovelSettingsWorker</settingsWorkerClass>
+    <defaultEnabled>false</defaultEnabled>
+    <order>30</order>
+  </DeepseekTheOrca.OrcaExtensionDef>
+</Defs>

@@ -171,7 +171,7 @@ namespace DeepseekTheOrca
             }
 
             List<string> parts = new List<string>();
-            foreach (SkillRecord skill in pawn.skills.skills.OrderByDescending(skill => skill.Level))
+            foreach (SkillRecord skill in pawn.skills.skills.Where(skill => skill != null && skill.def != null).OrderByDescending(skill => skill.Level))
             {
                 if (skill == null || skill.def == null)
                 {

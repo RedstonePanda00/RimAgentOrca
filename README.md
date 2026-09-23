@@ -1,6 +1,6 @@
-# AI Storyteller Expand: Deepseek The Orca
+# RimAgent
 
-Deepseek The Orca is a RimWorld 1.6 mod that adds an LLM-assisted storyteller, Orca Deepseek. Orca can observe colony state, chat with the player, and choose story incidents when an external model provider is configured.
+RimAgent is a RimWorld 1.6 agent and storyteller mod. Its built-in personas, Orca Deepseek and Gemini The Cat (「Google」哈Gemi), can observe colony state, chat with the player, and plan story incidents using any configured model provider. The historical `DeepseekTheOrca` namespace and package ID remain implementation identifiers.
 
 The mod still includes XML storyteller comps for offline play. Without a configured LLM connection, the AI decision layer stays silent and RimWorld falls back to the XML-defined storyteller behavior.
 
@@ -9,7 +9,8 @@ If you like my mod, please make sure to give me a Star!
 ## Features
 
 - Adds the `Orca Deepseek` storyteller for RimWorld 1.6.
-- Supports LLM connections for DeepSeek, OpenAI, OpenRouter, and custom OpenAI-compatible `/chat/completions` APIs.
+- Supports default connections for DeepSeek, OpenAI and Google Gemini, plus custom OpenAI-compatible `/chat/completions` APIs (including OpenRouter).
+- Gemini is normally a lazy, gentle storyteller. His exclusive `gemini_hiss` tool replaces the current plan with a short punitive sequence when the model judges the player's chat offensive. Defaults: 15 budget, 5 events, an immediate first event, then 1–2 game hours between events. After the sequence he sulks for 48 game hours; the model still replies, but in character refuses meaningful conversation. Parameters are available only through Gemini's entry in the persona manager. Switching persona resets his mood but leaves an already scheduled plan in place. Hiss requires AI planning, a decision model and the RimAgent storyteller; all personas share the same offline fallback.
 - Lets different model roles use different configured models: fallback, controller, decision, dialogue, tool, vision, and web search.
 - Provides an in-game Orca chat window with optional tool calls.
 - Can expose colony summary, recent letters, pawns, pawn details, available incidents, and incident execution tools to Orca.
@@ -17,6 +18,7 @@ If you like my mod, please make sure to give me a Star!
 - Optional HTTP MCP tool discovery for player-configured external tool servers.
 - Optional RimTalk integration for recent chat history and proactive dialogue hooks when RimTalk is active.
 - Includes English and Simplified Chinese localization.
+- Optional built-in Colony novel plugin: the current narrator writes a preface and continuing chapters from locally collected game records. Defaults to one approximately 2,000-character/word chapter per three game days, using the dialogue model in two steps. Includes save-bound progress, a reader, TXT/Markdown export and extensible material sources without Harmony. See [the novel guide](Docs/Novel.md).
 
 ## Requirements
 
@@ -28,15 +30,15 @@ If you like my mod, please make sure to give me a Star!
 ## Installation
 
 1. Place this repository folder in your RimWorld `Mods` directory.
-2. Enable `AI Storyteller Expand: Deepseek The Orca`.
+2. Enable `RimAgent`.
 3. Start RimWorld and select `Orca Deepseek` as the storyteller.
 
 ## Configuration
 
-Open RimWorld mod settings for `AI Storyteller Expand: Deepseek The Orca`.
+Open RimWorld mod settings for `RimAgent`.
 
 1. Add an LLM connection.
-2. Select a provider: DeepSeek, OpenAI, OpenRouter, or Custom OpenAI-compatible.
+2. Select a provider: DeepSeek, OpenAI, Google Gemini, or Custom OpenAI-compatible.
 3. Enter the provider API key.
 4. Refresh available models.
 5. Select models for the roles you want to use.

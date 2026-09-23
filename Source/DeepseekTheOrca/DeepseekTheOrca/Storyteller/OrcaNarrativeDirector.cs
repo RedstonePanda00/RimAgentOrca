@@ -50,6 +50,16 @@ namespace DeepseekTheOrca
         private static bool defaultsRegistered;
         private static int lastDispatchTick = -999999;
 
+        public static void Reset()
+        {
+            pendingBeats.Clear();
+            lastBeatTicksByKey.Clear();
+            sources.RemoveAll(source => source is ColonyObservationNarrativeSource);
+            sources.Add(new ColonyObservationNarrativeSource());
+            defaultsRegistered = true;
+            lastDispatchTick = -999999;
+        }
+
         public static void RegisterSource(IOrcaNarrativeBeatSource source)
         {
             EnsureDefaultsRegistered();
@@ -109,14 +119,14 @@ namespace DeepseekTheOrca
             return EnqueueBeat(beat);
         }
 
-        public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target)
+        public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target, OrcaNarrativeHistoryRecord history = null)
         {
             if (plan == null || firingIncident == null || firingIncident.def == null)
             {
                 return;
             }
 
-            OrcaNarrativeHistoryMemory.BeginIncident(firingIncident.def.defName, firingIncident.parms == null ? 0f : firingIncident.parms.points, target as Map);
+            OrcaNarrativeHistoryMemory.CommitIncident(history);
         }
 
         public static void Tick()

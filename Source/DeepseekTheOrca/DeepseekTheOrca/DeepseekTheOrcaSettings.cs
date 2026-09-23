@@ -233,6 +233,8 @@ namespace DeepseekTheOrca
         public int maxToolResultEstimatedTokens = 900;
         public int maxToolCalls = 8;
         public float planningMtbDays = 4.8f;
+        public GeminiHissSettings geminiHissSettings = new GeminiHissSettings();
+        public NovelSettings novelSettings = new NovelSettings();
         public float chatWindowAlpha = 0.82f;
 
         public bool HasConfiguredLlm
@@ -505,6 +507,10 @@ namespace DeepseekTheOrca
 
         public override void ExposeData()
         {
+            Scribe_Deep.Look(ref novelSettings, "novelSettings");
+            if (novelSettings == null) novelSettings = new NovelSettings();
+            Scribe_Deep.Look(ref geminiHissSettings, "geminiHissSettings");
+            if (geminiHissSettings == null) geminiHissSettings = new GeminiHissSettings();
             Scribe_Values.Look(ref enableAiPlanning, "enableAiPlanning", defaultValue: false);
             Scribe_Values.Look(ref debugLogging, "debugLogging", defaultValue: false);
             Scribe_Values.Look(ref enableWebSearch, "enableWebSearch", defaultValue: false);

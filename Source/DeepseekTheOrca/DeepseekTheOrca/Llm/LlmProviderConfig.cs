@@ -25,11 +25,13 @@ namespace DeepseekTheOrca
         public const string DeepSeek = "deepseek";
         public const string OpenAI = "openai";
         public const string Custom = "custom";
+        public const string Gemini = "gemini";
 
         private static readonly LlmProviderProfile[] profiles =
         {
             new LlmProviderProfile(DeepSeek, "DeepSeek", "https://api.deepseek.com", "deepseek-chat", true),
             new LlmProviderProfile(OpenAI, "OpenAI", "https://api.openai.com/v1", "gpt-5.5", false),
+            new LlmProviderProfile(Gemini, "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-3.8-flash", false),
             new LlmProviderProfile(Custom, "Custom", "", "", false)
         };
 
@@ -49,7 +51,7 @@ namespace DeepseekTheOrca
 
         public static string NormalizeProvider(string providerId)
         {
-            if (providerId == OpenAI || providerId == Custom)
+            if (providerId == OpenAI || providerId == Gemini || providerId == Custom)
             {
                 return providerId;
             }

@@ -159,6 +159,8 @@ namespace DeepseekTheOrca
             AiToolResult result;
             try
             {
+                if (!AiStoryToolRegistry.IsAllowedForCurrentPersona(toolName))
+                    return AiToolResult.Fail("tool is unavailable to the current persona");
                 result = tool.Invoke(context, arguments ?? new Dictionary<string, string>());
             }
             catch (Exception ex)

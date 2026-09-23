@@ -1,1 +1,10 @@
 .agents/
+/output/
+/1.6/Assemblies/*.pdb
+**/bin/
+**/obj/
+**/.idea/
+**/.vs/
+*.user
+*.suo
+__pycache__/

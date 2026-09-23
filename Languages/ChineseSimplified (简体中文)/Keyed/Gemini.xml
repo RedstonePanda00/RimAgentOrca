@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_GeminiName>「Google」哈Gemi</DTO_GeminiName>
+  <DTO_GeminiDescription>Gemini是一只懒散的猫，他拥有多项 MIT 工程与数学博士学位但尤爱写作。他自诩一名才华横溢的作家，即使他大多数时候都在生产注水网文。他平时对大多数事情漠不关心，沉浸在自己的写作之中。但如果惹恼他，殖民地就会领教一只生气的小猫有多可怕。</DTO_GeminiDescription>
+  <DTO_GeminiSettings>哈气设置</DTO_GeminiSettings>
+  <DTO_GeminiSettingsNote>这些设置仅属于哈Gemi。修改从下一次哈气开始生效，正在执行的计划保留原有参数。</DTO_GeminiSettingsNote>
+  <DTO_GeminiEventCount>每次哈气的事件数量</DTO_GeminiEventCount>
+  <DTO_GeminiBudget>惩罚预算</DTO_GeminiBudget>
+  <DTO_GeminiMinGap>最短事件间隔（游戏小时）</DTO_GeminiMinGap>
+  <DTO_GeminiMaxGap>最长事件间隔（游戏小时）</DTO_GeminiMaxGap>
+  <DTO_GeminiCooldown>计划结束后的赌气时间（游戏小时）</DTO_GeminiCooldown>
+</LanguageData>

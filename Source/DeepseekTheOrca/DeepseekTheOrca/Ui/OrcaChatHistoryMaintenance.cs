@@ -176,7 +176,8 @@ namespace DeepseekTheOrca
                 {
                     id = call.id,
                     name = call.name,
-                    argumentsJson = call.argumentsJson
+                    argumentsJson = call.argumentsJson,
+                    extraContent = call.extraContent == null ? null : new Dictionary<string, object>(call.extraContent)
                 });
             }
 

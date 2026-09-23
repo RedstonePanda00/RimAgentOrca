@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_GeminiName>Gemini The Cat</DTO_GeminiName>
+  <DTO_GeminiDescription>Gemini is a lazy cat with multiple MIT doctorates in engineering and mathematics, but writing is his true passion. He considers himself a brilliantly gifted author, even though he mostly churns out web fiction padded with filler. Usually indifferent to most things, he loses himself in his writing. But anger him, and the colony will learn just how terrifying an angry little cat can be.</DTO_GeminiDescription>
+  <DTO_GeminiSettings>Hiss settings</DTO_GeminiSettings>
+  <DTO_GeminiSettingsNote>These settings belong only to Gemini. Changes apply to the next hiss; the current sequence keeps its original settings.</DTO_GeminiSettingsNote>
+  <DTO_GeminiEventCount>Events per hiss</DTO_GeminiEventCount>
+  <DTO_GeminiBudget>Punishment budget</DTO_GeminiBudget>
+  <DTO_GeminiMinGap>Minimum interval (game hours)</DTO_GeminiMinGap>
+  <DTO_GeminiMaxGap>Maximum interval (game hours)</DTO_GeminiMaxGap>
+  <DTO_GeminiCooldown>Sulking after the sequence (game hours)</DTO_GeminiCooldown>
+</LanguageData>

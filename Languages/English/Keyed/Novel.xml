@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_NovelName>Colony novel</DTO_NovelName>
+  <DTO_NovelDescription>Your current narrator writes a continuing novel from recorded colony events. Uses the dialogue model. Disabled by default.</DTO_NovelDescription>
+  <DTO_NovelPeriod>Days per chapter (game days)</DTO_NovelPeriod>
+  <DTO_NovelLength>Approximate length per chapter (characters in Chinese; words otherwise)</DTO_NovelLength>
+  <DTO_NovelLogInterval>Advanced: log scan interval (ticks; default 250)</DTO_NovelLogInterval>
+  <DTO_NovelStateInterval>Advanced: state scan interval (ticks; default 2500)</DTO_NovelStateInterval>
+  <DTO_NovelSettingsHelp>Local collection makes no model calls. Enabling generates a preface, then normally two calls per chapter. Failures pause until manually resumed. No fixed input token cap. Period changes affect the next unassigned interval; length changes affect the next chapter that has not started.</DTO_NovelSettingsHelp>
+  <DTO_NovelOpen>Read colony novel</DTO_NovelOpen>
+  <DTO_NovelOff>Collection and writing disabled</DTO_NovelOff>
+  <DTO_NovelCollecting>Collecting material / rebuilding character dossiers</DTO_NovelCollecting>
+  <DTO_NovelPaused>Writing paused</DTO_NovelPaused>
+  <DTO_NovelWaiting>Waiting for the next chapter</DTO_NovelWaiting>
+  <DTO_NovelWriting>Writing a chapter</DTO_NovelWriting>
+  <DTO_NovelOrganizing>Organizing chapter material</DTO_NovelOrganizing>
+  <DTO_NovelCounts>{0} completed chapters · {1} source records</DTO_NovelCounts>
+  <DTO_NovelResume>Resume / retry</DTO_NovelResume>
+  <DTO_NovelPreface>Preface</DTO_NovelPreface>
+  <DTO_NovelChapter>Chapter {0}</DTO_NovelChapter>
+  <DTO_NovelRange>Game days {0:0.##}–{1:0.##}</DTO_NovelRange>
+  <DTO_NovelEmpty>Enable Colony novel in RimAgent's plugin settings to start collecting material and generate a preface.</DTO_NovelEmpty>
+  <DTO_NovelPending>This chapter is waiting to be completed.</DTO_NovelPending>
+  <DTO_NovelError>Writing stopped; the material and successful steps have been retained:</DTO_NovelError>
+  <DTO_NovelSourceWarnings>Some material sources could not be read:</DTO_NovelSourceWarnings>
+  <DTO_NovelExportTxt>Export TXT</DTO_NovelExportTxt>
+  <DTO_NovelExportMd>Export Markdown</DTO_NovelExportMd>
+  <DTO_NovelNoModel>No usable dialogue model is configured. Configure it, then resume writing.</DTO_NovelNoModel>
+  <DTO_NovelConnectionChanged>This chapter's original model connection is disabled, missing or has a different endpoint. Restore that connection, then resume. A different connection will not be used automatically.</DTO_NovelConnectionChanged>
+  <DTO_NovelInterrupted>A request was running when this save was created. Its completion is unknown. Resume manually to continue from the last saved successful step.</DTO_NovelInterrupted>
+  <DTO_NovelDiagnostics>Diagnostics ({0})</DTO_NovelDiagnostics>
+  <DTO_NovelDiagnosticsTitle>Collection and generation diagnostics</DTO_NovelDiagnosticsTitle>
+  <DTO_NovelNoDiagnostics>No source warnings.</DTO_NovelNoDiagnostics>
+  <DTO_NovelPawnCacheMissing>Character dossiers are still incomplete after an immediate scan. Writing is paused. See Diagnostics for details, then resume to try again.</DTO_NovelPawnCacheMissing>
+  <DTO_NovelRegenerate>Regenerate latest section</DTO_NovelRegenerate>
+  <DTO_NovelRegenerating>Regenerating the latest section; previous text retained</DTO_NovelRegenerating>
+  <DTO_NovelRegenerateHelp>Regenerate “{0}” using the current narrator, dialogue model, length and writing skill, within its original time range. Normally makes two new model calls. The old text remains readable until success. Later unfinished outlines will then be discarded and rebuilt. Available while the plugin is enabled and no request or regeneration is in progress.</DTO_NovelRegenerateHelp>
+  <DTO_NovelRegenerateStarted>Regeneration queued. The old text remains available until the replacement succeeds.</DTO_NovelRegenerateStarted>
+  <DTO_NovelRegenerateUnavailable>Enable the plugin and wait for active requests to finish. A completed section is required, and only one regeneration may run at a time.</DTO_NovelRegenerateUnavailable>
+</LanguageData>

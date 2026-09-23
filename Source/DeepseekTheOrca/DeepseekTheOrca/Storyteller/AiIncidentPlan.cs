@@ -68,6 +68,9 @@ namespace DeepseekTheOrca
     {
         public const int DefaultCycleBudget = 3;
 
+        public Map targetMap;
+        public string planId = "";
+        public bool geminiHiss;
         public int cycleStartTick;
         public int cycleEndTick;
         public int cycleBudget = DefaultCycleBudget;
@@ -111,6 +114,9 @@ namespace DeepseekTheOrca
 
         public void ExposeData()
         {
+            Scribe_References.Look(ref targetMap, "targetMap");
+            Scribe_Values.Look(ref planId, "planId", "");
+            Scribe_Values.Look(ref geminiHiss, "geminiHiss", false);
             Scribe_Values.Look(ref cycleStartTick, "cycleStartTick");
             Scribe_Values.Look(ref cycleEndTick, "cycleEndTick");
             Scribe_Values.Look(ref cycleBudget, "cycleBudget", DefaultCycleBudget);

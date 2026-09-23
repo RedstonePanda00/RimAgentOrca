@@ -10,7 +10,8 @@ namespace DeepseekTheOrca
     public static class LlmRequestScheduler
     {
         private const int MaxConcurrentRequests = 2;
-        private static readonly SemaphoreSlim gate = new SemaphoreSlim(MaxConcurrentRequests, MaxConcurrentRequests);
+        private static readonly Queue<WaitingRequest> normalQueue = new Queue<WaitingRequest>();
+        private static readonly Queue<WaitingRequest> backgroundQueue = new Queue<WaitingRequest>();
         private static readonly object syncRoot = new object();
         private static readonly Queue<string> pendingDebugMessages = new Queue<string>();
         private static readonly List<string> activeLabels = new List<string>();
@@ -43,14 +44,20 @@ namespace DeepseekTheOrca
             get { return !ActiveLabel.NullOrEmpty(); }
         }
 
-        public static async Task<T> RunAsync<T>(string label, Func<Task<T>> action)
+        // Keep the original signature for already compiled extensions.
+        public static Task<T> RunAsync<T>(string label, Func<Task<T>> action)
+        {
+            return RunAsync(label, action, false, CancellationToken.None);
+        }
+
+        public static async Task<T> RunAsync<T>(string label, Func<Task<T>> action, bool background, CancellationToken cancellation = default(CancellationToken))
         {
             if (action == null)
             {
                 throw new ArgumentNullException("action");
             }
 
-            using (await EnterAsync(label).ConfigureAwait(false))
+            using (await EnterAsync(label, background, cancellation).ConfigureAwait(false))
             {
                 return await action().ConfigureAwait(false);
             }
@@ -69,26 +76,45 @@ namespace DeepseekTheOrca
             }
         }
 
-        private static async Task<IDisposable> EnterAsync(string label)
+        private static async Task<IDisposable> EnterAsync(string label, bool background = false, CancellationToken cancellation = default(CancellationToken))
         {
             label = label.NullOrEmpty() ? "LLM request" : label;
-            Stopwatch waitTimer = Stopwatch.StartNew();
+            var request = new WaitingRequest { label = label, cancellation = cancellation };
             lock (syncRoot)
             {
                 waitingCount++;
+                (background ? backgroundQueue : normalQueue).Enqueue(request);
+                AdmitWaiting();
             }
-
-            await gate.WaitAsync().ConfigureAwait(false);
-
-            waitTimer.Stop();
-            lock (syncRoot)
+            using (cancellation.Register(() =>
             {
-                waitingCount--;
-                activeLabels.Add(label);
-            }
+                lock (syncRoot) { if (!request.admitted) request.ready.TrySetCanceled(); }
+            }))
+                return await request.ready.Task.ConfigureAwait(false);
+        }
 
-            Debug("Started " + label + WaitSuffix(waitTimer.ElapsedMilliseconds) + ".");
-            return new Lease(label);
+        private sealed class WaitingRequest
+        {
+            public string label;
+            public bool admitted;
+            public CancellationToken cancellation;
+            public readonly Stopwatch timer = Stopwatch.StartNew();
+            public readonly TaskCompletionSource<IDisposable> ready = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        private static void AdmitWaiting()
+        {
+            while (activeLabels.Count < MaxConcurrentRequests && (normalQueue.Count > 0 || backgroundQueue.Count > 0))
+            {
+                var request = normalQueue.Count > 0 ? normalQueue.Dequeue() : backgroundQueue.Dequeue();
+                waitingCount--;
+                if (request.cancellation.IsCancellationRequested || request.ready.Task.IsCanceled)
+                { request.ready.TrySetCanceled(); continue; }
+                request.admitted = true;
+                activeLabels.Add(request.label);
+                Debug("Started " + request.label + WaitSuffix(request.timer.ElapsedMilliseconds) + ".");
+                request.ready.SetResult(new Lease(request.label));
+            }
         }
 
         private static string WaitSuffix(long waitMs)
@@ -101,10 +127,10 @@ namespace DeepseekTheOrca
             lock (syncRoot)
             {
                 activeLabels.Remove(label);
+                AdmitWaiting();
             }
 
             Debug("Finished " + label + ".");
-            gate.Release();
         }
 
         private static void Debug(string message)

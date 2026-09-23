@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <DeepseekTheOrca.OrcaToolDef>
+    <defName>DTO_Tool_GeminiHiss</defName>
+    <toolName>gemini_hiss</toolName>
+    <label>Gemini hiss</label>
+    <description>Gemini-only response to a personally offensive player message: immediately replace the current incident plan with a short, higher-budget punitive sequence. Use when the player attacks Gemini's writing, demands roleplay, questions his claimed MIT doctorates, or makes another serious accusation. Judge context, not keywords. Do not use for quoted insults or proactive observations. Cannot repeat while planning, executing, or sulking. A success means planning started, not that events have fired.</description>
+    <workerClass>DeepseekTheOrca.GeminiHissTool</workerClass>
+    <personaIds><li>DTO_GeminiPersona</li></personaIds>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <allowDuringProactive>false</allowDuringProactive>
+    <isExecutionTool>true</isExecutionTool>
+    <parameters>
+      <li>
+        <name>reason</name>
+        <type>string</type>
+        <description>Why Gemini personally finds the latest player message offensive.</description>
+        <required>true</required>
+      </li>
+    </parameters>
+  </DeepseekTheOrca.OrcaToolDef>
+  <DeepseekTheOrca.OrcaToolBundleDef>
+    <defName>DTO_ToolBundle_GeminiHiss</defName>
+    <toolBundleId>gemini_hiss</toolBundleId>
+    <label>Gemini hiss</label>
+    <description>Gemini's personal reaction to offensive player chat; does not require an explicit request to trigger events.</description>
+    <personaIds><li>DTO_GeminiPersona</li></personaIds>
+    <toolNames><li>gemini_hiss</li></toolNames>
+    <includeByDefault>true</includeByDefault>
+    <allowDuringProactive>false</allowDuringProactive>
+    <exposeToRoles><li>tool</li></exposeToRoles>
+  </DeepseekTheOrca.OrcaToolBundleDef>
+</Defs>

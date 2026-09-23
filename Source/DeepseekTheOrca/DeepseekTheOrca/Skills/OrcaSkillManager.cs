@@ -11,6 +11,7 @@ namespace DeepseekTheOrca
     {
         public const string LocalPrefix = "local:";
         public const string SkillPrefix = "skill:";
+        public const string NovelWritingSkillName = "rimagent-novel-writing";
         private const int MaxReferenceFileBytes = 65536;
         private const int MaxReferenceSnippetsPerSkill = 3;
         private const int MaxReferenceSnippetChars = 900;
@@ -47,6 +48,16 @@ namespace DeepseekTheOrca
         {
             return AllSkills().Where(profile => profile.enabled).OrderBy(profile => profile.label).ToList();
         }
+
+        // Dedicated novel instructions are explicitly loaded by the novel pipeline, not chat routing.
+        public static bool IsNovelWritingSkill(OrcaSkillProfile skill)
+        { return skill != null && skill.skillName == NovelWritingSkillName; }
+
+        public static OrcaSkillProfile NovelWritingSkill()
+        { return AllSkills().FirstOrDefault(skill => IsNovelWritingSkill(skill) && skill.readOnly && skill.sourceMod == "Core"); }
+
+        private static List<OrcaSkillProfile> EnabledChatSkills()
+        { return EnabledSkills().Where(skill => !IsNovelWritingSkill(skill)).ToList(); }
 
         public static OrcaSkillProfile CreateLocal()
         {

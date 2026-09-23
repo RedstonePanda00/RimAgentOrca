@@ -33,6 +33,13 @@ namespace DeepseekTheOrca
         private static readonly List<IOrcaProactiveConversationSource> sources = new List<IOrcaProactiveConversationSource>();
         private static bool defaultsRegistered;
 
+        public static void Reset()
+        {
+            pendingRequests.Clear();
+            sources.RemoveAll(source => source is OrcaNarrativeDirectorSource || source is RimtalkProactiveConversationSource);
+            defaultsRegistered = false;
+        }
+
         public static bool AmbientEnabled
         {
             get { return OrcaExtensionManager.ExtensionEnabled(ExtensionDefName); }
@@ -62,9 +69,9 @@ namespace DeepseekTheOrca
             pendingRequests.Enqueue(request);
         }
 
-        public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target)
+        public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target, OrcaNarrativeHistoryRecord history = null)
         {
-            OrcaNarrativeDirector.NotifyStorytellerIncidentScheduled(plan, firingIncident, target);
+            OrcaNarrativeDirector.NotifyStorytellerIncidentScheduled(plan, firingIncident, target, history);
         }
 
         public static void Tick()

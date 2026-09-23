@@ -11,6 +11,18 @@ namespace DeepseekTheOrca
         private static int nextCycleStartTick = -1;
         private static string lastStatus = "";
 
+        public static void Reset()
+        {
+            currentCycle = null;
+            nextCycleStartTick = -1;
+            lastStatus = "";
+        }
+
+        public static bool IsPendingPlan(string id)
+        {
+            return currentCycle != null && currentCycle.planId == id && currentCycle.HasPendingIncidents;
+        }
+
         public static string LastStatus
         {
             get { return lastStatus; }
@@ -156,12 +168,14 @@ namespace DeepseekTheOrca
             }
 
             currentCycle.Normalize();
+            if (currentCycle.HasPendingIncidents) return false;
+
             if (now >= currentCycle.cycleEndTick)
             {
                 return true;
             }
 
-            return currentCycle.targetSeed != context.target.ConstantRandSeed;
+            return false;
         }
 
         public static void StoreCyclePlan(OrcaIncidentCyclePlan plan, AiToolContext context, float cycleDays)
@@ -176,7 +190,8 @@ namespace DeepseekTheOrca
             plan.Normalize();
             plan.cycleStartTick = plan.cycleStartTick <= 0 ? now : plan.cycleStartTick;
             plan.cycleEndTick = plan.cycleEndTick <= plan.cycleStartTick ? plan.cycleStartTick + cycleTicks : plan.cycleEndTick;
-            plan.cycleBudget = OrcaIncidentCyclePlan.DefaultCycleBudget;
+            if (plan.planId.NullOrEmpty()) plan.planId = System.Guid.NewGuid().ToString("N");
+            plan.targetMap = context.Map;
             plan.targetSeed = context.target.ConstantRandSeed;
 
             for (int i = 0; i < plan.incidents.Count; i++)
@@ -217,9 +232,12 @@ namespace DeepseekTheOrca
 
             currentCycle.Normalize();
             int now = Find.TickManager.TicksGame;
-            Map map = Find.CurrentMap;
-            if (map == null)
+            Map map = currentCycle.targetMap;
+            if (map == null || !Find.Maps.Contains(map))
             {
+                SetStatus("scheduled target map is unavailable; pending events cancelled");
+                currentCycle = null;
+                nextCycleStartTick = now;
                 return;
             }
 
@@ -256,8 +274,9 @@ namespace DeepseekTheOrca
                     + incident.incidentDefName + " | " + message + "\n" + traceText);
             }
 
-            if (now >= currentCycle.cycleEndTick && !currentCycle.HasPendingIncidents)
+            if ((currentCycle.geminiHiss || now >= currentCycle.cycleEndTick) && !currentCycle.HasPendingIncidents)
             {
+                if (currentCycle.geminiHiss) nextCycleStartTick = now;
                 currentCycle = null;
             }
         }

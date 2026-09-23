@@ -100,7 +100,7 @@ namespace DeepseekTheOrca
                     List<Dictionary<string, object>> toolCalls = new List<Dictionary<string, object>>();
                     foreach (LlmToolCall toolCall in message.toolCalls)
                     {
-                        toolCalls.Add(new Dictionary<string, object>
+                        var serializedCall = new Dictionary<string, object>
                         {
                             { "id", toolCall.id },
                             { "type", "function" },
@@ -110,7 +110,9 @@ namespace DeepseekTheOrca
                                     { "arguments", toolCall.argumentsJson ?? "{}" }
                                 }
                             }
-                        });
+                        };
+                        if (toolCall.extraContent != null) serializedCall["extra_content"] = toolCall.extraContent;
+                        toolCalls.Add(serializedCall);
                     }
                     item["tool_calls"] = toolCalls;
                 }
@@ -159,6 +161,7 @@ namespace DeepseekTheOrca
                 }
 
                 LlmChatResponse parsed = LlmChatResponse.Success();
+                parsed.finishReason = GetString(firstChoice, "finish_reason");
                 Dictionary<string, object> usage = GetDictionary(root, "usage");
                 if (usage != null)
                 {
@@ -213,6 +216,7 @@ namespace DeepseekTheOrca
                             parsedToolCall.id = GetString(toolCall, "id");
                             parsedToolCall.name = GetString(function, "name");
                             parsedToolCall.argumentsJson = GetString(function, "arguments") ?? "{}";
+                            parsedToolCall.extraContent = GetDictionary(toolCall, "extra_content");
                             parsed.toolCalls.Add(parsedToolCall);
                         }
                     }

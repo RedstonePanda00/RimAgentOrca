@@ -6,6 +6,7 @@ namespace DeepseekTheOrca
         {
             transcript.Clear();
             statusText = "";
+            if (pendingStreamingRequest != null) pendingStreamingRequest.Cancel();
             pendingRequest = null;
             pendingStreamingRequest = null;
             pendingStreamingLine = null;

@@ -64,10 +64,13 @@ namespace DeepseekTheOrca
         public string id;
         public string name;
         public string argumentsJson;
+        // Includes Google thought signatures. Preserve this opaque provider payload verbatim.
+        public Dictionary<string, object> extraContent;
     }
 
     public sealed class LlmChatResponse
     {
+        public string finishReason;
         public bool success;
         public string errorMessage;
         public string content;

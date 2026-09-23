@@ -2,10 +2,10 @@
 
 <ModMetaData>
 	<packageId>RedstonePanda.Orca</packageId>
-	<name>RimAgent:Orca Deepseek</name>
+	<name>RimAgent</name>
 	<author>RedstonePanda</author>
 	<supportedVersions>
 		<li>1.6</li>
 	</supportedVersions>
-	<description>An Agent system for RimWorld. Also add an AI Storyteller: Orca Deepseek to game. Connect an LLM provider to enable agent-driven dialogue, tools, and story decisions.</description>
+	<description>An agent system for RimWorld, featuring Orca Deepseek and Gemini The Cat. Connect an LLM provider to enable agent-driven dialogue, tools, and story decisions.</description>
 </ModMetaData>

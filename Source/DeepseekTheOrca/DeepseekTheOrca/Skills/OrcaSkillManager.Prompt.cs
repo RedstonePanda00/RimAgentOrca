@@ -11,7 +11,7 @@ namespace DeepseekTheOrca
     {
         public static string FormatEnabledSkillPrompt()
         {
-            return FormatSkillPrompt(EnabledSkills(), "Enabled skill modules:", "", null, OrcaLlmModelRole.Fallback);
+            return FormatSkillPrompt(EnabledChatSkills(), "Enabled skill modules:", "", null, OrcaLlmModelRole.Fallback);
         }
 
         public static string FormatActiveSkillPrompt(string turnText)
@@ -36,7 +36,7 @@ namespace DeepseekTheOrca
 
         public static string FormatSkillSelectionCatalog()
         {
-            List<OrcaSkillProfile> skills = EnabledSkills();
+            List<OrcaSkillProfile> skills = EnabledChatSkills();
             if (skills.Count == 0)
             {
                 return "";
@@ -95,7 +95,7 @@ namespace DeepseekTheOrca
 
         public static List<OrcaSkillProfile> ActiveSkillsFor(string turnText, IEnumerable<string> contextTags)
         {
-            List<OrcaSkillProfile> enabled = EnabledSkills();
+            List<OrcaSkillProfile> enabled = EnabledChatSkills();
             List<string> tags = CleanContextTags(contextTags);
             if (turnText.NullOrEmpty() && tags.Count == 0)
             {
@@ -121,7 +121,7 @@ namespace DeepseekTheOrca
                 return new List<OrcaSkillProfile>();
             }
 
-            List<OrcaSkillProfile> enabled = EnabledSkills();
+            List<OrcaSkillProfile> enabled = EnabledChatSkills();
             List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
             for (int i = 0; i < requested.Count; i++)
             {
@@ -247,7 +247,7 @@ namespace DeepseekTheOrca
 
         public static string FormatControllerRoutingHint()
         {
-            List<OrcaSkillProfile> skills = EnabledSkills();
+            List<OrcaSkillProfile> skills = EnabledChatSkills();
             if (skills.Count == 0)
             {
                 return "";

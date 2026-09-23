@@ -7,6 +7,12 @@ namespace DeepseekTheOrca
     {
         private void StartControllerOrChatRequest(DeepseekTheOrcaSettings settings)
         {
+            if (GeminiHissService.IsCoolingDown)
+            {
+                ForceNextModelRole(OrcaLlmModelRole.Dialogue);
+                StartRequest(settings);
+                return;
+            }
             OrcaLocalRouteDecision localDecision = OrcaLocalRouteGate.Decide(lastUserText, settings, allowExecutionToolsThisTurn);
             if (settings != null && settings.HasModelForRole(OrcaLlmModelRole.Controller))
             {

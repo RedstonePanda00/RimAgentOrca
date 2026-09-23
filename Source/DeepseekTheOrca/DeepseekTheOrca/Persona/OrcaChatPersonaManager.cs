@@ -39,6 +39,7 @@ namespace DeepseekTheOrca
         public const string LocalPrefix = "local:";
         public const string DefPrefix = "def:";
         public const string BuiltInOrcaId = "DTO_OrcaPersona";
+        public const string BuiltInGeminiId = "DTO_GeminiPersona";
         public const string DefaultStorytellerPortraitFolder = "Orca";
         public const string DefaultStorytellerPortraitLargeName = "Orca";
         public const string DefaultStorytellerPortraitTinyName = "OrcaTiny";
@@ -112,6 +113,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             EnsureLoaded();
             List<OrcaChatPersonaProfile> result = new List<OrcaChatPersonaProfile>();
             result.Add(BuiltInOrca());
+            result.Add(GeminiPersona.Create());
             result.AddRange(DefPersonas());
             result.AddRange(localPersonas);
             return result.OrderBy(profile => profile.label).ToList();
@@ -128,6 +130,8 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
             {
                 return BuiltInOrca();
             }
+
+            if (id == BuiltInGeminiId) return GeminiPersona.Create();
 
             if (id.StartsWith(LocalPrefix, StringComparison.Ordinal))
             {
@@ -631,7 +635,7 @@ Do not deny relief forever. After a major negative beat, allow room for recovery
                 return "";
             }
 
-            if (value == BuiltInOrcaId || value.StartsWith(LocalPrefix, StringComparison.Ordinal))
+            if (value == BuiltInOrcaId || value == BuiltInGeminiId || value.StartsWith(LocalPrefix, StringComparison.Ordinal))
             {
                 return value;
             }

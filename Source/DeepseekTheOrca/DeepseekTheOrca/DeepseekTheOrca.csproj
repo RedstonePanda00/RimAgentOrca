@@ -169,6 +169,15 @@
         <Compile Include="Ui\OrcaModelSelectionWindow.cs" />
         <Compile Include="Persona\OrcaStorytellerAppearance.cs" />
         <Compile Include="Persona\OrcaChatPersonaManager.cs" />
+        <Compile Include="Persona\GeminiPersona.cs" />
+        <Compile Include="Novel\NovelModels.cs" />
+        <Compile Include="Novel\NovelSources.cs" />
+        <Compile Include="Novel\NovelGameSources.cs" />
+        <Compile Include="Novel\NovelWriting.cs" />
+        <Compile Include="Novel\NovelGameComponent.cs" />
+        <Compile Include="Novel\NovelWindows.cs" />
+        <Compile Include="Persona\GeminiHissService.cs" />
+        <Compile Include="Persona\GeminiSettingsWindow.cs" />
         <Compile Include="Persona\OrcaPersonaManagerWindow.cs" />
         <Compile Include="Skills\OrcaSkillProfile.cs" />
         <Compile Include="Skills\OrcaSkillManager.cs" />

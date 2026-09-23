@@ -28,6 +28,8 @@ namespace DeepseekTheOrca
     public sealed class OrcaExtensionRegistry
     {
         private readonly OrcaExtensionDef owner;
+        internal readonly List<OrcaExtensionHandler<Func<INovelSource>>> novelSources = new List<OrcaExtensionHandler<Func<INovelSource>>>();
+        public void AddNovelSource(Func<INovelSource> factory, string capability = "novel_source") { Add(novelSources, capability, factory); }
 
         internal readonly List<OrcaExtensionHandler<Action<StringBuilder>>> systemPromptHandlers = new List<OrcaExtensionHandler<Action<StringBuilder>>>();
         internal readonly List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>> controllerRoutingContextHintHandlers = new List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>>();
@@ -149,6 +151,7 @@ namespace DeepseekTheOrca
             }
 
             systemPromptHandlers.AddRange(other.systemPromptHandlers);
+            novelSources.AddRange(other.novelSources);
             controllerRoutingContextHintHandlers.AddRange(other.controllerRoutingContextHintHandlers);
             chatTurnStartingHandlers.AddRange(other.chatTurnStartingHandlers);
             userMessageContextHandlers.AddRange(other.userMessageContextHandlers);

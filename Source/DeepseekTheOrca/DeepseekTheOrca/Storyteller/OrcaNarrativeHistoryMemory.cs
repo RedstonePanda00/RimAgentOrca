@@ -64,6 +64,8 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaNarrativeHistoryRecord : IExposable
     {
+        public Map targetMap;
+        public List<Pawn> colonistsBefore = new List<Pawn>();
         public string eventType = "";
         public string incidentDef = "";
         public float estimatedThreatPoints;
@@ -84,6 +86,8 @@ namespace DeepseekTheOrca
 
         public void ExposeData()
         {
+            Scribe_References.Look(ref targetMap, "targetMap");
+            Scribe_Collections.Look(ref colonistsBefore, "colonistsBefore", LookMode.Reference);
             Scribe_Values.Look(ref eventType, "eventType", "");
             Scribe_Values.Look(ref incidentDef, "incidentDef", "");
             Scribe_Values.Look(ref estimatedThreatPoints, "estimatedThreatPoints");
@@ -111,6 +115,10 @@ namespace DeepseekTheOrca
         private const int MaxRecords = 40;
         private static List<OrcaNarrativeHistoryRecord> records = new List<OrcaNarrativeHistoryRecord>();
 
+        public static void Reset() { records = new List<OrcaNarrativeHistoryRecord>(); }
+
+        public static List<OrcaNarrativeHistoryRecord> RecordsForNovel() { return new List<OrcaNarrativeHistoryRecord>(records); }
+
         public static void ExposeData()
         {
             Scribe_Collections.Look(ref records, "orcaNarrativeHistoryRecords", LookMode.Deep);
@@ -122,7 +130,7 @@ namespace DeepseekTheOrca
 
         public static void Tick()
         {
-            if (Find.TickManager == null || Find.CurrentMap == null)
+            if (Find.TickManager == null)
             {
                 return;
             }
@@ -131,19 +139,19 @@ namespace DeepseekTheOrca
             for (int i = 0; i < records.Count; i++)
             {
                 OrcaNarrativeHistoryRecord record = records[i];
-                if (record == null)
+                if (record == null || record.targetMap == null || !Find.Maps.Contains(record.targetMap))
                 {
                     continue;
                 }
 
                 if (!record.captured9000 && ticksGame - record.startTick >= FirstCaptureTicks)
                 {
-                    CapturePost(record, ColonyDeepSnapshot.Capture(Find.CurrentMap), first: true);
+                    CapturePost(record, ColonyDeepSnapshot.Capture(record.targetMap), first: true);
                 }
 
                 if (!record.captured18000 && ticksGame - record.startTick >= SecondCaptureTicks)
                 {
-                    CapturePost(record, ColonyDeepSnapshot.Capture(Find.CurrentMap), first: false);
+                    CapturePost(record, ColonyDeepSnapshot.Capture(record.targetMap), first: false);
                     FinalizeOutcome(record);
                 }
             }
@@ -154,11 +162,11 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static void BeginIncident(string incidentDef, float estimatedThreatPoints, Map map)
+        public static OrcaNarrativeHistoryRecord PrepareIncident(string incidentDef, float estimatedThreatPoints, Map map)
         {
             if (map == null)
             {
-                return;
+                return null;
             }
 
             OrcaNarrativeHistoryRecord record = new OrcaNarrativeHistoryRecord();
@@ -166,7 +174,15 @@ namespace DeepseekTheOrca
             record.incidentDef = incidentDef ?? "";
             record.estimatedThreatPoints = estimatedThreatPoints;
             record.startTick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame;
+            record.targetMap = map;
+            record.colonistsBefore = map.mapPawns.FreeColonistsSpawned.Where(pawn => !pawn.Dead).ToList();
             record.preSnapshot = OrcaNarrativeHistorySnapshotRecord.From(ColonyDeepSnapshot.Capture(map));
+            return record;
+        }
+
+        public static void CommitIncident(OrcaNarrativeHistoryRecord record)
+        {
+            if (record == null) return;
             records.Add(record);
             while (records.Count > MaxRecords)
             {
@@ -246,7 +262,7 @@ namespace DeepseekTheOrca
         {
             OrcaNarrativeHistorySnapshotRecord before = record.preSnapshot;
             OrcaNarrativeHistorySnapshotRecord after = record.postSnapshot18000;
-            record.deathDelta = Mathf.Max(0, before.colonists - after.colonists);
+            record.deathDelta = record.colonistsBefore == null ? 0 : record.colonistsBefore.Count(pawn => pawn != null && pawn.Dead);
             record.downedDelta = Mathf.Max(0, after.downedColonists - before.downedColonists);
             record.mentalBreakDelta = Mathf.Max(0, after.mentalStateColonists - before.mentalStateColonists);
             record.foodDelta = after.humanEdibleNutrition - before.humanEdibleNutrition;

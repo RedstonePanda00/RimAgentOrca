@@ -70,6 +70,8 @@ namespace DeepseekTheOrca
             Rect selectRect = new Rect(rect.xMax - 232f, rect.y + 8f, 72f, 28f);
             if (Widgets.ButtonText(selectRect, "DTO_ChatPersonaSelect".Translate()))
             {
+                if (DeepseekTheOrcaMod.Settings.chatPersonaDefName != profile.id)
+                    GeminiHissService.ResetPersonaState();
                 DeepseekTheOrcaMod.Settings.chatPersonaDefName = profile.id;
                 if (DeepseekTheOrcaMod.Instance != null)
                 {
@@ -80,6 +82,10 @@ namespace DeepseekTheOrca
             }
 
             Rect editRect = new Rect(selectRect.xMax + 8f, selectRect.y, 72f, 28f);
+            if (profile.id == OrcaChatPersonaManager.BuiltInGeminiId && Widgets.ButtonText(new Rect(editRect.x, editRect.y, 152f, 28f), "DTO_GeminiSettings".Translate()))
+            {
+                Find.WindowStack.Add(new GeminiSettingsWindow());
+            }
             if (!profile.readOnly && Widgets.ButtonText(editRect, "DTO_ChatPersonaEdit".Translate()))
             {
                 Find.WindowStack.Add(new OrcaPersonaEditorWindow(profile));

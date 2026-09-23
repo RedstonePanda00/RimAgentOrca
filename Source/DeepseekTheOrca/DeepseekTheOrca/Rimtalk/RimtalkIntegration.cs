@@ -33,6 +33,9 @@ namespace DeepseekTheOrca.Rimtalk
         public bool isFirstDialogue;
         public bool isPlayerMessage;
         public bool isAiResponse;
+        public bool isError;
+        public string pawnId;
+        public string recipientId;
     }
 
     public static class RimtalkIntegration
@@ -476,6 +479,8 @@ namespace DeepseekTheOrca.Rimtalk
             public string State;
             public string Pawn;
             public string Recipient;
+            public string PawnId;
+            public string RecipientId;
             public string InteractionType;
             public string Prompt;
             public string Response;
@@ -510,6 +515,10 @@ namespace DeepseekTheOrca.Rimtalk
                 record.State = InvokeString(log, "GetState");
                 record.Pawn = FirstNonEmpty(ValueText(GetProperty(log, "Name")), PawnLabel(GetProperty(request, "Initiator")));
                 record.Recipient = PawnLabel(GetProperty(request, "Recipient"));
+                var initiatorPawn = GetProperty(request, "Initiator") as Pawn;
+                var recipientPawn = GetProperty(request, "Recipient") as Pawn;
+                record.PawnId = initiatorPawn == null ? "" : initiatorPawn.GetUniqueLoadID();
+                record.RecipientId = recipientPawn == null ? "" : recipientPawn.GetUniqueLoadID();
                 record.InteractionType = ValueText(GetProperty(log, "InteractionType"));
                 record.Prompt = Truncate(CleanRimtalkMarkup(FirstNonEmpty(ValueText(GetProperty(request, "RawPrompt")), ValueText(GetProperty(request, "Prompt")))), maxChars);
                 record.Response = Truncate(CleanRimtalkMarkup(ValueText(GetProperty(log, "Response"))), maxChars);
@@ -591,7 +600,10 @@ namespace DeepseekTheOrca.Rimtalk
                     spokenTick = SpokenTick,
                     isFirstDialogue = IsFirstDialogue,
                     isPlayerMessage = IsPlayerMessage,
-                    isAiResponse = IsAiResponse
+                    isAiResponse = IsAiResponse,
+                    isError = IsError,
+                    pawnId = PawnId,
+                    recipientId = RecipientId
                 };
             }
 

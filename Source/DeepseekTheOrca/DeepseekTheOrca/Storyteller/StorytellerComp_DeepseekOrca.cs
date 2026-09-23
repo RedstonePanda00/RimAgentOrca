@@ -8,6 +8,8 @@ namespace DeepseekTheOrca
     {
         private static readonly Dictionary<int, int> lastIncidentTicksByTarget = new Dictionary<int, int>();
 
+        public static void ResetRuntime() { lastIncidentTicksByTarget.Clear(); }
+
         private StorytellerCompProperties_DeepseekOrca Props
         {
             get { return (StorytellerCompProperties_DeepseekOrca)props; }
@@ -15,6 +17,7 @@ namespace DeepseekTheOrca
 
         public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
         {
+            if (GeminiHissService.IsPlanning) yield break;
             if (!OrcaDecisionProvider.IsAvailable)
             {
                 yield break;
@@ -86,6 +89,7 @@ namespace DeepseekTheOrca
                 return false;
             }
 
+            OrcaNarrativeHistoryRecord history = OrcaNarrativeHistoryMemory.PrepareIncident(firingIncident.def.defName, firingIncident.parms.points, target as Map);
             if (!Find.Storyteller.TryFire(firingIncident))
             {
                 traceText = context.trace.ToString();
@@ -93,6 +97,7 @@ namespace DeepseekTheOrca
                 return false;
             }
 
+            OrcaNarrativeHistoryMemory.CommitIncident(history);
             lastIncidentTicksByTarget[target.ConstantRandSeed] = Find.TickManager.TicksGame;
             traceText = context.trace.ToString();
             message = "incident fired: " + firingIncident.def.defName;
@@ -168,6 +173,7 @@ namespace DeepseekTheOrca
                 return false;
             }
 
+            OrcaNarrativeHistoryRecord history = OrcaNarrativeHistoryMemory.PrepareIncident(firingIncident.def.defName, firingIncident.parms.points, target as Map);
             if (!Find.Storyteller.TryFire(firingIncident))
             {
                 traceText = context.trace.ToString();
@@ -178,7 +184,7 @@ namespace DeepseekTheOrca
             lastIncidentTicksByTarget[target.ConstantRandSeed] = Find.TickManager.TicksGame;
             traceText = context.trace.ToString();
             message = "scheduled incident fired: " + firingIncident.def.defName;
-            OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled(plan, firingIncident, target);
+            OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled(plan, firingIncident, target, history);
             LogDebug("Scheduled incident fired " + firingIncident.def.defName + ". Reason: " + plan.reason + "\n" + context.trace);
             return true;
         }
