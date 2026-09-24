@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DeepseekTheOrca.Rimtalk;
 using RimWorld;
@@ -47,12 +48,16 @@ namespace DeepseekTheOrca
         private static readonly Queue<OrcaNarrativeBeat> pendingBeats = new Queue<OrcaNarrativeBeat>();
         private static readonly Dictionary<string, int> lastBeatTicksByKey = new Dictionary<string, int>();
         private static readonly List<IOrcaNarrativeBeatSource> sources = new List<IOrcaNarrativeBeatSource>();
+        private static readonly HashSet<IOrcaNarrativeBeatSource> faultedSources = new HashSet<IOrcaNarrativeBeatSource>();
+        private static IOrcaNarrativeBeatSource[] sourceSnapshot;
         private static bool defaultsRegistered;
         private static int lastDispatchTick = -999999;
 
         public static void Reset()
         {
             pendingBeats.Clear();
+            faultedSources.Clear();
+            sourceSnapshot = null;
             lastBeatTicksByKey.Clear();
             sources.RemoveAll(source => source is ColonyObservationNarrativeSource);
             sources.Add(new ColonyObservationNarrativeSource());
@@ -66,6 +71,7 @@ namespace DeepseekTheOrca
             if (source != null && !sources.Contains(source))
             {
                 sources.Add(source);
+                sourceSnapshot = null;
             }
         }
 
@@ -101,6 +107,13 @@ namespace DeepseekTheOrca
             return true;
         }
 
+        public static void UnregisterSource(IOrcaNarrativeBeatSource source)
+        {
+            sources.Remove(source);
+            sourceSnapshot = null;
+            faultedSources.Remove(source);
+        }
+
         public static bool EnqueueAmbientBeat(OrcaNarrativeBeat beat, float chance)
         {
             if (!OrcaProactiveConversationManager.AmbientEnabled)
@@ -133,9 +146,15 @@ namespace DeepseekTheOrca
         {
             EnsureDefaultsRegistered();
 
-            for (int i = 0; i < sources.Count; i++)
+            foreach (var source in sourceSnapshot ?? (sourceSnapshot = sources.ToArray()))
             {
-                sources[i].Tick();
+                if (faultedSources.Contains(source) || !sources.Contains(source)) continue;
+                try { source.Tick(); }
+                catch (Exception ex)
+                {
+                    faultedSources.Add(source);
+                    Log.Warning("[RimAgent] Narrative source paused until next game: " + source.GetType().FullName + ": " + ex);
+                }
             }
 
             if (pendingBeats.Count == 0)

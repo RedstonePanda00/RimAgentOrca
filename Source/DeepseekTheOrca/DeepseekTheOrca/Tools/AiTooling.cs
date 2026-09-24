@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using RimWorld;
 using Verse;
 
@@ -132,6 +133,27 @@ namespace DeepseekTheOrca
         public AiToolSession(AiToolContext context)
         {
             this.context = context;
+        }
+
+        public Task<AiToolResult> BeginInvoke(string toolName, Dictionary<string, string> arguments)
+        {
+            var worker = AiStoryToolRegistry.WorkerFor(toolName);
+            var asynchronous = worker as IOrcaAsyncToolWorker;
+            bool external = OrcaHttpMcpClient.IsExposedTool(toolName);
+            if (asynchronous == null && !external) return Task.FromResult(Invoke(toolName, arguments));
+            callsUsed++;
+            int maxCalls = DeepseekTheOrcaMod.Settings == null ? 8 : DeepseekTheOrcaMod.Settings.maxToolCalls;
+            if (callsUsed > maxCalls) return Task.FromResult(AiToolResult.Fail("tool call budget exceeded"));
+            try
+            {
+                if (external) return OrcaHttpMcpClient.BeginInvokeExposedTool(toolName, arguments);
+                if (!AiStoryToolRegistry.IsAllowedForCurrentPersona(toolName))
+                    return Task.FromResult(AiToolResult.Fail("tool is unavailable to the current persona"));
+                string reason;
+                if (!worker.CanUse(context, out reason)) return Task.FromResult(AiToolResult.Fail(reason));
+                return asynchronous.BeginInvoke(context, new Dictionary<string, string>(arguments ?? new Dictionary<string, string>()));
+            }
+            catch (Exception ex) { return Task.FromResult(AiToolResult.Fail(ex.GetType().Name + ": " + ex.Message)); }
         }
 
         public AiToolResult Invoke(string toolName, Dictionary<string, string> arguments)

@@ -134,6 +134,7 @@ namespace DeepseekTheOrca
                         }
                         break;
                     case "triggerHints":
+                    case "taskScopes":
                     case "contexts":
                     case "allowedTools":
                         currentList = key;
@@ -397,6 +398,10 @@ namespace DeepseekTheOrca
                 {
                     result.contexts.Add(value);
                 }
+            }
+            else if (listName == "taskScopes")
+            {
+                result.taskScopes.Add(NormalizeContextTag(value));
             }
             else if (listName == "allowedTools")
             {

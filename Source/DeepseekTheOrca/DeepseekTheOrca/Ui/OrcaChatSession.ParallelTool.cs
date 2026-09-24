@@ -9,6 +9,8 @@ namespace DeepseekTheOrca
     {
         private void ResetParallelToolState()
         {
+            if (pendingParallelBatch != null) pendingParallelBatch.Dispose();
+            pendingParallelBatch = null;
             pendingParallelToolRequest = null;
             parallelToolMessages = null;
             parallelToolInstruction = "";
@@ -110,13 +112,19 @@ namespace DeepseekTheOrca
 
         private void HandleParallelToolCalls(LlmChatResponse response)
         {
+            pendingParallelBatch = RunHandleParallelToolCalls(response).GetEnumerator();
+            PumpToolBatch(ref pendingParallelBatch);
+        }
+
+        private IEnumerable<bool> RunHandleParallelToolCalls(LlmChatResponse response)
+        {
             bool roundBudgetExhausted = parallelToolRoundsUsed >= MaxToolGatheringRounds + 1;
             bool finalExecutionOnly = roundBudgetExhausted && ContainsExecutionToolCall(response);
             if (roundBudgetExhausted && !finalExecutionOnly)
             {
                 AddProcess("Parallel tool branch budget exhausted before executing requested tools.");
                 FinishParallelToolExecution("parallel tool budget exhausted");
-                return;
+                yield break;
             }
 
             if (finalExecutionOnly)
@@ -155,6 +163,7 @@ namespace DeepseekTheOrca
                     execution = OrcaChatToolExecutor.Execute(this, toolCall, arguments, OrcaLlmModelRole.Tool, allowExecutionToolsThisTurn);
                 }
 
+                while (!execution.TryComplete()) yield return false;
                 AddProcessLines(execution.ProcessLines);
                 AiToolResult result = execution.result;
                 string resultLine = (result.success ? "ok" : "failed") + " - " + result.message + OrcaToolResultFormatter.FormatValues(result);
@@ -183,19 +192,19 @@ namespace DeepseekTheOrca
             if (parallelToolExecutionSucceeded)
             {
                 FinishParallelToolExecution("parallel execution tool succeeded");
-                return;
+                yield break;
             }
             if (toolCallBudgetExhausted || toolCallsUsedThisTurn >= MaxToolCallsForSettings(DeepseekTheOrcaMod.Settings))
             {
                 FinishParallelToolExecution("parallel tool call budget exhausted");
-                return;
+                yield break;
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Tool))
             {
                 FinishParallelToolExecution("tool model unavailable after parallel tool results");
-                return;
+                yield break;
             }
 
             parallelToolMessages.Add(LlmChatMessage.System(

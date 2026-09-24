@@ -14,7 +14,7 @@ namespace DeepseekTheOrca
         public override Vector2 InitialSize { get { return new Vector2(520f, 480f); } }
         public override void DoWindowContents(Rect rect)
         {
-            var settings = DeepseekTheOrcaMod.Settings.geminiHissSettings;
+            var settings = GeminiHissService.Settings;
             var listing = new Listing_Standard();
             listing.Begin(rect);
             listing.Label("DTO_GeminiName".Translate() + " — " + "DTO_GeminiSettings".Translate());

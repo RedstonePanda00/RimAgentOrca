@@ -91,7 +91,7 @@ namespace DeepseekTheOrca
 
         public static void AttachChunkToCluster(List<OrcaMemoryRecord> records, OrcaMemoryRecord chunk)
         {
-            OrcaMemoryRecord cluster = BestClusterTarget(records, chunk.centroidEmbedding);
+            OrcaMemoryRecord cluster = BestClusterTarget(records, chunk.centroidEmbedding, chunk.embeddingIdentity);
             if (cluster == null)
             {
                 cluster = CreateClusterFromChunk(chunk);
@@ -105,7 +105,7 @@ namespace DeepseekTheOrca
             chunk.clusterId = cluster.id;
         }
 
-        private static OrcaMemoryRecord BestClusterTarget(List<OrcaMemoryRecord> records, List<float> sourceEmbedding)
+        private static OrcaMemoryRecord BestClusterTarget(List<OrcaMemoryRecord> records, List<float> sourceEmbedding, string identity)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             float threshold = settings == null ? 0.9f : settings.memoryMergeCosineThreshold;
@@ -114,7 +114,8 @@ namespace DeepseekTheOrca
             for (int i = 0; i < records.Count; i++)
             {
                 OrcaMemoryRecord candidate = records[i];
-                if (candidate == null || candidate.memoryKind != "cluster" || candidate.centroidEmbedding == null || candidate.centroidEmbedding.Count != sourceEmbedding.Count)
+                if (candidate == null || candidate.memoryKind != "cluster" || !OrcaEmbeddingIdentity.Matches(candidate.embeddingIdentity, identity)
+                    || candidate.centroidEmbedding == null || candidate.centroidEmbedding.Count != sourceEmbedding.Count)
                 {
                     continue;
                 }
@@ -151,6 +152,7 @@ namespace DeepseekTheOrca
                 createdAt = now,
                 lastAccessed = now,
                 embeddingState = "ready",
+                embeddingIdentity = chunk.embeddingIdentity,
                 memoryKind = "cluster",
                 strength = chunk.strength,
                 consolidationState = "active",

@@ -9,6 +9,19 @@ namespace DeepseekTheOrca
 {
     public static partial class OrcaSkillManager
     {
+        private sealed class CachedReference
+        { public long size; public DateTime modified; public string text; }
+        private static readonly Dictionary<string, CachedReference> referenceTextCache = new Dictionary<string, CachedReference>(StringComparer.OrdinalIgnoreCase);
+
+        private static string ReadReference(FileInfo info)
+        {
+            CachedReference cached;
+            if (referenceTextCache.TryGetValue(info.FullName, out cached) && cached.size == info.Length && cached.modified == info.LastWriteTimeUtc) return cached.text;
+            string text = File.ReadAllText(info.FullName);
+            if (referenceTextCache.Count >= 128) referenceTextCache.Clear();
+            referenceTextCache[info.FullName] = new CachedReference { size = info.Length, modified = info.LastWriteTimeUtc, text = text };
+            return text;
+        }
         private static void AppendReferenceSnippets(StringBuilder builder, OrcaSkillProfile skill, string turnText)
         {
             List<ReferenceSnippet> snippets = ReferenceSnippetsFor(skill, turnText);
@@ -121,7 +134,7 @@ namespace DeepseekTheOrca
             string text;
             try
             {
-                text = File.ReadAllText(file);
+                text = ReadReference(info);
             }
             catch (Exception ex)
             {
@@ -410,6 +423,7 @@ namespace DeepseekTheOrca
             public string description = "";
             public bool enabled = true;
             public string activation = "auto";
+            public List<string> taskScopes = new List<string>();
             public List<string> triggerHints = new List<string>();
             public List<string> contexts = new List<string>();
             public List<string> allowedTools = new List<string>();

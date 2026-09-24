@@ -22,7 +22,7 @@ namespace DeepseekTheOrca
                 saveId = OrcaLongTermMemoryService.CurrentSaveId(),
                 source = source ?? "",
                 text = (text ?? "").Trim(),
-                tick = Find.TickManager == null ? 0 : Find.TickManager.TicksGame,
+                tick = Current.Game == null || Find.TickManager == null ? 0 : Find.TickManager.TicksGame,
                 createdAt = OrcaMemoryRecord.NowUnixSeconds()
             };
         }

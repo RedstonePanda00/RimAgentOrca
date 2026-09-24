@@ -150,7 +150,6 @@ namespace DeepseekTheOrca
             OrcaExtensionManager.DrawOverlays(inRect, drawContext);
             DrawCloseButton(inRect);
 
-            OrcaChatWindowManager.Session.Tick();
         }
 
         private void DrawCloseButton(Rect rect)

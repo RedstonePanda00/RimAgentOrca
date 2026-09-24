@@ -13,6 +13,25 @@ namespace DeepseekTheOrca
         private const float MaxSingleExtraWidth = 360f;
         private static OrcaExtensionRegistry cachedRegistry;
         private static bool registryDirty = true;
+        public static void NotifyGameStarted(Game game, bool loaded)
+        {
+            registryDirty = true;
+            foreach (var entry in BuildRegistry().gameStartedHandlers)
+                Invoke(entry, "Game started", handler => handler(game, loaded));
+        }
+        public static void NotifyGameEnded(Game game)
+        {
+            foreach (var entry in BuildRegistry().gameEndedHandlers)
+                Invoke(entry, "Game ended", handler => handler(game));
+        }
+        internal static void Tick()
+        {
+            foreach (var entry in BuildRegistry().tickHandlers) Invoke(entry, "Game tick", handler => handler());
+        }
+        internal static void Update()
+        {
+            foreach (var entry in BuildRegistry().updateHandlers) Invoke(entry, "Game update", handler => handler());
+        }
         public static List<Func<INovelSource>> NovelSourceFactories()
         {
             return BuildRegistry().novelSources.Select(entry => entry.handler).ToList();
@@ -167,11 +186,12 @@ namespace DeepseekTheOrca
 
         public static void NotifyChatSessionCleared(OrcaChatSession session)
         {
+            var snapshot = new OrcaChatSnapshot(session);
             OrcaExtensionRegistry registry = BuildRegistry();
             for (int i = 0; i < registry.chatSessionClearedHandlers.Count; i++)
             {
-                OrcaExtensionHandler<Action<OrcaChatSession>> entry = registry.chatSessionClearedHandlers[i];
-                Invoke(entry, "Chat clear extension hook", handler => handler(session));
+                OrcaExtensionHandler<Action<OrcaChatSnapshot>> entry = registry.chatSessionClearedHandlers[i];
+                Invoke(entry, "Chat clear extension hook", handler => handler(snapshot));
             }
         }
 
@@ -182,7 +202,12 @@ namespace DeepseekTheOrca
             for (int i = 0; i < registry.agentNodeHandlers.Count; i++)
             {
                 OrcaExtensionHandler<Func<IEnumerable<OrcaAgentNodeSpec>>> entry = registry.agentNodeHandlers[i];
-                IEnumerable<OrcaAgentNodeSpec> specs = Invoke(entry, "Agent node extension hook", handler => handler(), null);
+                // Lazy iterators can throw during enumeration, not just creation.
+                IEnumerable<OrcaAgentNodeSpec> specs = Invoke(entry, "Agent node extension hook", handler =>
+                {
+                    var nodes = handler();
+                    return nodes == null ? null : nodes.ToList();
+                }, (List<OrcaAgentNodeSpec>)null);
                 if (specs == null)
                 {
                     continue;
@@ -241,7 +266,8 @@ namespace DeepseekTheOrca
             for (int i = 0; i < registry.executionGateHandlers.Count; i++)
             {
                 OrcaExtensionHandler<Action<OrcaExecutionGateContext>> entry = registry.executionGateHandlers[i];
-                Invoke(entry, "Execution gate extension hook", handler => handler(context));
+                if (!Invoke(entry, "Execution gate extension hook", handler => handler(context)))
+                    context.Block("Extension execution rule is unavailable: " + entry.Label);
                 if (context.Blocked)
                 {
                     return;
@@ -283,7 +309,7 @@ namespace DeepseekTheOrca
 
                 Rect workerRect = new Rect(x, rect.y, width, rect.height);
                 OrcaChatWindowContext workerContext = new OrcaChatWindowContext(
-                    context == null ? null : context.session,
+                    context == null ? new OrcaChatSnapshot(null) : context.chat,
                     context == null ? Rect.zero : context.windowRect,
                     context == null ? Rect.zero : context.chatRect,
                     workerRect,
@@ -391,6 +417,7 @@ namespace DeepseekTheOrca
             catch (Exception ex)
             {
                 Log.Warning("[RimAgent] Extension registration failed (" + WorkerLabel(worker.def) + "): " + ex.Message);
+                return new OrcaExtensionRegistry(worker.def);
             }
 
             return registry;
@@ -441,7 +468,7 @@ namespace DeepseekTheOrca
 
         private static bool Invoke<T>(OrcaExtensionHandler<T> entry, string hookName, Action<T> action) where T : class
         {
-            if (entry == null || entry.handler == null || action == null)
+            if (entry == null || entry.handler == null || action == null || entry.faulted)
             {
                 return false;
             }
@@ -453,6 +480,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
+                entry.faulted = true;
                 Log.Warning("[RimAgent] " + hookName + " failed (" + EntryLabel(entry) + "): " + ex.Message);
                 return false;
             }
@@ -460,7 +488,7 @@ namespace DeepseekTheOrca
 
         private static TResult Invoke<T, TResult>(OrcaExtensionHandler<T> entry, string hookName, Func<T, TResult> action, TResult fallback) where T : class
         {
-            if (entry == null || entry.handler == null || action == null)
+            if (entry == null || entry.handler == null || action == null || entry.faulted)
             {
                 return fallback;
             }
@@ -471,6 +499,7 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
+                entry.faulted = true;
                 Log.Warning("[RimAgent] " + hookName + " failed (" + EntryLabel(entry) + "): " + ex.Message);
                 return fallback;
             }

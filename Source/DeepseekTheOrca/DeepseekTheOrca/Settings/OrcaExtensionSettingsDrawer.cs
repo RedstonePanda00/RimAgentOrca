@@ -44,7 +44,9 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            FieldInfo field = typeof(DeepseekTheOrcaSettings).GetField(entry.fieldName ?? "");
+            // Legacy built-ins bind global fields; submods bind their own settingsClass.
+            object settingsOwner = def.settingsClass == null ? (object)settings : def.SettingsData;
+            FieldInfo field = settingsOwner.GetType().GetField(entry.fieldName ?? "");
             if (field == null)
             {
                 listing.Label("Missing setting field: " + (entry.fieldName ?? ""));
@@ -53,7 +55,7 @@ namespace DeepseekTheOrca
 
             string label = Text(entry.label.NullOrEmpty() ? entry.key : entry.label);
             string tooltip = Text(entry.tooltip);
-            object before = field.GetValue(settings);
+            object before = field.GetValue(settingsOwner);
             string type = (entry.type ?? "").ToLowerInvariant();
             if (type == "bool" && field.FieldType == typeof(bool))
             {
@@ -61,7 +63,7 @@ namespace DeepseekTheOrca
                 listing.CheckboxLabeled(label, ref value, tooltip.NullOrEmpty() ? null : tooltip);
                 if (value != (bool)before)
                 {
-                    field.SetValue(settings, value);
+                    field.SetValue(settingsOwner, value);
                     OnChanged(entry, context);
                 }
                 return;
@@ -75,7 +77,7 @@ namespace DeepseekTheOrca
                 SetBuffer(def, entry, buffer);
                 if (value != (int)before)
                 {
-                    field.SetValue(settings, value);
+                    field.SetValue(settingsOwner, value);
                     OnChanged(entry, context);
                 }
                 return;
@@ -89,7 +91,7 @@ namespace DeepseekTheOrca
                 SetBuffer(def, entry, buffer);
                 if (!Mathf.Approximately(value, (float)before))
                 {
-                    field.SetValue(settings, value);
+                    field.SetValue(settingsOwner, value);
                     OnChanged(entry, context);
                 }
                 return;
@@ -102,7 +104,7 @@ namespace DeepseekTheOrca
                 string next = listing.TextEntry(value);
                 if (next != value)
                 {
-                    field.SetValue(settings, next);
+                    field.SetValue(settingsOwner, next);
                     OnChanged(entry, context);
                 }
                 return;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
             Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
@@ -57,6 +57,16 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Tools\AiTooling.cs" />
+    <Compile Include="OrcaAtomicFile.cs" />
+    <Compile Include="Extensions\OrcaModuleData.cs" />
+    <Compile Include="Memory\OrcaEmbeddingIdentity.cs" />
+    <Compile Include="Memory\OrcaSemanticQueryCache.cs" />
+    <Compile Include="Ui\OrcaChatSession.SemanticQuery.cs" />
+        <Compile Include="OrcaRuntimeDiagnostics.cs" />
+    <Compile Include="Llm\LlmStreamingChatRequest.Diagnostics.cs" />
+    <Compile Include="Llm\LlmStreamDeadline.cs" />
+    <Compile Include="OrcaGameLifetime.cs" />
+        <Compile Include="Memory\OrcaMemoryCompactionState.cs" />
         <Compile Include="Tools\OrcaToolToggles.cs" />
         <Compile Include="Tools\Routing\OrcaToolBundleDef.cs" />
         <Compile Include="Tools\Routing\OrcaToolBundleRouter.cs" />
@@ -97,6 +107,7 @@
         <Compile Include="Memory\OrcaEmbeddingClient.cs" />
         <Compile Include="Memory\OrcaRecentExperienceRecord.cs" />
         <Compile Include="Memory\OrcaLongTermMemoryService.cs" />
+        <Compile Include="Memory\OrcaLongTermMemoryService.Storage.cs" />
         <Compile Include="Memory\OrcaMemoryStore.cs" />
         <Compile Include="Memory\OrcaMemoryCompactor.cs" />
         <Compile Include="Memory\OrcaMemoryRecord.cs" />
@@ -135,6 +146,7 @@
         <Compile Include="Integrations\Mcp\OrcaMcpToolSchemaSource.cs" />
         <Compile Include="Tools\OrcaStoryToolSchemaSource.cs" />
         <Compile Include="Extensions\OrcaExtensionDefs.cs" />
+        <Compile Include="Extensions\OrcaChatSnapshot.cs" />
         <Compile Include="Extensions\OrcaExtensionRegistry.cs" />
         <Compile Include="Agent\OrcaAgentCollaboration.cs" />
         <Compile Include="Agent\OrcaChatAgentHub.cs" />
@@ -170,6 +182,10 @@
         <Compile Include="Persona\OrcaStorytellerAppearance.cs" />
         <Compile Include="Persona\OrcaChatPersonaManager.cs" />
         <Compile Include="Persona\GeminiPersona.cs" />
+        <Compile Include="Persona\OrcaPersonaBehavior.cs" />
+        <Compile Include="Storyteller\IncidentPlanningPolicy.cs" />
+        <Compile Include="Novel\NovelGenerationRunner.cs" />
+        <Compile Include="Novel\NovelCollectionScheduler.cs" />
         <Compile Include="Novel\NovelModels.cs" />
         <Compile Include="Novel\NovelSources.cs" />
         <Compile Include="Novel\NovelGameSources.cs" />
@@ -205,7 +221,7 @@
         <Compile Include="Tools\WebSearchTool.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
-    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
          Other similar extension points exist, see Microsoft.Common.targets.
     <Target Name="BeforeBuild">
     </Target>

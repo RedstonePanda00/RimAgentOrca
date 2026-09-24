@@ -15,7 +15,9 @@ namespace DeepseekTheOrca
                 return null;
             }
 
-            return new Parser(json).ParseValue();
+            // Preserve the public null-on-invalid contract, but never return a partial tree.
+            try { return new Parser(json).ParseDocument(); }
+            catch (FormatException) { return null; }
         }
 
         public static string Serialize(object value)
@@ -62,7 +64,10 @@ namespace DeepseekTheOrca
 
             if (value is float || value is double || value is decimal)
             {
-                builder.Append(Convert.ToDouble(value).ToString("R", CultureInfo.InvariantCulture));
+                double number = Convert.ToDouble(value);
+                if (double.IsNaN(number) || double.IsInfinity(number))
+                    throw new ArgumentException("JSON cannot represent a non-finite number.");
+                builder.Append(number.ToString("R", CultureInfo.InvariantCulture));
                 return;
             }
 
@@ -158,6 +163,7 @@ namespace DeepseekTheOrca
 
         private sealed class Parser
         {
+            private const int MaxDepth = 128;
             private readonly string json;
             private int index;
 
@@ -166,13 +172,23 @@ namespace DeepseekTheOrca
                 this.json = json;
             }
 
-            public object ParseValue()
+            public object ParseDocument()
+            {
+                object value = ParseValue(0);
+                SkipWhitespace();
+                if (index != json.Length) throw Invalid();
+                return value;
+            }
+
+            private FormatException Invalid()
+            {
+                return new FormatException("Invalid JSON at character " + index + ".");
+            }
+
+            private object ParseValue(int depth)
             {
                 SkipWhitespace();
-                if (index >= json.Length)
-                {
-                    return null;
-                }
+                if (index >= json.Length || depth > MaxDepth) throw Invalid();
 
                 char c = json[index];
                 if (c == '"')
@@ -182,12 +198,12 @@ namespace DeepseekTheOrca
 
                 if (c == '{')
                 {
-                    return ParseObject();
+                    return ParseObject(depth + 1);
                 }
 
                 if (c == '[')
                 {
-                    return ParseArray();
+                    return ParseArray(depth + 1);
                 }
 
                 if (Match("true"))
@@ -208,85 +224,58 @@ namespace DeepseekTheOrca
                 return ParseNumber();
             }
 
-            private Dictionary<string, object> ParseObject()
+            private Dictionary<string, object> ParseObject(int depth)
             {
                 Dictionary<string, object> result = new Dictionary<string, object>();
                 index++;
+                SkipWhitespace();
+                if (Take('}')) return result;
                 while (true)
                 {
                     SkipWhitespace();
-                    if (index >= json.Length)
-                    {
-                        return result;
-                    }
-
-                    if (json[index] == '}')
-                    {
-                        index++;
-                        return result;
-                    }
-
                     string key = ParseString();
+                    if (result.ContainsKey(key)) throw Invalid();
                     SkipWhitespace();
-                    if (index < json.Length && json[index] == ':')
-                    {
-                        index++;
-                    }
-
-                    result[key] = ParseValue();
+                    Require(':');
+                    result.Add(key, ParseValue(depth));
                     SkipWhitespace();
-                    if (index < json.Length && json[index] == ',')
-                    {
-                        index++;
-                    }
+                    if (Take('}')) return result;
+                    Require(',');
                 }
             }
 
-            private List<object> ParseArray()
+            private List<object> ParseArray(int depth)
             {
                 List<object> result = new List<object>();
                 index++;
+                SkipWhitespace();
+                if (Take(']')) return result;
                 while (true)
                 {
+                    result.Add(ParseValue(depth));
                     SkipWhitespace();
-                    if (index >= json.Length)
-                    {
-                        return result;
-                    }
-
-                    if (json[index] == ']')
-                    {
-                        index++;
-                        return result;
-                    }
-
-                    result.Add(ParseValue());
-                    SkipWhitespace();
-                    if (index < json.Length && json[index] == ',')
-                    {
-                        index++;
-                    }
+                    if (Take(']')) return result;
+                    Require(',');
                 }
             }
 
             private string ParseString()
             {
                 StringBuilder builder = new StringBuilder();
-                if (index < json.Length && json[index] == '"')
-                {
-                    index++;
-                }
+                Require('"');
 
                 while (index < json.Length)
                 {
                     char c = json[index++];
                     if (c == '"')
                     {
-                        break;
+                        return builder.ToString();
                     }
 
-                    if (c == '\\' && index < json.Length)
+                    if (c < ' ') throw Invalid();
+                    if (c == '\\')
                     {
+                        if (index >= json.Length) throw Invalid();
                         char escaped = json[index++];
                         switch (escaped)
                         {
@@ -311,13 +300,15 @@ namespace DeepseekTheOrca
                                 builder.Append('\t');
                                 break;
                             case 'u':
-                                if (index + 4 <= json.Length)
-                                {
-                                    string hex = json.Substring(index, 4);
-                                    builder.Append((char)int.Parse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture));
-                                    index += 4;
-                                }
+                                if (index + 4 > json.Length) throw Invalid();
+                                int code;
+                                string hex = json.Substring(index, 4);
+                                if (!int.TryParse(hex, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out code)) throw Invalid();
+                                builder.Append((char)code);
+                                index += 4;
                                 break;
+                            default:
+                                throw Invalid();
                         }
                     }
                     else
@@ -326,34 +317,50 @@ namespace DeepseekTheOrca
                     }
                 }
 
-                return builder.ToString();
+                throw Invalid();
             }
 
             private object ParseNumber()
             {
                 int start = index;
-                while (index < json.Length && "-+0123456789.eE".IndexOf(json[index]) >= 0)
+                Take('-');
+                if (!Take('0')) Digits();
+                if (Take('.')) Digits();
+                if (Take('e') || Take('E'))
                 {
-                    index++;
+                    if (!Take('+')) Take('-');
+                    Digits();
                 }
-
                 string number = json.Substring(start, index - start);
-                if (number.IndexOf('.') >= 0 || number.IndexOf('e') >= 0 || number.IndexOf('E') >= 0)
-                {
-                    double doubleValue;
-                    if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out doubleValue))
-                    {
-                        return doubleValue;
-                    }
-                }
-
                 long longValue;
                 if (long.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out longValue))
-                {
                     return longValue;
-                }
+                ulong unsignedValue;
+                if (ulong.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out unsignedValue))
+                    return unsignedValue;
+                double doubleValue;
+                if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out doubleValue)
+                    && !double.IsInfinity(doubleValue) && !double.IsNaN(doubleValue)) return doubleValue;
+                throw Invalid();
+            }
 
-                return 0;
+            private void Digits()
+            {
+                int start = index;
+                while (index < json.Length && json[index] >= '0' && json[index] <= '9') index++;
+                if (index == start) throw Invalid();
+            }
+
+            private bool Take(char token)
+            {
+                if (index >= json.Length || json[index] != token) return false;
+                index++;
+                return true;
+            }
+
+            private void Require(char token)
+            {
+                if (!Take(token)) throw Invalid();
             }
 
             private bool Match(string token)
@@ -374,7 +381,7 @@ namespace DeepseekTheOrca
 
             private void SkipWhitespace()
             {
-                while (index < json.Length && char.IsWhiteSpace(json[index]))
+                while (index < json.Length && (json[index] == ' ' || json[index] == '\t' || json[index] == '\r' || json[index] == '\n'))
                 {
                     index++;
                 }

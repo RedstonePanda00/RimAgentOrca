@@ -1,15 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
 
 namespace DeepseekTheOrca
 {
-    public sealed class WebSearchTool : OrcaToolWorker
+    public sealed class WebSearchTool : OrcaToolWorker, IOrcaAsyncToolWorker
     {
         private const string TavilySearchUrl = "https://api.tavily.com/search";
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(12);
@@ -25,27 +26,30 @@ namespace DeepseekTheOrca
         }
 
         public override AiToolResult Invoke(AiToolContext context, Dictionary<string, string> arguments)
+        { return AiToolResult.Fail("Web search requires asynchronous invocation; use BeginInvoke"); }
+
+        public Task<AiToolResult> BeginInvoke(AiToolContext context, Dictionary<string, string> arguments)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.enableWebSearch)
             {
-                return AiToolResult.Fail("web search is disabled in mod settings");
+                return Task.FromResult(AiToolResult.Fail("web search is disabled in mod settings"));
             }
 
             if (!settings.UsesLocalWebSearchTool)
             {
-                return AiToolResult.Fail("local web search tool is disabled for the selected provider mode");
+                return Task.FromResult(AiToolResult.Fail("local web search tool is disabled for the selected provider mode"));
             }
 
             if (settings.tavilyApiKey.NullOrEmpty())
             {
-                return AiToolResult.Fail("Tavily API key is empty");
+                return Task.FromResult(AiToolResult.Fail("Tavily API key is empty"));
             }
 
             string query = GetArg(arguments, "query");
             if (query.NullOrEmpty())
             {
-                return AiToolResult.Fail("missing argument: query");
+                return Task.FromResult(AiToolResult.Fail("missing argument: query"));
             }
 
             int requestedMaxResults = ParseInt(arguments, "maxResults", settings.tavilyMaxResults);
@@ -53,13 +57,20 @@ namespace DeepseekTheOrca
             string topic = NormalizeTopic(GetArg(arguments, "topic"));
             string timeRange = NormalizeTimeRange(GetArg(arguments, "timeRange"));
 
+            string apiKey = settings.tavilyApiKey;
+            string searchDepth = settings.tavilySearchDepth;
+            return Task.Run(() => Search(query, topic, timeRange, maxResults, apiKey, searchDepth));
+        }
+
+        private static AiToolResult Search(string query, string topic, string timeRange, int maxResults, string apiKey, string searchDepth)
+        {
             try
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
                 Dictionary<string, object> payload = new Dictionary<string, object>();
                 payload["query"] = query;
-                payload["search_depth"] = NormalizeSearchDepth(settings.tavilySearchDepth);
+                payload["search_depth"] = NormalizeSearchDepth(searchDepth);
                 payload["topic"] = topic;
                 payload["max_results"] = maxResults;
                 payload["include_answer"] = "basic";
@@ -76,7 +87,7 @@ namespace DeepseekTheOrca
                 {
                     client.Timeout = Timeout;
                     client.DefaultRequestHeaders.UserAgent.ParseAdd("RimAgent/0.1");
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.tavilyApiKey);
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
                     string json = MiniJson.Serialize(payload);
                     using (StringContent content = new StringContent(json, Encoding.UTF8, "application/json"))

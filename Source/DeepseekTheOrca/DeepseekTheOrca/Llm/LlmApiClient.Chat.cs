@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -14,12 +14,18 @@ namespace DeepseekTheOrca
     public sealed partial class LlmApiClient
     {
         // A captured config, no tools, one transport attempt, and low-priority admission.
-        public Task<LlmChatResponse> SendNovelCompletionAsync(OrcaLlmRequestConfig config, List<LlmChatMessage> messages, int maxTokens, CancellationToken cancellation)
+        public Task<LlmChatResponse> SendBackgroundCompletionAsync(OrcaLlmRequestConfig config, List<LlmChatMessage> messages, int maxTokens, CancellationToken cancellation)
         {
-            if (config == null) return Task.FromResult(LlmChatResponse.Failure("No dialogue model is configured."));
+            return SendBackgroundCompletionAsync(config, messages, maxTokens, cancellation, OrcaLlmModelRole.Dialogue, 0.8f);
+        }
+
+        public Task<LlmChatResponse> SendBackgroundCompletionAsync(OrcaLlmRequestConfig config, List<LlmChatMessage> messages, int maxTokens,
+            CancellationToken cancellation, OrcaLlmModelRole role, float temperature)
+        {
+            if (config == null) return Task.FromResult(LlmChatResponse.Failure("No model is configured for " + role + "."));
             return SendChatCompletionAsync(config.apiKey, config.model, config.baseUrl, config.IncludeThinkingToggle,
-                messages, null, maxTokens, 0.8f, config.providerId, config.openAiOrganization, config.openAiProject,
-                config.proxyUrl, OrcaLlmModelRole.Dialogue, true, cancellation);
+                messages, null, maxTokens, temperature, config.providerId, config.openAiOrganization, config.openAiProject,
+                config.proxyUrl, role, true, cancellation);
         }
         public async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages)
         {
@@ -71,6 +77,7 @@ namespace DeepseekTheOrca
             request.model = config.model == null ? "" : config.model.Trim();
             request.providerId = config.providerId;
             request.allowDsmlToolCallFallback = AllowDsmlToolCallFallback(role);
+            CancellationToken capturedLifetime = queueLifetime.Token;
             Task.Run(async delegate
             {
                 await SendStreamingChatCompletionAsync(
@@ -86,7 +93,7 @@ namespace DeepseekTheOrca
                     config.openAiOrganization,
                     config.openAiProject,
                     config.proxyUrl,
-                    role).ConfigureAwait(false);
+                    role, capturedLifetime).ConfigureAwait(false);
             });
 
             return request;
@@ -136,7 +143,9 @@ namespace DeepseekTheOrca
                 return OrcaEmbeddingResult.Failure("No embedding model is selected.");
             }
 
-            return await SendEmbeddingAsync(config.apiKey, config.model, config.baseUrl, text, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, timeoutMs).ConfigureAwait(false);
+            var result = await SendEmbeddingAsync(config.apiKey, config.model, config.baseUrl, text, config.providerId, config.openAiOrganization, config.openAiProject, config.proxyUrl, timeoutMs).ConfigureAwait(false);
+            if (result != null) result.identity = OrcaEmbeddingIdentity.For(config);
+            return result;
         }
 
         private async Task<OrcaEmbeddingResult> SendEmbeddingAsync(string apiKey, string model, string baseUrl, string text, string providerId, string openAiOrganization, string openAiProject, string proxyUrl)
@@ -159,6 +168,7 @@ namespace DeepseekTheOrca
                 return OrcaEmbeddingResult.Failure("Base URL is empty.");
             }
 
+            CancellationToken capturedLifetime = queueLifetime.Token;
             return await LlmRequestScheduler.RunAsync("embedding", async delegate
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
@@ -196,7 +206,7 @@ namespace DeepseekTheOrca
                         return ParseEmbeddingResponse(responseText);
                     }
                 }
-            }).ConfigureAwait(false);
+            }, false, capturedLifetime).ConfigureAwait(false);
         }
 
         private async Task<LlmChatResponse> SendChatCompletionAsync(string apiKey, string model, List<LlmChatMessage> messages, bool includeTools, int maxTokens, float temperature)
@@ -263,12 +273,14 @@ namespace DeepseekTheOrca
             }
 
             int attempts = background ? 1 : MaxTransportAttempts;
-            return await LlmRequestScheduler.RunAsync((background ? "novel " : "chat completion ") + role, async delegate
+            if (!cancellation.CanBeCanceled) cancellation = queueLifetime.Token;
+            return await LlmRequestScheduler.RunAsync((background ? "background completion " : "chat completion ") + role, async delegate
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
                 for (int attempt = 1; attempt <= attempts; attempt++)
                 {
+                    if (attempt > 1) cancellation.ThrowIfCancellationRequested();
                     using (HttpClient client = CreateHttpClient(proxyUrl))
                     {
                         client.Timeout = ChatTimeoutForRole(role);
@@ -361,7 +373,7 @@ namespace DeepseekTheOrca
             string openAiOrganization,
             string openAiProject,
             string proxyUrl,
-            OrcaLlmModelRole role)
+            OrcaLlmModelRole role, CancellationToken cancellation)
         {
             Stopwatch stopwatch = null;
             try
@@ -391,13 +403,18 @@ namespace DeepseekTheOrca
 
                 await LlmRequestScheduler.RunAsync("streaming chat completion " + role, async delegate
                 {
+                    streamingRequest.CancellationToken.ThrowIfCancellationRequested();
+                    streamingRequest.SetStage("admitted");
                     stopwatch = Stopwatch.StartNew();
                     ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
                     for (int attempt = 1; attempt <= MaxTransportAttempts; attempt++)
                     {
+                        using (var deadline = CancellationTokenSource.CreateLinkedTokenSource(streamingRequest.CancellationToken))
                         using (HttpClient client = CreateHttpClient(proxyUrl))
                         {
+                            deadline.CancelAfter(StreamingTimeout);
+                            streamingRequest.SetStage("sending attempt " + attempt);
                             client.Timeout = StreamingTimeout;
                             client.BaseAddress = new Uri(LlmProviderConfig.NormalizeBaseUrl(baseUrl));
                             ApplyAuthorizationHeaders(client, apiKey, openAiOrganization, openAiProject);
@@ -413,11 +430,11 @@ namespace DeepseekTheOrca
                                 HttpResponseMessage response;
                                 try
                                 {
-                                    response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                                    response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
                                 }
-                                catch (TaskCanceledException)
+                                catch (OperationCanceledException)
                                 {
-                                    streamingRequest.Fail("Connection timed out.");
+                                    streamingRequest.Fail(streamingRequest.IsCancellationRequested ? "Streaming request cancelled." : "Streaming request timed out before response headers.");
                                     LlmConnectionTester.ReportFailedCall("Connection timed out.");
                                     return;
                                 }
@@ -426,7 +443,7 @@ namespace DeepseekTheOrca
                                     if (IsTransientTransportException(ex) && attempt < MaxTransportAttempts)
                                     {
                                         LlmConnectionTester.ReportFailedCall(TransientRetryMessage(ex, attempt));
-                                        await Task.Delay(250).ConfigureAwait(false);
+                                        await Task.Delay(250, deadline.Token).ConfigureAwait(false);
                                         continue;
                                     }
 
@@ -438,9 +455,10 @@ namespace DeepseekTheOrca
 
                                 using (response)
                                 {
+                                    streamingRequest.SetStage("headers HTTP " + (int)response.StatusCode + "; contentType=" + response.Content.Headers.ContentType);
                                     if (!response.IsSuccessStatusCode)
                                     {
-                                        string responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                        string responseText = await LlmStreamDeadline.Await(response.Content.ReadAsStringAsync(), deadline.Token).ConfigureAwait(false);
                                         string error = ExtractErrorMessage(responseText);
                                         string message = "HTTP " + (int)response.StatusCode + " " + response.ReasonPhrase + (string.IsNullOrEmpty(error) ? "" : ": " + error);
                                         streamingRequest.Fail(message);
@@ -448,12 +466,14 @@ namespace DeepseekTheOrca
                                         return;
                                     }
 
-                                    using (Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                                    using (Stream stream = await LlmStreamDeadline.Await(response.Content.ReadAsStreamAsync(), deadline.Token).ConfigureAwait(false))
                                     using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                                     {
+                                        streamingRequest.SetStage("reading body");
                                         string line;
-                                        while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                                        while ((line = await LlmStreamDeadline.Await(reader.ReadLineAsync(), deadline.Token).ConfigureAwait(false)) != null)
                                         {
+                                            streamingRequest.ReceivedLine();
                                             if (streamingRequest.IsCancellationRequested)
                                             {
                                                 streamingRequest.Fail("Streaming request cancelled.");
@@ -471,7 +491,7 @@ namespace DeepseekTheOrca
                                                 break;
                                             }
 
-                                            ParseStreamingChunk(data, streamingRequest);
+                                            if (data.Length != 0) ParseStreamingChunk(data, streamingRequest);
                                         }
                                     }
                                 }
@@ -482,6 +502,10 @@ namespace DeepseekTheOrca
                     }
 
                     stopwatch.Stop();
+                    if (string.IsNullOrWhiteSpace(streamingRequest.RawContent))
+                        throw new InvalidDataException("Stream ended without reply content.");
+                    if (streamingRequest.FinishReason == "length" || streamingRequest.FinishReason == "content_filter")
+                        throw new InvalidDataException("Stream ended with finish_reason=" + streamingRequest.FinishReason);
                     LlmChatResponse parsed = LlmChatResponse.Success();
                     parsed.content = streamingRequest.RawContent;
                     parsed.elapsedMs = (int)stopwatch.ElapsedMilliseconds;
@@ -491,7 +515,7 @@ namespace DeepseekTheOrca
                     streamingRequest.Complete(parsed);
                     LlmConnectionTester.ReportSuccessfulCall("Connection succeeded by streaming chat completion.");
                     LlmUsageTracker.Record(parsed);
-                }).ConfigureAwait(false);
+                }, false, cancellation).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -501,7 +525,11 @@ namespace DeepseekTheOrca
                 }
                 if (streamingRequest != null)
                 {
-                    streamingRequest.Fail(ex.GetType().Name + ": " + ex.Message);
+                    string detail = ex is OperationCanceledException
+                        ? (streamingRequest.IsCancellationRequested ? "Streaming request cancelled." : "Streaming request exceeded its timeout while queued or receiving the response.")
+                        : ex.GetType().Name + ": " + ex.Message;
+                    streamingRequest.Fail(detail);
+                    OrcaRuntimeDiagnostics.Record("Chat stream failure", streamingRequest.DiagnosticStatus + "\n" + OrcaRuntimeDiagnostics.ExceptionText(ex));
                 }
                 LlmConnectionTester.ReportFailedCall(ex.GetType().Name + ": " + ex.Message);
             }

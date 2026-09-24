@@ -6,12 +6,28 @@ namespace DeepseekTheOrca
 {
     public sealed partial class OrcaChatSession
     {
+        private void PumpToolBatch(ref IEnumerator<bool> batch)
+        {
+            if (batch == null) return;
+            try { if (batch.MoveNext()) return; }
+            catch (System.Exception ex) { SetError("Tool workflow failed: " + ex.Message); }
+            batch.Dispose();
+            batch = null;
+            CompleteTurnIfIdle("tool batch completed");
+        }
+
         private void HandleToolCalls(LlmChatResponse response)
+        {
+            pendingToolBatch = RunHandleToolCalls(response).GetEnumerator();
+            PumpToolBatch(ref pendingToolBatch);
+        }
+
+        private IEnumerable<bool> RunHandleToolCalls(LlmChatResponse response)
         {
             if (toolRoundsUsed >= MaxToolRounds)
             {
                 ContinueToDialogueWithToolBudgetExhausted("hard tool round budget reached before executing requested tools");
-                return;
+                yield break;
             }
 
             toolRoundsUsed++;
@@ -37,6 +53,7 @@ namespace DeepseekTheOrca
                 {
                     execution = OrcaChatToolExecutor.Execute(this, toolCall, arguments, pendingRequestRole, allowExecutionToolsThisTurn);
                 }
+                while (!execution.TryComplete()) yield return false;
                 AddProcessLines(execution.ProcessLines);
                 AiToolResult result = execution.result;
 
@@ -61,13 +78,13 @@ namespace DeepseekTheOrca
             {
                 statusText = "DTO_OrcaChatNoApiKey".Translate();
                 SetError(statusText);
-                return;
+                yield break;
             }
 
             if (toolCallBudgetExhausted || !CanContinueSpecialistGathering(settings))
             {
                 ContinueToDialogueWithToolBudgetExhausted(toolCallBudgetExhausted ? "tool call budget exhausted after executing requested tools" : "tool gathering round budget exhausted after tool results");
-                return;
+                yield break;
             }
 
             specialistReturnedNoToolCalls = false;

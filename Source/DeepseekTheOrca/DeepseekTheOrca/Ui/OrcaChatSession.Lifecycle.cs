@@ -4,6 +4,12 @@ namespace DeepseekTheOrca
     {
         public void Clear()
         {
+            client.CancelQueuedRequests();
+            afterSemanticQuery = null;
+            pendingSemanticQuery = null;
+            OrcaSemanticQueryCache.Reset();
+            if (pendingToolBatch != null) pendingToolBatch.Dispose();
+            pendingToolBatch = null;
             transcript.Clear();
             statusText = "";
             if (pendingStreamingRequest != null) pendingStreamingRequest.Cancel();

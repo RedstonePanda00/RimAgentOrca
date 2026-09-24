@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_MemoryCompactionPaused>记忆压缩在 3 次未成功的尝试后暂停：{0}</DTO_MemoryCompactionPaused>
+  <DTO_MemoryCompactionRetry>记忆压缩将在启用且空闲时重试，还需等待 {0} 秒现实时间：{1}</DTO_MemoryCompactionRetry>
+  <DTO_MemoryCompactionResume>恢复记忆压缩</DTO_MemoryCompactionResume>
+  <DTO_MemoryStoragePaused>人格 {0} 的记忆存储已暂停：{1}\n原文件和内存中的待保存内容已保留。采集及新请求暂停；解决文件访问问题后，点击恢复将优先重试本地保存。</DTO_MemoryStoragePaused>
+  <DTO_DebugRuntimeDiagnostic>当前聊天运行状态（实时）</DTO_DebugRuntimeDiagnostic>
+</LanguageData>

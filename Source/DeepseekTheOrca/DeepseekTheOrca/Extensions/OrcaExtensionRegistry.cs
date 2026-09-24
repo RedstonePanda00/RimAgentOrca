@@ -11,6 +11,7 @@ namespace DeepseekTheOrca
         public readonly OrcaExtensionDef def;
         public readonly string capability;
         public readonly T handler;
+        internal bool faulted;
 
         public OrcaExtensionHandler(OrcaExtensionDef def, string capability, T handler)
         {
@@ -30,6 +31,14 @@ namespace DeepseekTheOrca
         private readonly OrcaExtensionDef owner;
         internal readonly List<OrcaExtensionHandler<Func<INovelSource>>> novelSources = new List<OrcaExtensionHandler<Func<INovelSource>>>();
         public void AddNovelSource(Func<INovelSource> factory, string capability = "novel_source") { Add(novelSources, capability, factory); }
+        internal readonly List<OrcaExtensionHandler<Action<Game, bool>>> gameStartedHandlers = new List<OrcaExtensionHandler<Action<Game, bool>>>();
+        internal readonly List<OrcaExtensionHandler<Action<Game>>> gameEndedHandlers = new List<OrcaExtensionHandler<Action<Game>>>();
+        internal readonly List<OrcaExtensionHandler<Action>> tickHandlers = new List<OrcaExtensionHandler<Action>>();
+        internal readonly List<OrcaExtensionHandler<Action>> updateHandlers = new List<OrcaExtensionHandler<Action>>();
+        public void AddGameStarted(Action<Game, bool> handler, string capability = "lifecycle") { Add(gameStartedHandlers, capability, handler); }
+        public void AddGameEnded(Action<Game> handler, string capability = "lifecycle") { Add(gameEndedHandlers, capability, handler); }
+        public void AddTick(Action handler, string capability = "lifecycle") { Add(tickHandlers, capability, handler); }
+        public void AddUpdate(Action handler, string capability = "lifecycle") { Add(updateHandlers, capability, handler); }
 
         internal readonly List<OrcaExtensionHandler<Action<StringBuilder>>> systemPromptHandlers = new List<OrcaExtensionHandler<Action<StringBuilder>>>();
         internal readonly List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>> controllerRoutingContextHintHandlers = new List<OrcaExtensionHandler<Func<OrcaControllerRoutingContext, string>>>();
@@ -37,7 +46,7 @@ namespace DeepseekTheOrca
         internal readonly List<OrcaExtensionHandler<Action<StringBuilder, OrcaChatTurnContext>>> userMessageContextHandlers = new List<OrcaExtensionHandler<Action<StringBuilder, OrcaChatTurnContext>>>();
         internal readonly List<OrcaExtensionHandler<Action<Dictionary<string, object>>>> chatReplySchemaHandlers = new List<OrcaExtensionHandler<Action<Dictionary<string, object>>>>();
         internal readonly List<OrcaExtensionHandler<Action<OrcaChatReplyContext>>> chatReplyHandlers = new List<OrcaExtensionHandler<Action<OrcaChatReplyContext>>>();
-        internal readonly List<OrcaExtensionHandler<Action<OrcaChatSession>>> chatSessionClearedHandlers = new List<OrcaExtensionHandler<Action<OrcaChatSession>>>();
+        internal readonly List<OrcaExtensionHandler<Action<OrcaChatSnapshot>>> chatSessionClearedHandlers = new List<OrcaExtensionHandler<Action<OrcaChatSnapshot>>>();
         internal readonly List<OrcaExtensionHandler<Action>> enabledHandlers = new List<OrcaExtensionHandler<Action>>();
         internal readonly List<OrcaExtensionHandler<Action>> disabledHandlers = new List<OrcaExtensionHandler<Action>>();
         internal readonly List<OrcaExtensionHandler<Func<IEnumerable<OrcaAgentNodeSpec>>>> agentNodeHandlers = new List<OrcaExtensionHandler<Func<IEnumerable<OrcaAgentNodeSpec>>>>();
@@ -88,7 +97,7 @@ namespace DeepseekTheOrca
             Add(chatReplyHandlers, capability, handler);
         }
 
-        public void AddChatSessionCleared(Action<OrcaChatSession> handler, string capability = "chat_lifecycle")
+        public void AddChatSessionCleared(Action<OrcaChatSnapshot> handler, string capability = "chat_lifecycle")
         {
             Add(chatSessionClearedHandlers, capability, handler);
         }
@@ -152,6 +161,10 @@ namespace DeepseekTheOrca
 
             systemPromptHandlers.AddRange(other.systemPromptHandlers);
             novelSources.AddRange(other.novelSources);
+            gameStartedHandlers.AddRange(other.gameStartedHandlers);
+            gameEndedHandlers.AddRange(other.gameEndedHandlers);
+            tickHandlers.AddRange(other.tickHandlers);
+            updateHandlers.AddRange(other.updateHandlers);
             controllerRoutingContextHintHandlers.AddRange(other.controllerRoutingContextHintHandlers);
             chatTurnStartingHandlers.AddRange(other.chatTurnStartingHandlers);
             userMessageContextHandlers.AddRange(other.userMessageContextHandlers);

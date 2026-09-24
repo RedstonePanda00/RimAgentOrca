@@ -13,6 +13,10 @@ namespace DeepseekTheOrca
         public bool enabled;
         public List<string> triggerHints = new List<string>();
         public List<string> contexts = new List<string>();
+        // Empty scopes preserve legacy chat skills. Contexts remain relevance hints.
+        public List<string> taskScopes = new List<string>();
+        public bool AppliesToTask(string scope)
+        { return taskScopes == null || taskScopes.Count == 0 ? scope == "chat" : taskScopes.Contains(scope); }
         public string prompt;
         public List<string> allowedTools = new List<string>();
         public bool readOnly;

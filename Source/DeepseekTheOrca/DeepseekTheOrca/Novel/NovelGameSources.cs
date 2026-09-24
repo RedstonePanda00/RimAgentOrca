@@ -20,7 +20,7 @@ namespace DeepseekTheOrca
             foreach (var letter in letters.Distinct())
             {
                 string key = letter.GetUniqueLoadID();
-                if (c.Book.Seen(Id + ":" + key)) { yield return null; continue; }
+                if (c.Seen(key)) { yield return null; continue; }
                 var choice = letter as ChoiceLetter;
                 var targets = letter.lookTargets == null ? new List<GlobalTargetInfo>() : letter.lookTargets.targets.ToList();
                 string subject = string.Join(",", targets.Where(t => t.Thing != null).Select(t => t.Thing.GetUniqueLoadID()).ToArray());
@@ -37,18 +37,22 @@ namespace DeepseekTheOrca
 
     public sealed class NovelLogSource : INovelSource
     {
+        private static IEnumerable<LogEntry> Entries()
+        {
+            if (Find.PlayLog != null)
+                foreach (var log in Find.PlayLog.AllEntries.ToArray()) yield return log;
+            if (Find.BattleLog != null)
+                foreach (var battle in Find.BattleLog.Battles.ToArray())
+                    foreach (var log in battle.Entries.ToArray()) yield return log;
+        }
         public string Id { get { return "logs"; } }
         public IEnumerable<NovelRecord> Scan(NovelCaptureContext c, bool initial, bool stateScan)
         {
             if (stateScan && !initial) yield break;
-            var logs = new List<LogEntry>();
-            if (Find.PlayLog != null) logs.AddRange(Find.PlayLog.AllEntries);
-            if (Find.BattleLog != null)
-                foreach (var battle in Find.BattleLog.Battles.ToList()) logs.AddRange(battle.Entries);
-            foreach (var log in logs.Distinct())
+            foreach (var log in Entries())
             {
                 string key = log.GetUniqueLoadID();
-                if (c.Book.Seen(Id + ":" + key)) { yield return null; continue; }
+                if (c.Seen(key)) { yield return null; continue; }
                 var concerns = log.GetConcerns().Where(p => p != null).ToList();
                 string text;
                 try { text = log.ToGameStringFromPOV(concerns.FirstOrDefault()); }
@@ -60,7 +64,7 @@ namespace DeepseekTheOrca
             if (Find.TaleManager == null) yield break;
             foreach (var tale in Find.TaleManager.AllTalesListForReading.ToList())
             {
-                if (tale == null || tale.hidden || c.Book.Seen(Id + ":" + tale.GetUniqueLoadID())) { yield return null; continue; }
+                if (tale == null || tale.hidden || c.Seen(tale.GetUniqueLoadID())) { yield return null; continue; }
                 // ShortSummary describes the recorded tale; do not call art text generation.
                 string summary = tale.ShortSummary;
                 yield return c.Record(tale.GetUniqueLoadID(), "tale", tale.DominantPawn == null ? "" : tale.DominantPawn.GetUniqueLoadID(),
@@ -69,45 +73,68 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class NovelPawnSource : INovelSource
+    public sealed class NovelPawnSource : INovelSource, INovelSourceReadiness
     {
         public string Id { get { return "pawns"; } }
         public IEnumerable<NovelRecord> Scan(NovelCaptureContext c, bool initial, bool stateScan)
         {
             if (!initial && !stateScan) yield break;
-            var pawns = ObservablePawns(c.Book);
-            var known = new HashSet<string>(c.Book.baselines.Keys.Where(k => k.StartsWith("pawns:profile:")).Select(k => k.Substring("pawns:profile:".Length)));
+            var pawns = ObservablePawnCandidates(c);
+            var known = new HashSet<string>(c.BaselineKeys("profile:"));
             var found = new HashSet<string>();
             foreach (var pawn in pawns)
             {
-                string id = pawn.GetUniqueLoadID(); found.Add(id);
-                foreach (var record in Isolate(c.Book, "pawns:entity:" + id, CapturePawn(c, pawn))) yield return record;
+                if (pawn == null) { yield return null; continue; }
+                string id = pawn.GetUniqueLoadID();
+                if (!found.Add(id)) { yield return null; continue; }
+                foreach (var record in Isolate(c, "entity:" + id, CapturePawn(c, pawn))) yield return record;
             }
             foreach (string absent in known.Where(id => !found.Contains(id)))
                 yield return c.State("state:" + absent, "pawn_state", absent, "unknown", absent,
                     new Dictionary<string, object> { {"location", "not found in observable maps/caravans/world pawns; fate unknown"} });
         }
 
-        public static List<Pawn> ObservablePawns(NovelBook book)
+        // Snapshot engine-owned collections before yielding, then inspect one entity per step.
+        private static IEnumerable<Pawn> ObservablePawnCandidates(NovelCaptureContext c)
         {
-            var pawns = new List<Pawn>();
-            foreach (var map in Find.Maps.Where(m => m != null).ToList())
+            foreach (var map in Find.Maps.ToArray())
             {
-                pawns.AddRange(map.mapPawns.AllPawns.Where(p => p != null && p.RaceProps != null && (p.RaceProps.Humanlike || p.Faction == Faction.OfPlayer)));
-                pawns.AddRange(map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse).OfType<Corpse>().Select(x => x.InnerPawn));
+                if (map == null) continue;
+                foreach (var pawn in map.mapPawns.AllPawns.ToArray())
+                    yield return pawn != null && pawn.RaceProps != null && (pawn.RaceProps.Humanlike || pawn.Faction == Faction.OfPlayer) ? pawn : null;
+                foreach (var thing in map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse).ToArray())
+                    yield return (thing as Corpse)?.InnerPawn;
             }
             if (Find.WorldObjects != null)
-                foreach (var caravan in Find.WorldObjects.Caravans.ToList())
-                    if (caravan != null && caravan.Faction == Faction.OfPlayer) pawns.AddRange(caravan.PawnsListForReading);
-            var known = new HashSet<string>(book.baselines.Keys.Where(k => k.StartsWith("pawns:profile:")).Select(k => k.Substring("pawns:profile:".Length)));
+                foreach (var caravan in Find.WorldObjects.Caravans.ToArray())
+                    if (caravan != null && caravan.Faction == Faction.OfPlayer)
+                        foreach (var pawn in caravan.PawnsListForReading.ToArray()) yield return pawn;
+            var known = new HashSet<string>(c.BaselineKeys("profile:"));
             if (Find.WorldPawns != null)
-                foreach (var pawn in Find.WorldPawns.AllPawnsAliveOrDead)
-                    if (pawn != null && known.Contains(pawn.GetUniqueLoadID())) pawns.Add(pawn);
-            return pawns.Where(p => p != null).Distinct().ToList();
+                foreach (var pawn in Find.WorldPawns.AllPawnsAliveOrDead.ToArray())
+                    yield return pawn != null && known.Contains(pawn.GetUniqueLoadID()) ? pawn : null;
+        }
+
+        public IEnumerable<NovelRecord> PrepareForWriting(NovelCaptureContext c)
+        {
+            var checkedIds = new HashSet<string>();
+            foreach (var pawn in ObservablePawnCandidates(c))
+            {
+                if (pawn == null || !checkedIds.Add(pawn.GetUniqueLoadID())) { yield return null; continue; }
+                string id = pawn.GetUniqueLoadID();
+                bool profile = c.HasRecord("profile", id);
+                if (profile && c.Baseline("profile:" + id) != null && c.Baseline("state:" + id) != null)
+                { yield return null; continue; }
+                if (!profile) c.RemoveBaseline("profile:" + id);
+                foreach (var record in Isolate(c, "entity:" + id, CapturePawn(c, pawn))) yield return record;
+                if (!c.HasRecord("profile", id) || c.Baseline("profile:" + id) == null || c.Baseline("state:" + id) == null)
+                    throw new InvalidOperationException("DTO_NovelPawnCacheMissing".Translate());
+            }
+            c.ClearDiagnostic("cache"); c.ClearDiagnostic("initial"); c.ClearDiagnostic("state");
         }
 
         // Isolate a broken pawn as well as individual fields: it must never hide later pawns.
-        public static IEnumerable<NovelRecord> Isolate(NovelBook book, string key, IEnumerable<NovelRecord> records)
+        public static IEnumerable<NovelRecord> Isolate(NovelCaptureContext context, string key, IEnumerable<NovelRecord> records)
         {
             using (var iterator = records.GetEnumerator())
             {
@@ -115,9 +142,9 @@ namespace DeepseekTheOrca
                 {
                     bool moved = false, failed = false;
                     try { moved = iterator.MoveNext(); }
-                    catch (Exception ex) { book.sourceErrors[key] = ex.ToString(); failed = true; }
+                    catch (Exception ex) { context.Diagnostic(key, ex); failed = true; }
                     if (failed) yield break;
-                    if (!moved) { book.sourceErrors.Remove(key); yield break; }
+                    if (!moved) { context.ClearDiagnostic(key); yield break; }
                     yield return iterator.Current;
                 }
             }
@@ -126,7 +153,7 @@ namespace DeepseekTheOrca
         private IEnumerable<NovelRecord> CapturePawn(NovelCaptureContext c, Pawn pawn)
         {
             string id = pawn.GetUniqueLoadID();
-            var profile = new NovelPawnFields(c.Book, id, "profile");
+            var profile = new NovelPawnFields(c, id, "profile");
             profile.Read("name", () => pawn.LabelShort);
             profile.Read("kind", () => pawn.KindLabel);
             profile.Read("race", () => pawn.def.label);
@@ -144,11 +171,12 @@ namespace DeepseekTheOrca
             profile.Read("apparel", () => pawn.apparel == null ? "" : string.Join("; ", pawn.apparel.WornApparel.Where(t => t != null).Select(t => t.LabelCap.ToString()).ToArray()));
             profile.Read("rimtalkPersona", () => RimtalkIntegration.PawnPersonaSummary(pawn));
             string name = profile.Values.ContainsKey("name") ? Convert.ToString(profile.Values["name"]) : "Unnamed person";
-            var state = new NovelPawnFields(c.Book, id, "state");
+            var state = new NovelPawnFields(c, id, "state");
             state.Read("name", () => name);
             state.Read("location", () => pawn.Map == null ? (pawn.GetCaravan() == null ? "off-map; location unknown" : pawn.GetCaravan().GetUniqueLoadID()) : pawn.Map.GetUniqueLoadID());
             string location = state.Values.ContainsKey("location") ? Convert.ToString(state.Values["location"]) : "unknown";
-            yield return c.State("profile:" + id, "profile", id, location, name, profile.Values);
+            yield return c.State("profile:" + id, "profile", id, location, name, profile.Values,
+                new[] { "childhood", "adulthood", "skills", "rimtalkPersona", "equipment", "apparel" });
             state.Read("dead", () => pawn.Dead);
             state.Read("downed", () => pawn.Downed);
             state.Read("mentalState", () => pawn.MentalStateDef == null ? "" : pawn.MentalStateDef.label);
@@ -156,11 +184,11 @@ namespace DeepseekTheOrca
             state.Read("needs", () => PawnDetailsFormatter.NeedsSummary(pawn));
             state.Read("health", () => pawn.health == null || pawn.health.hediffSet == null ? "" : string.Join("; ", pawn.health.hediffSet.hediffs
                 .Where(h => h != null && h.def != null).Select(h => h.Label + " [" + h.def.defName + "] " + (h.Part == null ? "" : h.Part.Label) + " severity=" + h.Severity.ToString("0.##")).ToArray()));
-            state.Read("moodReasons", () => MoodReasons(pawn));
+            state.Values["moodReasons"] = MoodReasons(c, pawn);
             yield return c.State("state:" + id, "pawn_state", id, location, name, state.Values);
             if (pawn.records != null)
             {
-                var values = new NovelPawnFields(c.Book, id, "records");
+                var values = new NovelPawnFields(c, id, "records");
                 foreach (var def in DefDatabase<RecordDef>.AllDefsListForReading)
                 {
                     if (def != null) values.Read(def.defName + " (" + def.label + ")", () => Math.Round(pawn.records.GetValue(def), 2));
@@ -169,30 +197,76 @@ namespace DeepseekTheOrca
                 yield return c.State("records:" + id, "daily_records", id, location, name + " cumulative records", values.Values);
             }
         }
-        private static string MoodReasons(Pawn pawn)
+        private static object MoodReasons(NovelCaptureContext context, Pawn pawn)
         {
-            if (pawn.Dead || pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null) return "";
+            string key = "field:" + pawn.GetUniqueLoadID() + ":state:moodReasons";
+            if (pawn.Dead || pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null)
+            { context.ClearDiagnostic(key); return null; }
+            var errors = new List<Exception>();
             var thoughts = new List<Thought>();
-            pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
-            return string.Join("; ", thoughts.Where(t => t != null && t.def != null).Select(t => t.LabelCap.ToString()).ToArray());
+            var labels = new List<string>();
+            var handler = pawn.needs.mood.thoughts;
+            string pawnInfo = "pawn=" + pawn.GetUniqueLoadID() + "; spawned=" + pawn.Spawned + "; dead=" + pawn.Dead;
+            // Vanilla's combined method aborts on the first bad memory. Isolate each
+            // entry and the situational source so healthy observations remain usable.
+            try
+            {
+                if (handler.memories == null) throw new InvalidOperationException("Memory thought handler unavailable");
+                foreach (var thought in handler.memories.Memories)
+                {
+                    try { ValidateThought(thought); if (thought.MoodOffset() != 0f) thoughts.Add(thought); }
+                    catch (Exception ex) { errors.Add(new InvalidOperationException(pawnInfo + "; phase=memory_mood; " + ThoughtIdentity(thought), ex)); }
+                }
+            }
+            catch (Exception ex) { errors.Add(new InvalidOperationException(pawnInfo + "; phase=collect_memories", ex)); }
+            try
+            {
+                if (handler.situational == null) throw new InvalidOperationException("Situational thought handler unavailable");
+                handler.situational.AppendMoodThoughts(thoughts);
+            }
+            catch (Exception ex) { errors.Add(new InvalidOperationException(pawnInfo + "; phase=collect_situational", ex)); }
+            foreach (var thought in thoughts)
+            {
+                try { ValidateThought(thought); labels.Add(thought.LabelCap); }
+                catch (Exception ex) { errors.Add(new InvalidOperationException(pawnInfo + "; phase=label; " + ThoughtIdentity(thought), ex)); }
+            }
+            if (errors.Count > 0) context.Diagnostic(key, new AggregateException("Mood collection partially unavailable", errors));
+            else context.ClearDiagnostic(key);
+            return new Dictionary<string, object> { { "observed", labels }, { "complete", errors.Count == 0 } };
+        }
+
+        private static string ThoughtIdentity(Thought thought)
+        {
+            return thought == null ? "thought=null" : "thought=" + (thought.def == null ? "null_def" : thought.def.defName)
+                + "; type=" + thought.GetType().FullName + "; worker=" + (thought.def == null || thought.def.workerClass == null ? "none" : thought.def.workerClass.FullName)
+                + "; pawnBound=" + (thought.pawn != null);
+        }
+
+        private static void ValidateThought(Thought thought)
+        {
+            if (thought == null || thought.def == null || thought.pawn == null)
+                throw new InvalidOperationException("Thought, definition or bound pawn is null");
+            int stage = thought.CurStageIndex;
+            if (thought.def.stages == null || stage < 0 || stage >= thought.def.stages.Count || thought.def.stages[stage] == null)
+                throw new InvalidOperationException("Invalid thought stage " + stage);
         }
     }
 
     public sealed class NovelPawnFields
     {
         public readonly Dictionary<string, object> Values = new Dictionary<string, object>();
-        private readonly NovelBook book;
+        private readonly NovelCaptureContext context;
         private readonly string prefix;
-        public NovelPawnFields(NovelBook book, string pawnId, string section)
-        { this.book = book; prefix = "pawns:field:" + pawnId + ":" + section + ":"; }
+        public NovelPawnFields(NovelCaptureContext context, string pawnId, string section)
+        { this.context = context; prefix = "field:" + pawnId + ":" + section + ":"; }
         public void Read(string name, Func<object> read)
         {
-            try { Values[name] = read(); book.sourceErrors.Remove(prefix + name); }
+            try { Values[name] = read(); context.ClearDiagnostic(prefix + name); }
             catch (Exception ex)
             {
                 // Diagnostics are never source text. Null means unavailable, not an empty/zero fact.
                 Values[name] = null;
-                book.sourceErrors[prefix + name] = ex.ToString();
+                context.Diagnostic(prefix + name, ex);
             }
         }
     }
@@ -206,17 +280,43 @@ namespace DeepseekTheOrca
             foreach (var map in Find.Maps.ToList())
             {
                 string id = map.GetUniqueLoadID();
-                var s = ColonyDeepSnapshot.Capture(map);
+                int colonists = 0, downed = 0, injured = 0, moodCount = 0;
+                double moodSum = 0;
+                foreach (var pawn in map.PlayerPawnsForStoryteller.ToArray())
+                {
+                    if (pawn != null && !pawn.Dead)
+                    {
+                        colonists++; if (pawn.Downed) downed++;
+                        var health = pawn.health == null ? null : pawn.health.hediffSet;
+                        if (health != null && (health.PainTotal > 0.08f || health.BleedRateTotal > 0.01f || health.hediffs.Any(h => h != null && h.TendableNow()))) injured++;
+                        if (pawn.needs != null && pawn.needs.mood != null) { moodSum += pawn.needs.mood.CurLevel; moodCount++; }
+                    }
+                    yield return null;
+                }
+                int medicine = 0;
+                foreach (string name in new[] { "MedicineHerbal", "MedicineIndustrial", "MedicineUltratech" })
+                {
+                    var def = DefDatabase<ThingDef>.GetNamedSilentFail(name);
+                    if (def != null && map.resourceCounter != null) medicine += map.resourceCounter.GetCount(def);
+                    yield return null;
+                }
                 yield return c.State(id, "colony_state", id, id, map.Parent.LabelCap.ToString(), new Dictionary<string, object>
                 {
                     {"tile", map.Tile.ToString()}, {"biome", map.Biome.label}, {"weather", map.weatherManager.curWeather.label},
                     {"temperature", Math.Round(map.mapTemperature.OutdoorTemp, 1)},
                     {"conditions", string.Join("; ", map.gameConditionManager.ActiveConditions.Select(x => x.Label).ToArray())},
-                    {"colonists", s.colonists}, {"downed", s.downedColonists}, {"injured", s.injuredColonists},
-                    {"foodNutrition", Math.Round(s.humanEdibleNutrition, 1)}, {"medicine", s.medicineCount}, {"wealth", Math.Round(s.playerWealth)},
-                    {"mood", Math.Round(s.averageMood, 2)}
+                    {"colonists", colonists}, {"downed", downed}, {"injured", injured},
+                    {"foodNutrition", map.resourceCounter == null ? -1d : Math.Round(map.resourceCounter.TotalHumanEdibleNutrition, 1)}, {"medicine", medicine}, {"wealth", Math.Round(map.PlayerWealthForStoryteller)},
+                    {"mood", moodCount == 0 ? 0.5d : Math.Round(moodSum / moodCount, 2)}
                 });
-                var buildings = map.listerBuildings.allBuildingsColonist.GroupBy(b => b.def).ToDictionary(g => g.Key.defName + " (" + g.Key.label + ")", g => (object)g.Count());
+                var buildings = new Dictionary<string, object>();
+                foreach (var building in map.listerBuildings.allBuildingsColonist.ToArray())
+                {
+                    string key = building.def.defName + " (" + building.def.label + ")";
+                    object count; buildings.TryGetValue(key, out count);
+                    buildings[key] = (count == null ? 0 : (int)count) + 1;
+                    yield return null;
+                }
                 yield return c.State("buildings:" + id, "construction", id, id, "Observed buildings; changes do not identify builders", buildings);
             }
             foreach (var caravan in Find.WorldObjects.Caravans.ToList())
@@ -248,11 +348,9 @@ namespace DeepseekTheOrca
         public IEnumerable<NovelRecord> Scan(NovelCaptureContext c, bool initial, bool stateScan)
         {
             if ((!initial && stateScan) || !RimtalkIntegration.IsAvailable) yield break;
-            List<RimtalkHistorySnapshot> rows; string error;
-            if (!RimtalkIntegration.TryGetRecentHistorySnapshots(int.MaxValue, int.MaxValue, out rows, out error)) throw new InvalidOperationException(error);
-            foreach (var row in rows)
+            foreach (var row in RimtalkIntegration.EnumerateHistorySnapshots())
             {
-                if (!IsSpoken(row)) { yield return null; continue; }
+                if (!IsSpoken(row) || c.Seen(row.identityKey)) { yield return null; continue; }
                 yield return c.Record(row.identityKey, "dialogue", (row.pawnId ?? row.pawn) + "," + (row.recipientId ?? row.recipient), "", row.pawn + " -> " + row.recipient + ": " + row.interactionType,
                     row.pawn + ": " + row.response + "\nRecipient: " + row.recipient + "\nConversation: " + row.conversationId, row.spokenTick >= 0 ? row.spokenTick : row.finishedTick);
             }

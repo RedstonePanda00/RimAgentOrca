@@ -145,6 +145,7 @@ namespace DeepseekTheOrca
         private string descriptionBuffer;
         private string triggerHintsBuffer;
         private string contextsBuffer;
+        private string taskScopesBuffer;
         private string allowedToolsBuffer;
         private string promptBuffer;
         private bool enabledBuffer;
@@ -157,6 +158,7 @@ namespace DeepseekTheOrca
             descriptionBuffer = profile == null ? "" : profile.description;
             triggerHintsBuffer = profile == null || profile.triggerHints == null ? "" : string.Join("\n", profile.triggerHints.ToArray());
             contextsBuffer = profile == null || profile.contexts == null ? "" : string.Join("\n", profile.contexts.ToArray());
+            taskScopesBuffer = profile == null || profile.taskScopes == null ? "" : string.Join(", ", profile.taskScopes.ToArray());
             allowedToolsBuffer = profile == null || profile.allowedTools == null ? "" : string.Join("\n", profile.allowedTools.ToArray());
             promptBuffer = profile == null ? "" : profile.prompt;
             enabledBuffer = profile == null || profile.enabled;
@@ -168,7 +170,7 @@ namespace DeepseekTheOrca
 
         public override Vector2 InitialSize
         {
-            get { return new Vector2(780f, 680f); }
+            get { return new Vector2(780f, 740f); }
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -208,6 +210,13 @@ namespace DeepseekTheOrca
             allowedToolsBuffer = Widgets.TextArea(new Rect(inRect.x + (columnWidth + 10f) * 2f, y, columnWidth, 82f), allowedToolsBuffer ?? "");
             y += 92f;
 
+            var scopeLabel = new Rect(inRect.x, y, inRect.width, 24f);
+            Widgets.Label(scopeLabel, "DTO_SkillTaskScopes".Translate());
+            TooltipHandler.TipRegion(scopeLabel, "DTO_SkillTaskScopesHelp".Translate());
+            y += 26f;
+            taskScopesBuffer = Widgets.TextField(new Rect(inRect.x, y, inRect.width, 28f), taskScopesBuffer ?? "");
+            y += 36f;
+
             Widgets.Label(new Rect(inRect.x, y, inRect.width, 24f), "DTO_SkillPrompt".Translate());
             y += 26f;
             Rect promptOuter = new Rect(inRect.x, y, inRect.width, inRect.height - y - 48f);
@@ -225,6 +234,7 @@ namespace DeepseekTheOrca
                 profile.enabled = enabledBuffer;
                 profile.triggerHints = SplitLines(triggerHintsBuffer);
                 profile.contexts = SplitLines(contextsBuffer);
+                profile.taskScopes = SplitLines((taskScopesBuffer ?? "").Replace(",", "\n").Replace("，", "\n"));
                 profile.allowedTools = SplitLines(allowedToolsBuffer);
                 profile.prompt = promptBuffer ?? "";
                 OrcaSkillManager.Save(profile);

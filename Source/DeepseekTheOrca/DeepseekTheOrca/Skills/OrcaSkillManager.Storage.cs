@@ -9,6 +9,8 @@ namespace DeepseekTheOrca
 {
     public static partial class OrcaSkillManager
     {
+        private static List<OrcaSkillProfile> cachedModSkills;
+        private static DateTime nextModSkillRefresh;
         private static void EnsureLoaded()
         {
             if (loadedLocal)
@@ -31,6 +33,13 @@ namespace DeepseekTheOrca
 
         private static List<OrcaSkillProfile> ModFolderSkills()
         {
+            if (cachedModSkills != null && DateTime.UtcNow < nextModSkillRefresh)
+            {
+                var settings = DeepseekTheOrcaMod.Settings;
+                foreach (var profile in cachedModSkills)
+                    profile.enabled = settings == null ? profile.defaultEnabled : settings.IsExternalSkillEnabled(profile.id, profile.defaultEnabled);
+                return cachedModSkills;
+            }
             List<OrcaSkillProfile> result = new List<OrcaSkillProfile>();
             List<ModContentPack> mods = LoadedModManager.RunningModsListForReading;
             if (mods == null)
@@ -50,6 +59,8 @@ namespace DeepseekTheOrca
                 LoadModSkillRoot(result, mod, Path.Combine(mod.RootDir, "Skills"));
             }
 
+            cachedModSkills = result;
+            nextModSkillRefresh = DateTime.UtcNow.AddSeconds(5);
             return result;
         }
 
@@ -91,6 +102,7 @@ namespace DeepseekTheOrca
             profile.prompt = profile.prompt ?? "";
             profile.triggerHints = CleanList(profile.triggerHints);
             profile.contexts = CleanContextTags(profile.contexts);
+            profile.taskScopes = CleanContextTags(profile.taskScopes);
             profile.allowedTools = CleanList(profile.allowedTools);
             if (profile.format.NullOrEmpty())
             {
@@ -194,6 +206,7 @@ namespace DeepseekTheOrca
                     enabled = markdown.enabled,
                     triggerHints = markdown.triggerHints,
                     contexts = markdown.contexts,
+                    taskScopes = markdown.taskScopes,
                     prompt = markdown.instructions,
                     allowedTools = markdown.allowedTools,
                     readOnly = readOnly,
@@ -239,6 +252,7 @@ namespace DeepseekTheOrca
             }
             AppendMarkdownList(builder, "triggerHints", profile.triggerHints);
             AppendMarkdownList(builder, "contexts", profile.contexts);
+            AppendMarkdownList(builder, "taskScopes", profile.taskScopes);
             AppendMarkdownList(builder, "allowedTools", profile.allowedTools);
             builder.AppendLine("---");
             builder.AppendLine();

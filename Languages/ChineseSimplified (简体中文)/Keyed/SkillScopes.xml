@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_SkillTaskScopes>适用任务（逗号分隔；留空表示聊天）</DTO_SkillTaskScopes>
+  <DTO_SkillTaskScopesHelp>chat：聊天；novel_organize：章节提纲；novel_write：小说正文。Skill 只用于所列任务；上下文标签用于判断任务内的相关性。</DTO_SkillTaskScopesHelp>
+</LanguageData>

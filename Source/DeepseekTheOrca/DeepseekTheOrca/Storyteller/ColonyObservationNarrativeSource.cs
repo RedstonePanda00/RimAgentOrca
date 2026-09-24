@@ -11,9 +11,7 @@ namespace DeepseekTheOrca
         private const int MaxSeenKeys = 200;
         private readonly HashSet<string> seenLetterKeys = new HashSet<string>();
         private readonly Queue<string> seenKeyOrder = new Queue<string>();
-        private readonly Queue<ColonyDeepSnapshot> recentSnapshots = new Queue<ColonyDeepSnapshot>();
-        private readonly OrcaNarrativeEvaluationState evaluationState = new OrcaNarrativeEvaluationState();
-        private ColonyDeepSnapshot previous;
+        private readonly Dictionary<int, MapObservation> observations = new Dictionary<int, MapObservation>();
         private int lastScanTick = -999999;
         private bool seeded;
 
@@ -32,19 +30,24 @@ namespace DeepseekTheOrca
 
             lastScanTick = ticksGame;
             List<Letter> letters = RecentLetters(12);
-            ColonyDeepSnapshot current = Find.CurrentMap == null || Find.CurrentMap.StoryState == null ? null : ColonyDeepSnapshot.Capture(Find.CurrentMap);
+            Map map = Find.CurrentMap;
+            ColonyDeepSnapshot current = map == null || map.StoryState == null ? null : ColonyDeepSnapshot.Capture(map);
+            // Map identity is independent of global event-plan ownership. Retain separate
+            // histories so switching the camera cannot manufacture a colony-state delta.
+            foreach (int removed in observations.Keys.Where(id => !Find.Maps.Any(m => m.uniqueID == id)).ToArray())
+                observations.Remove(removed);
+            MapObservation observation = ObservationFor(map == null ? -1 : map.uniqueID);
             if (!seeded)
             {
                 MarkSeen(letters);
-                previous = current;
-                AddRecentSnapshot(current);
+                observation.Observe(current);
                 seeded = true;
                 return;
             }
 
             List<OrcaNarrativeObservationCandidate> candidates = new List<OrcaNarrativeObservationCandidate>();
-            ColonyDeepSnapshot trendPrevious = recentSnapshots.Count == 0 ? previous : recentSnapshots.Peek();
-            CollectDeltas(previous, current, trendPrevious, candidates);
+            ColonyDeepSnapshot trendPrevious = observation.Trend;
+            CollectDeltas(observation.previous, current, trendPrevious, candidates);
 
             for (int i = 0; i < letters.Count; i++)
             {
@@ -63,22 +66,34 @@ namespace DeepseekTheOrca
                 }
             }
 
-            EvaluateAndMaybeEnqueue(candidates, trendPrevious, current);
-            previous = current;
-            AddRecentSnapshot(current);
+            EvaluateAndMaybeEnqueue(candidates, trendPrevious, current, observation.evaluationState);
+            observation.Observe(current);
         }
 
-        private void AddRecentSnapshot(ColonyDeepSnapshot snapshot)
+        private MapObservation ObservationFor(int mapId)
         {
-            if (snapshot == null)
+            MapObservation observation;
+            if (!observations.TryGetValue(mapId, out observation))
             {
-                return;
+                observation = new MapObservation();
+                observations.Add(mapId, observation);
             }
+            return observation;
+        }
 
-            recentSnapshots.Enqueue(snapshot);
-            while (recentSnapshots.Count > 4)
+        private sealed class MapObservation
+        {
+            public ColonyDeepSnapshot previous;
+            public readonly OrcaNarrativeEvaluationState evaluationState = new OrcaNarrativeEvaluationState();
+            private readonly Queue<ColonyDeepSnapshot> recent = new Queue<ColonyDeepSnapshot>();
+            public ColonyDeepSnapshot Trend { get { return recent.Count == 0 ? previous : recent.Peek(); } }
+
+            public void Observe(ColonyDeepSnapshot snapshot)
             {
-                recentSnapshots.Dequeue();
+                if (snapshot == null) return;
+                previous = snapshot;
+                recent.Enqueue(snapshot);
+                while (recent.Count > 4) recent.Dequeue();
             }
         }
 
@@ -373,7 +388,7 @@ namespace DeepseekTheOrca
             }
         }
 
-        private void EvaluateAndMaybeEnqueue(List<OrcaNarrativeObservationCandidate> candidates, ColonyDeepSnapshot previous, ColonyDeepSnapshot current)
+        private void EvaluateAndMaybeEnqueue(List<OrcaNarrativeObservationCandidate> candidates, ColonyDeepSnapshot previous, ColonyDeepSnapshot current, OrcaNarrativeEvaluationState evaluationState)
         {
             if (candidates == null || candidates.Count == 0)
             {

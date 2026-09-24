@@ -58,7 +58,7 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            if (pendingRequest != null || pendingStreamingRequest != null || pendingParallelToolRequest != null)
+            if (IsWaiting)
             {
                 statusText = pendingParallelToolRequest != null ? "DTO_OrcaChatUsingTools".Translate() : "DTO_OrcaChatWaiting".Translate();
                 return;

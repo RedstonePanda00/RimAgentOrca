@@ -274,9 +274,9 @@ namespace DeepseekTheOrca
                     + incident.incidentDefName + " | " + message + "\n" + traceText);
             }
 
-            if ((currentCycle.geminiHiss || now >= currentCycle.cycleEndTick) && !currentCycle.HasPendingIncidents)
+            if ((currentCycle.finishWhenEventsComplete || now >= currentCycle.cycleEndTick) && !currentCycle.HasPendingIncidents)
             {
-                if (currentCycle.geminiHiss) nextCycleStartTick = now;
+                if (currentCycle.finishWhenEventsComplete) nextCycleStartTick = now;
                 currentCycle = null;
             }
         }

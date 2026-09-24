@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
 using Verse;
 
 namespace DeepseekTheOrca
@@ -17,9 +19,9 @@ namespace DeepseekTheOrca
             AiToolContext context = new AiToolContext(Find.CurrentMap, null, null);
             AiToolSession session = new AiToolSession(context);
 
-            if (GeminiHissService.IsCoolingDown && AiStoryToolRegistry.IsExecutionTool(toolName))
+            if (!string.IsNullOrEmpty(OrcaPersonaBehaviors.Current.ExecutionBlockReason) && AiStoryToolRegistry.IsExecutionTool(toolName))
             {
-                execution.result = AiToolResult.Fail("Gemini is sulking and will not execute chat requests");
+                execution.result = AiToolResult.Fail(OrcaPersonaBehaviors.Current.ExecutionBlockReason);
             }
             else if (!IsToolExposedToChat(toolName))
             {
@@ -47,7 +49,22 @@ namespace DeepseekTheOrca
             }
             else
             {
-                execution.result = session.Invoke(toolName, arguments);
+                var worker = AiStoryToolRegistry.WorkerFor(toolName);
+                var asyncWorker = worker as IOrcaAsyncToolWorker;
+                string reason;
+                try
+                {
+                    if (asyncWorker != null)
+                    {
+                        if (!worker.CanUse(context, out reason)) execution.result = AiToolResult.Fail(reason);
+                        else execution.pending = asyncWorker.BeginInvoke(context, new Dictionary<string, string>(arguments ?? new Dictionary<string, string>()));
+                    }
+                    else if (OrcaHttpMcpClient.IsExposedTool(toolName))
+                        execution.pending = OrcaHttpMcpClient.BeginInvokeExposedTool(toolName, arguments);
+                    else execution.result = session.Invoke(toolName, arguments);
+                    if (execution.pending == null && execution.result == null) execution.result = AiToolResult.Fail("tool returned no operation");
+                }
+                catch (Exception ex) { execution.result = AiToolResult.Fail(ex.GetType().Name + ": " + ex.Message); }
             }
 
             execution.exposedToChat = IsToolExposedToChat(toolName);
@@ -156,5 +173,16 @@ namespace DeepseekTheOrca
         public AiToolResult result;
         public bool exposedToChat;
         public readonly List<string> ProcessLines = new List<string>();
+        internal Task<AiToolResult> pending;
+
+        public bool TryComplete()
+        {
+            if (pending == null) return true;
+            if (!pending.IsCompleted) return false;
+            try { result = pending.GetAwaiter().GetResult() ?? AiToolResult.Fail("tool returned no result"); }
+            catch (Exception ex) { result = AiToolResult.Fail(ex.GetType().Name + ": " + ex.Message); }
+            pending = null;
+            return true;
+        }
     }
 }

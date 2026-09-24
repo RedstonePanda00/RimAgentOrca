@@ -96,7 +96,7 @@ namespace DeepseekTheOrca
         }
     }
 
-    public sealed class LlmStreamingChatRequest
+    public sealed partial class LlmStreamingChatRequest
     {
         private readonly object syncRoot = new object();
         private readonly StringBuilder rawContent = new StringBuilder();
@@ -238,6 +238,7 @@ namespace DeepseekTheOrca
                 }
                 visibleText = JsonReplyStreamExtractor.SanitizeVisibleText(replyExtractor.Extract(rawContent.ToString()));
                 completed = true;
+                SetStage(response.success ? "completed" : "failed");
             }
         }
 
@@ -258,6 +259,7 @@ namespace DeepseekTheOrca
                 finalResponse.providerId = providerId;
                 visibleText = JsonReplyStreamExtractor.SanitizeVisibleText(replyExtractor.Extract(rawContent.ToString()));
                 completed = true;
+                SetStage("failed");
             }
         }
 
@@ -267,6 +269,7 @@ namespace DeepseekTheOrca
             {
                 cancelled = true;
             }
+            cancellationSource.Cancel();
         }
     }
 }

@@ -216,7 +216,7 @@ namespace DeepseekTheOrca
 
         private static string ControllerPromptPreamble()
         {
-            return GeminiHissService.RuntimePrompt() + "\nYou are the central controller for a RimWorld chat agent. "
+            return OrcaPersonaBehaviors.Current.RuntimePrompt + "\nYou are the central controller for a RimWorld chat agent. "
                 + "You decide whether more information is needed and route to one primary visible next stage. "
                 + "Return exactly one JSON object and no extra text. "
                 + "Schema: {\"route\":\"dialogue|tool|web_search|vision\",\"skillIds\":[\"enabled skill id\"],\"reason\":\"short reason\",\"contextSummary\":\"relevant facts and constraints for the next model; not final prose\",\"parallelToolInstruction\":\"optional exact tool-side execution goal, or empty string\"}. "

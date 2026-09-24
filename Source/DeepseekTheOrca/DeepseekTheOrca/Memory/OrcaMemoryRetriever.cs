@@ -29,6 +29,7 @@ namespace DeepseekTheOrca
             string saveId = OrcaLongTermMemoryService.CurrentSaveId();
             long now = OrcaMemoryRecord.NowUnixSeconds();
             bool hasSemanticQuery = queryEmbedding != null && queryEmbedding.Count > 0;
+            string embeddingIdentity = OrcaEmbeddingIdentity.Current;
 
             List<ScoredMemory> scored = new List<ScoredMemory>();
             for (int i = 0; i < records.Count; i++)
@@ -39,7 +40,8 @@ namespace DeepseekTheOrca
                     continue;
                 }
 
-                float score = Score(record, idSet.Contains(record.id), queryKeywords, queryEmbedding, hasSemanticQuery, saveId, now);
+                float score = Score(record, idSet.Contains(record.id), queryKeywords, queryEmbedding,
+                    hasSemanticQuery && OrcaEmbeddingIdentity.Matches(record.embeddingIdentity, embeddingIdentity), saveId, now);
                 if (score > 0.05f)
                 {
                     scored.Add(new ScoredMemory(record, score));
@@ -67,8 +69,7 @@ namespace DeepseekTheOrca
                         continue;
                     }
 
-                    float diversityPenalty = MaxSimilarity(candidate.record, selected);
-                    float mmr = candidate.score * MmrRelevanceWeight - diversityPenalty * MmrDiversityWeight;
+                    float mmr = candidate.score * MmrRelevanceWeight - candidate.diversityPenalty * MmrDiversityWeight;
                     if (mmr > bestScore)
                     {
                         bestScore = mmr;
@@ -83,6 +84,8 @@ namespace DeepseekTheOrca
 
                 remaining.Remove(best);
                 selected.Add(best.record);
+                foreach (var candidate in remaining)
+                    candidate.diversityPenalty = Math.Max(candidate.diversityPenalty, Similarity(candidate.record, best.record));
                 string clusterKey = ClusterKey(best.record);
                 if (!clusterKey.NullOrEmpty())
                 {
@@ -143,7 +146,7 @@ namespace DeepseekTheOrca
                 return 0.85f;
             }
 
-            return Cosine(a.centroidEmbedding, b.centroidEmbedding);
+            return OrcaEmbeddingIdentity.Matches(a.embeddingIdentity, b.embeddingIdentity) ? Cosine(a.centroidEmbedding, b.centroidEmbedding) : 0f;
         }
 
         private static float Score(OrcaMemoryRecord record, bool keywordHit, List<string> queryKeywords, List<float> queryEmbedding, bool hasSemanticQuery, string saveId, long now)
@@ -194,7 +197,8 @@ namespace DeepseekTheOrca
                 return false;
             }
 
-            return record.memoryKind == "cluster" || record.embeddingState == "ready";
+            // A failed/unconfigured embedding must not hide valid textual memories.
+            return record.memoryKind == "cluster" || record.memoryKind == "chunk" || record.memoryKind == "atomic";
         }
 
         public static float Cosine(List<float> a, List<float> b)
@@ -221,6 +225,7 @@ namespace DeepseekTheOrca
         {
             public readonly OrcaMemoryRecord record;
             public readonly float score;
+            public float diversityPenalty;
 
             public ScoredMemory(OrcaMemoryRecord record, float score)
             {

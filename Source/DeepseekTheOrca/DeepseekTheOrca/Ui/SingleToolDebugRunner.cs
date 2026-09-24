@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RimWorld;
 using Verse;
 
@@ -7,6 +8,11 @@ namespace DeepseekTheOrca
     public static class SingleToolDebugRunner
     {
         private static readonly List<string> logLines = new List<string>();
+        private static Task<AiToolResult> pending;
+        private static AiToolContext pendingContext;
+        private static Game owner;
+        private static string pendingTool;
+        private static Dictionary<string, string> pendingArguments;
 
         public static IEnumerable<string> LogLines
         {
@@ -15,25 +21,49 @@ namespace DeepseekTheOrca
 
         public static void Run(string toolName, Dictionary<string, string> arguments)
         {
+            Update();
+            if (pending != null) { AddLog("A debug tool is still running."); return; }
             if (Find.CurrentMap == null)
             {
                 AddLog("No current map.");
                 return;
             }
 
-            arguments = arguments ?? new Dictionary<string, string>();
+            arguments = arguments == null ? new Dictionary<string, string>() : new Dictionary<string, string>(arguments);
 
             AiToolContext context = new AiToolContext(Find.CurrentMap, null, null);
             AiToolSession session = new AiToolSession(context);
 
             AddLog("Run tool: " + toolName + " " + FormatArguments(arguments));
-            AiToolResult result = session.Invoke(toolName, arguments);
+            owner = Current.Game;
+            pendingTool = toolName;
+            pendingArguments = arguments;
+            pendingContext = context;
+            pending = session.BeginInvoke(toolName, arguments);
+            Update();
+        }
+
+        internal static void Update()
+        {
+            if (pending == null) return;
+            if (owner != Current.Game) { Reset(); return; }
+            if (!pending.IsCompleted) return;
+            var context = pendingContext;
+            var arguments = pendingArguments;
+            var toolName = pendingTool;
+            var finished = pending;
+            Reset();
+            AiToolResult result = finished.IsCanceled ? AiToolResult.Fail("Debug tool cancelled.")
+                : finished.IsFaulted ? AiToolResult.Fail(finished.Exception.GetBaseException().Message)
+                : finished.Result ?? AiToolResult.Fail("Debug tool returned no result.");
             AddLog("Result: " + (result.success ? "ok" : "failed") + " - " + result.message + FormatValues(result));
 
             if (context.trace.Length > 0)
             {
                 AddLog("Trace: " + context.trace.ToString().Replace("\n", " | "));
             }
+
+            if (!ReferenceEquals(context.target, Find.CurrentMap)) return;
 
             if (result.success && toolName == "schedule_incident")
             {
@@ -47,6 +77,15 @@ namespace DeepseekTheOrca
             {
                 SpawnPawns(arguments);
             }
+        }
+
+        internal static void Reset()
+        {
+            pending = null;
+            pendingContext = null;
+            pendingArguments = null;
+            pendingTool = null;
+            owner = null;
         }
 
         public static void ClearLog()

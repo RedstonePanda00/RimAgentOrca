@@ -15,9 +15,20 @@ namespace DeepseekTheOrca
         private static Task<OrcaEmbeddingResult> pendingBundleEmbedding;
         private static string pendingBundleId = "";
         private static int lastPrewarmTick = -MaxSemanticPrewarmIntervalTicks;
+        private static string embeddingIdentity = "";
+
+        private static void EnsureEmbeddingIdentity()
+        {
+            string current = OrcaEmbeddingIdentity.Current;
+            if (current == embeddingIdentity) return;
+            ResetRuntime();
+            lock (syncRoot) bundleEmbeddings.Clear();
+            embeddingIdentity = current;
+        }
 
         public static void ResetRuntime()
         {
+            embeddingClient.CancelQueuedRequests();
             pendingBundleEmbedding = null;
             pendingBundleId = "";
             lastPrewarmTick = -MaxSemanticPrewarmIntervalTicks;
@@ -25,6 +36,7 @@ namespace DeepseekTheOrca
 
         public static HashSet<string> SelectToolNames(string query, OrcaLlmModelRole role, bool allowExecutionTools)
         {
+            EnsureEmbeddingIdentity();
             List<OrcaToolBundleDef> bundles = BundlesForRole(role);
             HashSet<string> selected = new HashSet<string>();
             for (int i = 0; i < bundles.Count; i++)
@@ -63,6 +75,7 @@ namespace DeepseekTheOrca
 
         public static void Tick()
         {
+            EnsureEmbeddingIdentity();
             CompletePendingBundleEmbedding();
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.enableSemanticToolSearch || !settings.HasModelForRole(OrcaLlmModelRole.Embedding))
@@ -102,7 +115,8 @@ namespace DeepseekTheOrca
             try
             {
                 OrcaEmbeddingResult result = task.Result;
-                if (result != null && result.success && result.embedding != null && result.embedding.Count > 0)
+                if (result != null && result.success && result.embedding != null && result.embedding.Count > 0
+                    && OrcaEmbeddingIdentity.Matches(result.identity, embeddingIdentity))
                 {
                     lock (syncRoot)
                     {
@@ -141,36 +155,7 @@ namespace DeepseekTheOrca
 
         private static List<float> TryEmbedQuery(DeepseekTheOrcaSettings settings, string query)
         {
-            if (settings == null || !settings.enableSemanticToolSearch || query.NullOrEmpty() || !settings.HasModelForRole(OrcaLlmModelRole.Embedding))
-            {
-                return null;
-            }
-            if (LlmRequestScheduler.IsBusy || !AnyBundleEmbeddingReady())
-            {
-                return null;
-            }
-
-            try
-            {
-                int waitMs = Math.Max(0, settings.toolSemanticSearchWaitMs);
-                if (waitMs <= 0)
-                {
-                    return null;
-                }
-
-                Task<OrcaEmbeddingResult> task = embeddingClient.EmbedAsync(settings, query, waitMs);
-                if (!task.Wait(waitMs))
-                {
-                    return null;
-                }
-
-                OrcaEmbeddingResult result = task.Result;
-                return result != null && result.success && result.embedding != null && result.embedding.Count > 0 ? result.embedding : null;
-            }
-            catch
-            {
-                return null;
-            }
+            return settings != null && settings.enableSemanticToolSearch ? OrcaSemanticQueryCache.Ready(query) : null;
         }
 
         private static float SemanticScore(OrcaToolBundleDef bundle, List<float> queryEmbedding)

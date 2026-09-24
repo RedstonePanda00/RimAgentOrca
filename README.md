@@ -18,7 +18,7 @@ If you like my mod, please make sure to give me a Star!
 - Optional HTTP MCP tool discovery for player-configured external tool servers.
 - Optional RimTalk integration for recent chat history and proactive dialogue hooks when RimTalk is active.
 - Includes English and Simplified Chinese localization.
-- Optional built-in Colony novel plugin: the current narrator writes a preface and continuing chapters from locally collected game records. Defaults to one approximately 2,000-character/word chapter per three game days, using the dialogue model in two steps. Includes save-bound progress, a reader, TXT/Markdown export and extensible material sources without Harmony. See [the novel guide](Docs/Novel.md).
+- Optional built-in Colony novel plugin: the current narrator writes a preface and continuing chapters from locally collected game records. Defaults to one approximately 2,000-character/word chapter per three game days, using the dialogue model in two steps. Includes save-bound progress, a reader, TXT/Markdown export and extensible material sources without Harmony.
 
 ## Requirements
 
@@ -44,11 +44,19 @@ Open RimWorld mod settings for `RimAgent`.
 5. Select models for the roles you want to use.
 6. Enable AI planning if you want Orca to choose incidents automatically.
 
+With AI planning enabled and a decision model configured, planning starts automatically. A successful connection test is not required. Connection status reports do not replace or cancel a running planner; each workflow handles its own request failures.
+
 Web search, HTTP MCP, proactive dialogue, persona, skill, plugin, and debug settings are also configured from the mod settings window. Optional sub-mods can add more plugins to the same plugin settings page.
 
 ## Mod Integration
 
-External mods can ship Orca knowledge base entries with XML Defs. See `Docs/ExternalKnowledgeSupport.md` for the supported fields, matching behavior, and a copyable template.
+External mods can ship Orca knowledge base entries with XML Defs and register behavior through `OrcaExtensionWorker.Register`.
+
+See [the persona and plugin API guide](Docs/Extensions.md) for XML personas with optional DLL behaviors, persona-exclusive tools, per-game state, custom configuration and lifecycle hooks. Built-in Gemini uses the same public behavior and module-data interfaces.
+
+Novel sources register with `registry.AddNovelSource(() => new YourSource())`. Implement `INovelSource.Scan`, yielding records or null checkpoints on the main thread. `NovelCaptureContext` provides source-scoped `Seen`, `State`, `Baseline`, `BaselineKeys`, `RemoveBaseline`, `HasRecord`, `Diagnostic` and `ClearDiagnostic`; it does not expose the book or chapters. Keys passed to these methods are local to the source. Optional `INovelSourceReadiness.PrepareForWriting` supplies incremental cache repair before requests; failure pauses writing until manual recovery.
+
+Skills can declare `taskScopes` in their metadata: `chat`, `novel_organize`, `novel_write`, or extension-defined task names. Missing/empty scopes preserve legacy chat behavior. Scopes restrict which task may load the skill; `contexts` remain relevance hints within a task. The skill editor exposes this field. Novel generation captures all enabled matching skills once per chapter, separately for each stage, independent of skill name or source mod. Disabled skills contribute no instructions; missing scopes or empty enabled instructions report a configuration error. Existing chapters retain their saved instruction snapshots.
 
 ## Privacy And Network Use
 
@@ -83,6 +91,21 @@ If your RimWorld installation is elsewhere, update the reference hint paths in `
 - Scheduled storyteller incidents now notify the narrative system through `OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled`, so narrative history and proactive dialogue share one path.
 - Switching the active persona and toggling external skills now persist immediately via `WriteSettings`.
 - The storyteller planning tool whitelist is now driven solely by the `exposeToStorytellerPlanning` flag in `OrcaToolDef` XML; tools marked in XML are actually exposed to the planning stage.
+
+### Runtime Boundaries
+
+- Ordinary chat retains controller-led routing when a controller model is configured. Persona constraints may require dialogue only (for example Gemini's cooldown). Without a controller, local routing remains available. Incident planning and novel writing are independent background workflows.
+- `OrcaPersonaBehavior` supplies runtime prompts, routing constraints, execution restrictions, selection lifecycle and settings entry points. Additional personas register policies through `OrcaPersonaBehaviors.Register`. Gemini's implementation owns its special decisions; shared chat code consumes the behavior interface.
+- The incident planner accepts `IncidentPlanningPolicy` rather than concrete persona settings. The schedule uses the generic `finishWhenEventsComplete` field and save key. This release intentionally does not migrate old persona/plugin state or preserve replaced extension APIs.
+- `NovelGameComponent` owns game lifetime, persistence and coordination. `NovelCollectionScheduler` handles scanning and readiness; `NovelGenerationRunner` handles requests, configuration snapshots and failure recovery; `NovelWriting` handles indexes and response protocols. Sources cannot directly mutate chapter state.
+- Background generation uses the shared request scheduler and yields admission to waiting foreground requests. Active requests complete normally. Game-instance checks prevent stale completions from entering another save.
+- Chat workflows advance through game updates even with all chat windows closed. Remote tools and semantic query preparation yield while waiting; their results are consumed on the main thread.
+- Memory compaction waits 30 seconds and then 120 seconds between failures, with at most three total attempts before manual resume. Retry progress persists per persona. Missing or rebuilding embeddings retain keyword retrieval. Changing the embedding model schedules gradual background vector rebuilding, which uses the newly configured provider and may incur API costs.
+- Memory files use atomic replacement and a replayable journal for compaction. File access errors or corrupt primary records pause memory collection and requests; manual resume retries local persistence before generating again. Pending in-memory changes remain owned by their original persona. Changes that cannot be written do not survive process exit, so resolve the displayed storage error before quitting.
+- Extension callbacks receive copied `OrcaChatSnapshot` values rather than mutable chat sessions. Persona policies, plugin hooks, and proactive/narrative sources isolate failing callbacks. Submods can unregister their sources when disabled.
+- RimTalk proactive scans select the newest records before expanding their text, using O(N log K) selection and O(K) retained references (K = 30). Disabled ambient dialogue does not scan this history. Novel collection still retains all captured evidence.
+- Novel scan budgets are shared across tick/update calls within a frame. Skill catalogs are cached for five seconds; explicit reload invalidates them immediately, and reference text is invalidated when file metadata changes.
+- RimTalk text conversion, pawn checks and building counts yield incrementally. Raw game collections still require reference snapshots, and external API calls cannot be forcibly preempted: the 2 ms scan budget is a cooperative target, not a strict frame-time guarantee.
 
 ## Repository Layout
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DeepseekTheOrca.Rimtalk;
 using RimWorld;
@@ -31,11 +32,15 @@ namespace DeepseekTheOrca
         private const int MaxQueuedRequests = 20;
         private static readonly Queue<OrcaProactiveConversationRequest> pendingRequests = new Queue<OrcaProactiveConversationRequest>();
         private static readonly List<IOrcaProactiveConversationSource> sources = new List<IOrcaProactiveConversationSource>();
+        private static readonly HashSet<IOrcaProactiveConversationSource> faultedSources = new HashSet<IOrcaProactiveConversationSource>();
+        private static IOrcaProactiveConversationSource[] sourceSnapshot;
         private static bool defaultsRegistered;
 
         public static void Reset()
         {
             pendingRequests.Clear();
+            faultedSources.Clear();
+            sourceSnapshot = null;
             sources.RemoveAll(source => source is OrcaNarrativeDirectorSource || source is RimtalkProactiveConversationSource);
             defaultsRegistered = false;
         }
@@ -51,6 +56,7 @@ namespace DeepseekTheOrca
             if (source != null && !sources.Contains(source))
             {
                 sources.Add(source);
+                sourceSnapshot = null;
             }
         }
 
@@ -69,6 +75,13 @@ namespace DeepseekTheOrca
             pendingRequests.Enqueue(request);
         }
 
+        public static void UnregisterSource(IOrcaProactiveConversationSource source)
+        {
+            sources.Remove(source);
+            sourceSnapshot = null;
+            faultedSources.Remove(source);
+        }
+
         public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target, OrcaNarrativeHistoryRecord history = null)
         {
             OrcaNarrativeDirector.NotifyStorytellerIncidentScheduled(plan, firingIncident, target, history);
@@ -78,9 +91,16 @@ namespace DeepseekTheOrca
         {
             EnsureDefaultsRegistered();
 
-            for (int i = 0; i < sources.Count; i++)
+            // Iterate a snapshot: a submod may register/unregister during its callback.
+            foreach (var source in sourceSnapshot ?? (sourceSnapshot = sources.ToArray()))
             {
-                sources[i].Tick();
+                if (faultedSources.Contains(source) || !sources.Contains(source)) continue;
+                try { source.Tick(); }
+                catch (Exception ex)
+                {
+                    faultedSources.Add(source);
+                    Log.Warning("[RimAgent] Proactive source paused until next game: " + source.GetType().FullName + ": " + ex);
+                }
             }
 
             if (pendingRequests.Count == 0 || OrcaChatAgentHub.IsChatBusy)

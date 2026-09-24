@@ -35,7 +35,7 @@ namespace DeepseekTheOrca
             builder.AppendLine("Current game language: " + OrcaLanguageUtility.CurrentGameLanguage());
             builder.AppendLine("System proactive trigger source: " + request.source);
             builder.AppendLine("Trigger title: " + request.title);
-            List<string> contextTags = context == null ? null : context.contextTags;
+            IReadOnlyList<string> contextTags = context == null ? null : context.contextTags;
             AppendContextTags(builder, contextTags);
             AppendActiveSkillContext(builder, request.source + "\n" + request.title + "\n" + request.body, contextTags);
             string query = request.source + "\n" + request.title + "\n" + request.body;
@@ -141,7 +141,7 @@ namespace DeepseekTheOrca
             return persona.label;
         }
 
-        private static void AppendActiveSkillContext(StringBuilder builder, string turnText, List<string> contextTags)
+        private static void AppendActiveSkillContext(StringBuilder builder, string turnText, IReadOnlyList<string> contextTags)
         {
             string skillPrompt = OrcaSkillManager.FormatActiveSkillPrompt(turnText, contextTags);
             if (skillPrompt.NullOrEmpty())
@@ -165,7 +165,7 @@ namespace DeepseekTheOrca
             builder.AppendLine(skillPrompt);
         }
 
-        private static void AppendContextTags(StringBuilder builder, List<string> contextTags)
+        private static void AppendContextTags(StringBuilder builder, IReadOnlyList<string> contextTags)
         {
             if (builder == null || contextTags == null || contextTags.Count == 0)
             {

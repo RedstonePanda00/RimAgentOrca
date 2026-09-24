@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_MemoryCompactionPaused>Memory compaction paused after 3 unsuccessful attempts: {0}</DTO_MemoryCompactionPaused>
+  <DTO_MemoryCompactionRetry>Memory compaction will retry when enabled and idle, in {0} real-time seconds: {1}</DTO_MemoryCompactionRetry>
+  <DTO_MemoryCompactionResume>Resume memory processing</DTO_MemoryCompactionResume>
+  <DTO_MemoryStoragePaused>Memory storage paused for {0}: {1}\nFiles and pending in-memory changes are preserved. Collection and new requests are paused. Fix the file access problem, then resume to retry local storage first.</DTO_MemoryStoragePaused>
+  <DTO_DebugRuntimeDiagnostic>Current chat runtime (live)</DTO_DebugRuntimeDiagnostic>
+</LanguageData>

@@ -26,6 +26,16 @@ namespace DeepseekTheOrca.Rimtalk
 
         public void Tick()
         {
+            if (!OrcaProactiveConversationManager.AmbientEnabled)
+            {
+                // Re-seed on enable; conversations from the disabled interval must not
+                // suddenly trigger a burst of delayed commentary.
+                pendingTrigger = null;
+                seeded = false;
+                seenRecordKeys.Clear();
+                missedConversationStarterRecords = 0;
+                return;
+            }
             if (Find.TickManager == null)
             {
                 return;

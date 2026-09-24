@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -17,6 +17,8 @@ namespace DeepseekTheOrca
             try
             {
                 Dictionary<string, object> root = MiniJson.Deserialize(data) as Dictionary<string, object>;
+                if (root == null) throw new InvalidDataException("SSE data is not a JSON object.");
+                if (root.ContainsKey("error")) throw new InvalidDataException("Provider returned an error frame: " + ExtractErrorMessage(data));
                 object choicesObj;
                 List<object> choices = root != null && root.TryGetValue("choices", out choicesObj) ? choicesObj as List<object> : null;
                 if (choices == null || choices.Count == 0)
@@ -25,6 +27,7 @@ namespace DeepseekTheOrca
                 }
 
                 Dictionary<string, object> firstChoice = choices[0] as Dictionary<string, object>;
+                if (firstChoice != null) streamingRequest.SetFinishReason(GetString(firstChoice, "finish_reason"));
                 Dictionary<string, object> delta = firstChoice == null ? null : GetDictionary(firstChoice, "delta");
                 if (delta == null)
                 {
@@ -37,8 +40,9 @@ namespace DeepseekTheOrca
                     streamingRequest.AppendContent(content);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                throw new InvalidDataException("Invalid streaming response frame.", ex);
             }
         }
 

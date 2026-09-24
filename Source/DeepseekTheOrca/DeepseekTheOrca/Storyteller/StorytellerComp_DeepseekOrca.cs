@@ -17,7 +17,7 @@ namespace DeepseekTheOrca
 
         public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
         {
-            if (GeminiHissService.IsPlanning) yield break;
+            if (OrcaPersonaBehaviors.Current.BlocksNormalPlanning) yield break;
             if (!OrcaDecisionProvider.IsAvailable)
             {
                 yield break;

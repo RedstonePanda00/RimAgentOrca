@@ -22,6 +22,7 @@ namespace DeepseekTheOrca
         public long createdAt;
         public long lastAccessed;
         public string embeddingState = "pending";
+        public string embeddingIdentity = "";
         public string memoryKind = "atomic";
         public string clusterId = "";
         public string sourceRange = "";

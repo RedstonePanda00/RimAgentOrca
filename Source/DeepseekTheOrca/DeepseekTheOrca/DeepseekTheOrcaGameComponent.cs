@@ -4,10 +4,12 @@ namespace DeepseekTheOrca
 {
     public sealed class DeepseekTheOrcaGameComponent : GameComponent
     {
-        public GeminiHissState geminiHiss = new GeminiHissState();
+        public OrcaModuleData moduleData = new OrcaModuleData();
+        private readonly Game owner;
 
         public DeepseekTheOrcaGameComponent(Game game)
         {
+            owner = game;
             // Global configuration/persona memories survive; transient game work does not.
             OrcaIncidentSchedule.Reset();
             OrcaNarrativeHistoryMemory.Reset();
@@ -15,9 +17,30 @@ namespace DeepseekTheOrca
             OrcaProactiveConversationManager.Reset();
             StorytellerComp_DeepseekOrca.ResetRuntime();
             OrcaToolBundleRouter.ResetRuntime();
-            if (OrcaDecisionProvider.HasConnectedProvider)
-                OrcaDecisionProvider.SetConnectedProvider(new LlmIncidentDecisionProvider());
-            OrcaChatAgentHub.ClearConversation();
+            OrcaDecisionProvider.UpdateConfiguration();
+        }
+
+        public override void GameComponentUpdate()
+        {
+            // Runs while paused as well as while ticking, independent of visible windows.
+            OrcaDecisionProvider.UpdateConfiguration();
+            OrcaChatAgentHub.Update(owner);
+            SingleToolDebugRunner.Update();
+            OrcaPersonaBehaviors.Update();
+            OrcaExtensionManager.Update();
+        }
+
+        public override void StartedNewGame() { NotifyStarted(false); }
+        public override void LoadedGame() { NotifyStarted(true); }
+        private void NotifyStarted(bool loaded)
+        {
+            // Construction also occurs during loading, before Current.Game is stable.
+            // Activate the live owner only after RimWorld finishes initializing it.
+            OrcaGameRuntime.Begin(owner);
+            OrcaChatAgentHub.BeginGame(owner);
+            OrcaRuntimeDiagnostics.Record("Game ready", "loaded=" + loaded + "; build=" + typeof(DeepseekTheOrcaGameComponent).Module.ModuleVersionId);
+            OrcaPersonaBehaviors.GameStarted(owner, loaded);
+            OrcaExtensionManager.NotifyGameStarted(owner, loaded);
         }
 
         public override void GameComponentTick()
@@ -28,8 +51,9 @@ namespace DeepseekTheOrca
             OrcaSessionMemory.Tick();
             OrcaNarrativeHistoryMemory.Tick();
             OrcaIncidentSchedule.Tick();
-            GeminiHissService.Tick();
+            OrcaPersonaBehaviors.Tick();
             OrcaToolBundleRouter.Tick();
+            OrcaExtensionManager.Tick();
         }
 
         public override void ExposeData()
@@ -37,8 +61,8 @@ namespace DeepseekTheOrca
             base.ExposeData();
             OrcaNarrativeHistoryMemory.ExposeData();
             OrcaIncidentSchedule.ExposeData();
-            Scribe_Deep.Look(ref geminiHiss, "geminiHiss");
-            if (geminiHiss == null) geminiHiss = new GeminiHissState();
+            Scribe_Deep.Look(ref moduleData, "moduleData");
+            if (moduleData == null) moduleData = new OrcaModuleData();
         }
     }
 }

@@ -30,6 +30,8 @@ namespace DeepseekTheOrca
         private static readonly TimeSpan FailedRefreshBackoff = TimeSpan.FromSeconds(10);
         private static readonly object syncRoot = new object();
         private static readonly List<OrcaMcpToolDescriptor> cachedTools = new List<OrcaMcpToolDescriptor>();
+        private static readonly Dictionary<string, OrcaMcpToolDescriptor> toolsByName = new Dictionary<string, OrcaMcpToolDescriptor>();
+        private static DateTime nextSettingsCheck;
         private static readonly Dictionary<string, string> sessionIdsByEndpoint = new Dictionary<string, string>();
         private static readonly HashSet<string> initializedEndpoints = new HashSet<string>();
         private static Task<List<OrcaMcpToolDescriptor>> pendingDiscovery;
@@ -43,12 +45,19 @@ namespace DeepseekTheOrca
 
         public static List<OrcaMcpToolDescriptor> DiscoverTools()
         {
-            Tick();
+            Refresh(true);
             return CachedTools();
         }
 
         public static void Tick()
+        { Refresh(false); }
+
+        private static void Refresh(bool force)
         {
+            var settings = DeepseekTheOrcaMod.Settings;
+            if (settings == null || !settings.enableHttpMcp) { ClearCacheIfNeeded(); return; }
+            if (!force && DateTime.UtcNow < nextSettingsCheck && (pendingDiscovery == null || !pendingDiscovery.IsCompleted)) return;
+            nextSettingsCheck = DateTime.UtcNow.AddMilliseconds(500);
             List<OrcaHttpMcpServerSettings> servers = ActiveServers();
             if (servers.Count == 0)
             {
@@ -107,6 +116,7 @@ namespace DeepseekTheOrca
                 lastRefreshAttemptFingerprint = "";
                 lastDiscoveryError = "";
                 cachedTools.Clear();
+                toolsByName.Clear();
             }
         }
 
@@ -142,7 +152,9 @@ namespace DeepseekTheOrca
                     cacheTimeUtc = DateTime.UtcNow;
                     lastDiscoveryError = "";
                     cachedTools.Clear();
+                    toolsByName.Clear();
                     cachedTools.AddRange(discovered);
+                    foreach (var tool in discovered) toolsByName[tool.exposedName] = tool;
                 }
 
                 DebugLog("MCP tool discovery completed; cached " + discovered.Count + " tool(s).");
@@ -185,6 +197,7 @@ namespace DeepseekTheOrca
                     cacheTimeUtc = DateTime.MinValue;
                     lastDiscoveryError = "";
                     cachedTools.Clear();
+                    toolsByName.Clear();
                 }
 
                 lastRefreshAttemptUtc = now;
@@ -223,7 +236,9 @@ namespace DeepseekTheOrca
 
         public static bool IsExposedTool(string toolName)
         {
-            return DiscoverTools().Any(tool => tool.exposedName == toolName);
+            if (string.IsNullOrEmpty(toolName)) return false;
+            Tick();
+            lock (syncRoot) return toolsByName.ContainsKey(toolName);
         }
 
         public static bool TryInvokeExposedTool(string toolName, Dictionary<string, string> arguments, out AiToolResult result)
@@ -237,7 +252,7 @@ namespace DeepseekTheOrca
 
             try
             {
-                result = InvokeToolNow(descriptor, arguments ?? new Dictionary<string, string>());
+                result = AiToolResult.Fail("MCP requires asynchronous invocation; use BeginInvokeExposedTool");
             }
             catch (Exception ex)
             {
@@ -245,6 +260,19 @@ namespace DeepseekTheOrca
             }
 
             return true;
+        }
+
+        public static Task<AiToolResult> BeginInvokeExposedTool(string toolName, Dictionary<string, string> arguments)
+        {
+            // DiscoverTools returns detached descriptors; no live settings on the worker.
+            var descriptor = DiscoverTools().FirstOrDefault(tool => tool.exposedName == toolName);
+            if (descriptor == null) return Task.FromResult(AiToolResult.Fail("MCP tool is unavailable: " + toolName));
+            var copied = new Dictionary<string, string>(arguments ?? new Dictionary<string, string>());
+            return Task.Run(() =>
+            {
+                try { return InvokeToolNow(descriptor, copied); }
+                catch (Exception ex) { return AiToolResult.Fail("MCP tool failed: " + ex.GetType().Name + ": " + ex.Message); }
+            });
         }
 
         private static List<OrcaMcpToolDescriptor> DiscoverToolsNow(OrcaHttpMcpServerSettings server, bool includeServerName, HashSet<string> usedNames)

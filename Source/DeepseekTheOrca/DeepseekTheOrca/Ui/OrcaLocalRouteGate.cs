@@ -18,14 +18,8 @@ namespace DeepseekTheOrca
                 return decision;
             }
 
-            string hissReason;
-            if (allowExecutionTools && GeminiHissService.IsGemini && settings.HasModelForRole(OrcaLlmModelRole.Tool)
-                && AiStoryToolRegistry.IsExposedToChat(GeminiPersona.ToolName)
-                && GeminiHissService.CanBegin(Find.CurrentMap, out hissReason))
-            {
-                // Without a controller, the tool model must see the message to judge offense.
-                return Direct("tool", OrcaLlmModelRole.Tool, "Gemini persona tool judgment");
-            }
+            if (OrcaPersonaBehaviors.Current.WantsToolJudgment(settings, allowExecutionTools))
+                return Direct("tool", OrcaLlmModelRole.Tool, "Persona tool judgment");
 
             if (LooksLikeWeb(lower) && settings.HasModelForRole(OrcaLlmModelRole.WebSearch) && settings.UsesLocalWebSearchTool)
             {

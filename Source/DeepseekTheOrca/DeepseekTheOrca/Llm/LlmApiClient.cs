@@ -14,6 +14,18 @@ namespace DeepseekTheOrca
 {
     public sealed partial class LlmApiClient
     {
+        private CancellationTokenSource queueLifetime = new CancellationTokenSource();
+
+        // Workflow owners revoke queued requests when cleared/replaced. Admission captures
+        // the token; already dispatched requests finish without being applied to a new owner.
+        public void CancelQueuedRequests()
+        {
+            var previous = queueLifetime;
+            queueLifetime = new CancellationTokenSource();
+            previous.Cancel();
+            previous.Dispose();
+        }
+
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan StreamingTimeout = TimeSpan.FromSeconds(120);
         private static readonly TimeSpan DefaultChatTimeout = TimeSpan.FromSeconds(45);

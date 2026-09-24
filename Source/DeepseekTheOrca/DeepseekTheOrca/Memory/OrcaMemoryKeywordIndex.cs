@@ -9,7 +9,7 @@ namespace DeepseekTheOrca
 {
     public sealed class OrcaMemoryKeywordIndex
     {
-        private const int Version = 1;
+        private const int Version = 2;
         private readonly Dictionary<string, List<string>> keywordToIds = new Dictionary<string, List<string>>();
         private string memoryHash = "";
 
@@ -142,7 +142,7 @@ namespace DeepseekTheOrca
             root["index"] = index;
 
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            File.WriteAllText(filePath, MiniJson.Serialize(root));
+            OrcaAtomicFile.WriteAllText(filePath, MiniJson.Serialize(root));
         }
 
         public static string ComputeMemoryHash(List<OrcaMemoryRecord> records)
@@ -175,11 +175,6 @@ namespace DeepseekTheOrca
         private static bool ShouldIndex(OrcaMemoryRecord record)
         {
             if (record == null || record.id.NullOrEmpty() || record.consolidationState == "compressed" || record.consolidationState == "pruned")
-            {
-                return false;
-            }
-
-            if ((record.memoryKind == "atomic" || record.memoryKind == "chunk") && record.embeddingState != "ready")
             {
                 return false;
             }

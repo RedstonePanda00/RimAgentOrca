@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
 
@@ -9,6 +10,8 @@ namespace DeepseekTheOrca
     public class OrcaChatPersonaDef : Def
     {
         public string prompt = "";
+        // XML-only personas need no behavior. Optional DLL classes supply runtime rules.
+        public Type behaviorClass;
         public string narrativeTendency = "";
         public string controllerRoutingTendency = "";
         [MustTranslate]
@@ -20,6 +23,14 @@ namespace DeepseekTheOrca
         public string storytellerPortraitTinyName = "";
         public string storytellerPortraitLargePath = "";
         public string storytellerPortraitTinyPath = "";
+
+        public override IEnumerable<string> ConfigErrors()
+        {
+            foreach (string error in base.ConfigErrors()) yield return error;
+            if (behaviorClass != null && (!typeof(OrcaPersonaBehavior).IsAssignableFrom(behaviorClass)
+                || behaviorClass.IsAbstract || behaviorClass.GetConstructor(Type.EmptyTypes) == null))
+                yield return "behaviorClass must be a concrete OrcaPersonaBehavior with a public parameterless constructor.";
+        }
     }
 
     public class OrcaDefaultPersonaDef : Def
@@ -30,15 +41,24 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaChatWindowContext
     {
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly Rect windowRect;
         public readonly Rect chatRect;
         public readonly Rect extensionRect;
         public readonly float alpha;
 
-        public OrcaChatWindowContext(OrcaChatSession session, Rect windowRect, Rect chatRect, Rect extensionRect, float alpha)
+        internal OrcaChatWindowContext(OrcaChatSession session, Rect windowRect, Rect chatRect, Rect extensionRect, float alpha)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
+            this.windowRect = windowRect;
+            this.chatRect = chatRect;
+            this.extensionRect = extensionRect;
+            this.alpha = alpha;
+        }
+
+        internal OrcaChatWindowContext(OrcaChatSnapshot chat, Rect windowRect, Rect chatRect, Rect extensionRect, float alpha)
+        {
+            this.chat = chat;
             this.windowRect = windowRect;
             this.chatRect = chatRect;
             this.extensionRect = extensionRect;
@@ -47,39 +67,39 @@ namespace DeepseekTheOrca
 
         public bool IsWaiting
         {
-            get { return session != null && session.IsWaiting; }
+            get { return chat.IsWaiting; }
         }
 
         public string LastReplyText
         {
-            get { return session == null ? "" : session.LastReplyText; }
+            get { return chat.LastReplyText; }
         }
 
         public string LastUserText
         {
-            get { return session == null ? "" : session.LastUserText; }
+            get { return chat.LastUserText; }
         }
 
         public string LastProcessText
         {
-            get { return session == null ? "" : session.LastProcessText; }
+            get { return chat.LastProcessText; }
         }
 
         public string LastErrorText
         {
-            get { return session == null ? "" : session.LastErrorText; }
+            get { return chat.LastErrorText; }
         }
     }
 
     public sealed class OrcaMainTabStatusContext
     {
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly Rect inRect;
         public float y;
 
-        public OrcaMainTabStatusContext(OrcaChatSession session, Rect inRect, float y)
+        internal OrcaMainTabStatusContext(OrcaChatSession session, Rect inRect, float y)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
             this.inRect = inRect;
             this.y = y;
         }
@@ -92,21 +112,21 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaChatTurnContext
     {
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly string source;
         public readonly string playerName;
         public readonly string text;
-        public readonly List<string> contextTags;
+        public readonly IReadOnlyList<string> contextTags;
         public readonly bool proactive;
         private readonly List<string> processLines = new List<string>();
 
-        public OrcaChatTurnContext(OrcaChatSession session, string source, string playerName, string text, List<string> contextTags, bool proactive)
+        internal OrcaChatTurnContext(OrcaChatSession session, string source, string playerName, string text, List<string> contextTags, bool proactive)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
             this.source = source ?? "";
             this.playerName = playerName ?? "";
             this.text = text ?? "";
-            this.contextTags = contextTags ?? new List<string>();
+            this.contextTags = new List<string>(contextTags ?? new List<string>()).AsReadOnly();
             this.proactive = proactive;
         }
 
@@ -126,7 +146,7 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaControllerRoutingContext
     {
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly string latestUserText;
         public readonly bool isReview;
         public readonly int toolRoundsUsed;
@@ -135,7 +155,7 @@ namespace DeepseekTheOrca
         public readonly int maxToolCalls;
         public readonly bool specialistReturnedNoToolCalls;
 
-        public OrcaControllerRoutingContext(
+        internal OrcaControllerRoutingContext(
             OrcaChatSession session,
             string latestUserText,
             bool isReview,
@@ -145,7 +165,7 @@ namespace DeepseekTheOrca
             int maxToolCalls,
             bool specialistReturnedNoToolCalls)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
             this.latestUserText = latestUserText ?? "";
             this.isReview = isReview;
             this.toolRoundsUsed = toolRoundsUsed;
@@ -158,15 +178,15 @@ namespace DeepseekTheOrca
 
     public sealed class OrcaChatReplyContext
     {
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly OrcaChatReply reply;
         public readonly string originalContent;
         private readonly List<string> processLines = new List<string>();
         private readonly List<string> memoryFragments = new List<string>();
 
-        public OrcaChatReplyContext(OrcaChatSession session, OrcaChatReply reply, string originalContent)
+        internal OrcaChatReplyContext(OrcaChatSession session, OrcaChatReply reply, string originalContent)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
             this.reply = reply;
             this.originalContent = originalContent ?? "";
         }
@@ -202,13 +222,13 @@ namespace DeepseekTheOrca
     {
         private readonly List<string> processLines = new List<string>();
 
-        public readonly OrcaChatSession session;
+        public readonly OrcaChatSnapshot chat;
         public readonly string toolName;
         public readonly Dictionary<string, string> arguments;
 
         public OrcaExecutionGateContext(OrcaChatSession session, string toolName, Dictionary<string, string> arguments)
         {
-            this.session = session;
+            chat = new OrcaChatSnapshot(session);
             this.toolName = toolName ?? "";
             this.arguments = arguments ?? new Dictionary<string, string>();
         }
@@ -284,6 +304,16 @@ namespace DeepseekTheOrca
         public float order;
         public Type workerClass;
         public Type settingsWorkerClass;
+        public Type settingsClass;
+
+        public IExposable SettingsData
+        {
+            get
+            {
+                if (settingsClass == null) return null;
+                return DeepseekTheOrcaMod.Settings.moduleData.Get("extension:" + defName, settingsClass);
+            }
+        }
 
         private OrcaExtensionWorker workerInt;
         private OrcaExtensionSettingsWorker settingsWorkerInt;
@@ -343,6 +373,10 @@ namespace DeepseekTheOrca
                 yield return error;
             }
 
+            if (settingsClass != null && (!typeof(IExposable).IsAssignableFrom(settingsClass)
+                || settingsClass.IsAbstract || settingsClass.GetConstructor(Type.EmptyTypes) == null))
+                yield return "settingsClass must implement IExposable with a public parameterless constructor.";
+
             if (workerClass == null)
             {
                 yield return "workerClass must be set.";
@@ -366,6 +400,13 @@ namespace DeepseekTheOrca
         public string description = "";
         public bool required;
         public List<string> enumValues = new List<string>();
+    }
+
+    // Begin on the main thread, copy required state before returning. The task
+    // must only use copied data and return a result, never touch Verse/Unity objects.
+    public interface IOrcaAsyncToolWorker
+    {
+        Task<AiToolResult> BeginInvoke(AiToolContext context, Dictionary<string, string> arguments);
     }
 
     public abstract class OrcaToolWorker

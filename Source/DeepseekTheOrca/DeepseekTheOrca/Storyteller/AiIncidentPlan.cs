@@ -70,7 +70,7 @@ namespace DeepseekTheOrca
 
         public Map targetMap;
         public string planId = "";
-        public bool geminiHiss;
+        public bool finishWhenEventsComplete;
         public int cycleStartTick;
         public int cycleEndTick;
         public int cycleBudget = DefaultCycleBudget;
@@ -116,7 +116,8 @@ namespace DeepseekTheOrca
         {
             Scribe_References.Look(ref targetMap, "targetMap");
             Scribe_Values.Look(ref planId, "planId", "");
-            Scribe_Values.Look(ref geminiHiss, "geminiHiss", false);
+            // Retain the old save key while exposing a persona-neutral scheduling policy.
+            Scribe_Values.Look(ref finishWhenEventsComplete, "finishWhenEventsComplete", false);
             Scribe_Values.Look(ref cycleStartTick, "cycleStartTick");
             Scribe_Values.Look(ref cycleEndTick, "cycleEndTick");
             Scribe_Values.Look(ref cycleBudget, "cycleBudget", DefaultCycleBudget);

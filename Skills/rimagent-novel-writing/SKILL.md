@@ -4,6 +4,9 @@ displayName: Novel writing
 description: Turn verified colony material into connected fictional scenes while preserving the active author's personality and literary voice.
 enabled: true
 activation: auto
+taskScopes:
+- novel_organize
+- novel_write
 contexts:
 - novel_organize
 - novel_write

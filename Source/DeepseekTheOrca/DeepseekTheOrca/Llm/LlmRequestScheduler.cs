@@ -41,7 +41,7 @@ namespace DeepseekTheOrca
 
         public static bool IsBusy
         {
-            get { return !ActiveLabel.NullOrEmpty(); }
+            get { lock (syncRoot) return activeLabels.Count > 0; }
         }
 
         // Keep the original signature for already compiled extensions.
@@ -65,12 +65,17 @@ namespace DeepseekTheOrca
 
         public static async Task RunAsync(string label, Func<Task> action)
         {
+            await RunAsync(label, action, false, CancellationToken.None).ConfigureAwait(false);
+        }
+
+        public static async Task RunAsync(string label, Func<Task> action, bool background, CancellationToken cancellation)
+        {
             if (action == null)
             {
                 throw new ArgumentNullException("action");
             }
 
-            using (await EnterAsync(label).ConfigureAwait(false))
+            using (await EnterAsync(label, background, cancellation).ConfigureAwait(false))
             {
                 await action().ConfigureAwait(false);
             }

@@ -39,7 +39,9 @@ namespace DeepseekTheOrca
 
             List<OrcaMemoryRecord> records = OrcaLongTermMemoryService.AllRecords();
             List<OrcaRecentExperienceRecord> recent = OrcaLongTermMemoryService.AllRecentExperiences();
-            float viewHeight = Mathf.Max(rect.height, 330f + records.Count * 86f + Mathf.Min(5, recent.Count) * 54f);
+            string compactionStatus = OrcaLongTermMemoryService.CompactionStatus;
+            float statusHeight = compactionStatus.NullOrEmpty() ? 0f : Text.CalcHeight(compactionStatus, rect.width - 16f) + 48f;
+            float viewHeight = Mathf.Max(rect.height, 330f + statusHeight + records.Count * 86f + Mathf.Min(5, recent.Count) * 54f);
             Rect viewRect = new Rect(0f, 0f, rect.width - 16f, viewHeight);
             Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
             Listing_Standard listing = new Listing_Standard();
@@ -48,6 +50,12 @@ namespace DeepseekTheOrca
             listing.Label("DTO_MemoryManagerTitle".Translate());
             listing.Label("Current persona memory: " + OrcaLongTermMemoryService.CurrentPersonaId());
             listing.CheckboxLabeled("DTO_EnableLongTermMemory".Translate(), ref settings.enableLongTermMemory, "DTO_EnableLongTermMemoryTooltip".Translate());
+            if (!compactionStatus.NullOrEmpty())
+            {
+                listing.Label(compactionStatus);
+                if (OrcaLongTermMemoryService.CompactionPaused && listing.ButtonText("DTO_MemoryCompactionResume".Translate()))
+                    OrcaLongTermMemoryService.ResumeCompaction();
+            }
             listing.Label("DTO_MemoryMaxInjectedEntries".Translate() + ": " + settings.memoryMaxInjectedEntries);
             settings.memoryMaxInjectedEntries = (int)listing.Slider(settings.memoryMaxInjectedEntries, 1, 12);
             listing.Label("DTO_MemoryMergeCosineThreshold".Translate() + ": " + settings.memoryMergeCosineThreshold.ToString("0.00"));

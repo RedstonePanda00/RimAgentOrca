@@ -7,6 +7,7 @@ namespace DeepseekTheOrca
     {
         public bool success;
         public string errorMessage = "";
+        public string identity = "";
         public List<float> embedding = new List<float>();
 
         public static OrcaEmbeddingResult Failure(string message)
@@ -18,6 +19,8 @@ namespace DeepseekTheOrca
     public sealed class OrcaEmbeddingClient
     {
         private readonly LlmApiClient client = new LlmApiClient();
+
+        public void CancelQueuedRequests() { client.CancelQueuedRequests(); }
 
         public Task<OrcaEmbeddingResult> EmbedAsync(DeepseekTheOrcaSettings settings, string text)
         {

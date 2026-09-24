@@ -8,7 +8,7 @@ using UnityEngine;
 using Verse;
 namespace DeepseekTheOrca
 {
-    public sealed partial class OrcaChatSession : IOrcaChatAgent
+    public sealed partial class OrcaChatSession : IOrcaChatAgent, IOrcaChatAgentUpdate, IOrcaChatAgentDiagnostics
     {
         private const int MaxConversationTurns = 12;
         private const int MaxTurnLogs = 50;
@@ -26,6 +26,8 @@ namespace DeepseekTheOrca
         private readonly OrcaChatThinkingState thinkingState = new OrcaChatThinkingState();
         private Task<LlmChatResponse> pendingRequest;
         private Task<LlmChatResponse> pendingParallelToolRequest;
+        private IEnumerator<bool> pendingToolBatch;
+        private IEnumerator<bool> pendingParallelBatch;
         private LlmStreamingChatRequest pendingStreamingRequest;
         private OrcaChatLine pendingStreamingLine;
         private List<LlmChatMessage> parallelToolMessages;
@@ -64,12 +66,18 @@ namespace DeepseekTheOrca
 
         public bool IsWaiting
         {
-            get { return pendingRequest != null || pendingStreamingRequest != null || pendingParallelToolRequest != null; }
+            get { return pendingRequest != null || pendingStreamingRequest != null || pendingParallelToolRequest != null
+                || pendingToolBatch != null || pendingParallelBatch != null || afterSemanticQuery != null; }
         }
 
         bool IOrcaChatAgent.IsBusy
         {
             get { return IsWaiting; }
+        }
+
+        void IOrcaChatAgentUpdate.UpdateConversation()
+        {
+            Tick();
         }
 
         void IOrcaChatAgent.ClearConversation()
@@ -198,7 +206,7 @@ namespace DeepseekTheOrca
             finalReplyReceivedThisTurn = false;
             turnCompletionNotified = false;
             ClearForcedNextModelRole();
-            StartControllerOrChatRequest(settings);
+            PrepareSemanticQuery(settings, () => StartControllerOrChatRequest(settings));
         }
 
         public bool TryStartProactive(OrcaProactiveConversationRequest request)
@@ -241,12 +249,15 @@ namespace DeepseekTheOrca
             turnCompletionNotified = false;
             ClearForcedNextModelRole();
             ForceNextModelRole(OrcaLlmModelRole.Dialogue);
-            StartRequest(settings);
+            PrepareSemanticQuery(settings, () => StartRequest(settings));
             return true;
         }
 
         public void Tick()
         {
+            TickSemanticQuery();
+            PumpToolBatch(ref pendingToolBatch);
+            PumpToolBatch(ref pendingParallelBatch);
             TickStreamingRequest();
             TickParallelToolRequest();
 

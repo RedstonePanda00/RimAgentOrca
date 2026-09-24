@@ -37,7 +37,6 @@ namespace DeepseekTheOrca
                 {
                     status = LlmConnectionStatus.NotTested;
                     message = "DTO_ConnectionNotTested";
-                    OrcaDecisionProvider.ClearConnectedProvider();
                 }
             }
         }
@@ -67,14 +66,6 @@ namespace DeepseekTheOrca
                 {
                     status = result.success ? LlmConnectionStatus.Succeeded : LlmConnectionStatus.Failed;
                     message = result.message;
-                    if (result.success)
-                    {
-                        OrcaDecisionProvider.SetConnectedProvider(new LlmIncidentDecisionProvider());
-                    }
-                    else
-                    {
-                        OrcaDecisionProvider.ClearConnectedProvider();
-                    }
                 }
 
                 if (result.success)
@@ -96,7 +87,6 @@ namespace DeepseekTheOrca
                 {
                     status = LlmConnectionStatus.Succeeded;
                     message = messageText.NullOrEmpty() ? "Connection succeeded." : messageText;
-                    OrcaDecisionProvider.EnsureConnectedProvider();
                 }
             }
         }
@@ -109,7 +99,6 @@ namespace DeepseekTheOrca
                 {
                     status = LlmConnectionStatus.Failed;
                     message = messageText ?? "";
-                    OrcaDecisionProvider.ClearConnectedProvider();
                 }
             }
         }

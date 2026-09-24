@@ -10,6 +10,48 @@ namespace DeepseekTheOrca
     // JSONL persistence for memory records and recent experiences.
     public static class OrcaMemoryStore
     {
+        internal static void PrepareCompactionCommit(string journalPath, List<OrcaMemoryRecord> chunks, IEnumerable<string> consumedIds)
+        {
+            var journal = new Dictionary<string, object>
+            {
+                { "chunks", chunks.Select(ToJson).ToList() },
+                { "consumedIds", consumedIds.ToList() }
+            };
+            OrcaAtomicFile.WriteAllText(journalPath, MiniJson.Serialize(journal));
+        }
+
+        // Idempotent replay protects the transition between two independently atomic
+        // files. A crash after writing chunks but before clearing recent text is safe.
+        internal static bool RecoverCompactionCommit(string journalPath, string chunkPath, string recentPath)
+        {
+            if (!File.Exists(journalPath)) return false;
+            var journal = MiniJson.Deserialize(File.ReadAllText(journalPath)) as Dictionary<string, object>;
+            if (journal == null || !journal.ContainsKey("chunks") || !journal.ContainsKey("consumedIds"))
+                throw new InvalidDataException("Invalid memory compaction journal; original files were preserved.");
+            var serialized = journal["chunks"] as List<object>;
+            var consumed = journal["consumedIds"] as List<object>;
+            if (serialized == null || serialized.Count == 0 || consumed == null)
+                throw new InvalidDataException("Incomplete memory compaction journal; original files were preserved.");
+            var additions = new List<OrcaMemoryRecord>();
+            foreach (var item in serialized)
+            {
+                var record = item is string ? FromJson((string)item) : null;
+                if (record == null || string.IsNullOrEmpty(record.id)) throw new InvalidDataException("Invalid committed memory record.");
+                additions.Add(record);
+            }
+            if (consumed.Any(id => !(id is string) || string.IsNullOrEmpty((string)id))) throw new InvalidDataException("Invalid consumed experience ID.");
+            var chunks = LoadRecords(chunkPath, "chunk");
+            var ids = new HashSet<string>(chunks.Select(record => record.id));
+            foreach (var record in additions) if (ids.Add(record.id)) chunks.Add(record);
+            var consumedIds = new HashSet<string>(consumed.Cast<string>());
+            var recent = LoadRecent(recentPath);
+            recent.RemoveAll(record => consumedIds.Contains(record.id));
+            SaveRecords(chunkPath, chunks);
+            SaveRecent(recentPath, recent);
+            File.Delete(journalPath);
+            return true;
+        }
+
         public static List<OrcaRecentExperienceRecord> LoadRecent(string filePath)
         {
             List<OrcaRecentExperienceRecord> result = new List<OrcaRecentExperienceRecord>();
@@ -20,11 +62,11 @@ namespace DeepseekTheOrca
 
             foreach (string line in File.ReadAllLines(filePath))
             {
+                if (string.IsNullOrWhiteSpace(line)) continue;
                 OrcaRecentExperienceRecord record = RecentFromJson(line);
-                if (record != null && !record.id.NullOrEmpty() && !record.text.NullOrEmpty())
-                {
-                    result.Add(record);
-                }
+                if (record == null || record.id.NullOrEmpty() || record.text.NullOrEmpty())
+                    throw new InvalidDataException("Invalid recent experience in " + filePath + "; file preserved.");
+                result.Add(record);
             }
 
             return result;
@@ -40,15 +82,12 @@ namespace DeepseekTheOrca
 
             foreach (string line in File.ReadAllLines(filePath))
             {
+                if (string.IsNullOrWhiteSpace(line)) continue;
                 OrcaMemoryRecord record = FromJson(line);
-                if (record != null && !record.id.NullOrEmpty())
-                {
-                    if (record.memoryKind.NullOrEmpty())
-                    {
-                        record.memoryKind = defaultKind;
-                    }
-                    result.Add(record);
-                }
+                if (record == null || record.id.NullOrEmpty())
+                    throw new InvalidDataException("Invalid memory record in " + filePath + "; file preserved.");
+                if (record.memoryKind.NullOrEmpty()) record.memoryKind = defaultKind;
+                result.Add(record);
             }
 
             return result;
@@ -62,7 +101,7 @@ namespace DeepseekTheOrca
                 builder.AppendLine(RecentToJson(recentExperiences[i]));
             }
 
-            File.WriteAllText(filePath, builder.ToString());
+            OrcaAtomicFile.WriteAllText(filePath, builder.ToString());
         }
 
         public static void SaveRecords(string filePath, IEnumerable<OrcaMemoryRecord> source)
@@ -73,7 +112,33 @@ namespace DeepseekTheOrca
                 builder.AppendLine(ToJson(record));
             }
 
-            File.WriteAllText(filePath, builder.ToString());
+            OrcaAtomicFile.WriteAllText(filePath, builder.ToString());
+        }
+
+        internal static OrcaMemoryCompactionState LoadCompactionState(string filePath)
+        {
+            if (!File.Exists(filePath)) return new OrcaMemoryCompactionState();
+            var root = MiniJson.Deserialize(File.ReadAllText(filePath)) as Dictionary<string, object>;
+            if (root == null)
+                return new OrcaMemoryCompactionState { attempts = OrcaMemoryCompactionState.MaxAttempts, error = "Memory retry state could not be read. Resume manually." };
+            var state = new OrcaMemoryCompactionState
+            {
+                attempts = Math.Max(0, Math.Min(OrcaMemoryCompactionState.MaxAttempts, GetInt(root, "attempts"))),
+                retryAt = Math.Max(0, GetLong(root, "retryAt")),
+                inFlight = GetString(root, "inFlight") == "True",
+                error = GetString(root, "error")
+            };
+            if (state.inFlight) state.Fail(OrcaMemoryRecord.NowUnixSeconds(), "Memory compaction was interrupted.");
+            return state;
+        }
+
+        internal static void SaveCompactionState(string filePath, OrcaMemoryCompactionState state)
+        {
+            OrcaAtomicFile.WriteAllText(filePath, MiniJson.Serialize(new Dictionary<string, object>
+            {
+                { "attempts", state.attempts }, { "retryAt", state.retryAt },
+                { "inFlight", state.inFlight }, { "error", state.error }
+            }));
         }
 
         private static string RecentToJson(OrcaRecentExperienceRecord record)
@@ -135,6 +200,7 @@ namespace DeepseekTheOrca
             root["createdAt"] = record.createdAt;
             root["lastAccessed"] = record.lastAccessed;
             root["embeddingState"] = record.embeddingState ?? "pending";
+            root["embeddingIdentity"] = record.embeddingIdentity ?? "";
             root["memoryKind"] = record.memoryKind ?? "chunk";
             root["clusterId"] = record.clusterId ?? "";
             root["sourceRange"] = record.sourceRange ?? "";
@@ -174,6 +240,7 @@ namespace DeepseekTheOrca
                 record.createdAt = GetLong(root, "createdAt");
                 record.lastAccessed = GetLong(root, "lastAccessed");
                 record.embeddingState = GetString(root, "embeddingState");
+                record.embeddingIdentity = GetString(root, "embeddingIdentity");
                 record.memoryKind = GetString(root, "memoryKind");
                 record.clusterId = GetString(root, "clusterId");
                 record.sourceRange = GetString(root, "sourceRange");
@@ -183,6 +250,13 @@ namespace DeepseekTheOrca
                 record.representativeMemoryIds = GetStringList(root, "representativeMemoryIds");
                 record.embeddingRetryCount = GetInt(root, "embeddingRetryCount");
                 record.nextEmbeddingRetryAt = GetLong(root, "nextEmbeddingRetryAt");
+                // Requests cannot survive process exit or persona unload. Recover this
+                // transient state so the saved text can be embedded again when enabled.
+                if (record.embeddingState == "embedding")
+                {
+                    record.embeddingState = "pending";
+                    record.nextEmbeddingRetryAt = 0;
+                }
                 if (record.embeddingState.NullOrEmpty())
                 {
                     record.embeddingState = record.centroidEmbedding.Count > 0 ? "ready" : "pending";

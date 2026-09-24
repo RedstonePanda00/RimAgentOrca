@@ -7,7 +7,7 @@ namespace DeepseekTheOrca
     {
         private void StartControllerOrChatRequest(DeepseekTheOrcaSettings settings)
         {
-            if (GeminiHissService.IsCoolingDown)
+            if (OrcaPersonaBehaviors.Current.ForceDialogue)
             {
                 ForceNextModelRole(OrcaLlmModelRole.Dialogue);
                 StartRequest(settings);

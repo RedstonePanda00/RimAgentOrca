@@ -32,6 +32,9 @@ namespace DeepseekTheOrca
         public int rangeStartTick = -1, rangeEndTick = -1;
         public string stateBefore = "", stateAfter = "";
         public bool historical;
+        // Transient commit metadata. A source can prepare/discard a record without changing
+        // the stored baseline; only NovelBook.Add commits the observation and its baseline.
+        internal string pendingBaselineKey, pendingStateLabel;
         public void ExposeData()
         {
             Scribe_Values.Look(ref id, "id", ""); Scribe_Values.Look(ref key, "key", "");
@@ -53,6 +56,8 @@ namespace DeepseekTheOrca
         public bool frozen, started, complete, outputTruncated;
         public bool writingSkillCaptured;
         public string writingSkillId = "", writingSkillText = "";
+        // Null means a legacy single snapshot; empty means this stage was explicitly disabled.
+        public string writingSkillOrganizeText, writingSkillDraftText;
         public List<string> recordIds = new List<string>(), selectedIds = new List<string>(), personIds = new List<string>();
         public string lastResponse = "";
         public void ExposeData()
@@ -67,6 +72,8 @@ namespace DeepseekTheOrca
             Scribe_Values.Look(ref lastResponse, "lastResponse", ""); Scribe_Values.Look(ref outputTruncated, "outputTruncated");
             Scribe_Values.Look(ref writingSkillCaptured, "writingSkillCaptured");
             Scribe_Values.Look(ref writingSkillId, "writingSkillId", ""); Scribe_Values.Look(ref writingSkillText, "writingSkillText", "");
+            Scribe_Values.Look(ref writingSkillOrganizeText, "writingSkillOrganizeText", null);
+            Scribe_Values.Look(ref writingSkillDraftText, "writingSkillDraftText", null);
             Scribe_Collections.Look(ref recordIds, "recordIds", LookMode.Value);
             Scribe_Collections.Look(ref selectedIds, "selectedIds", LookMode.Value);
             Scribe_Collections.Look(ref personIds, "personIds", LookMode.Value);
@@ -88,20 +95,51 @@ namespace DeepseekTheOrca
         public Dictionary<string, string> sourceErrors = new Dictionary<string, string>();
         private HashSet<string> seen;
         private Dictionary<string, NovelRecord> byId;
-        public void Reindex() { seen = new HashSet<string>(records.Select(r => r.key)); byId = records.ToDictionary(r => r.id); }
+        public void Reindex() { sourceSubjects = null; seen = new HashSet<string>(records.Select(r => r.key)); byId = records.ToDictionary(r => r.id); }
         public bool Seen(string key) { if (seen == null) Reindex(); return seen.Contains(key); }
         public NovelRecord Find(string key) { if (byId == null) Reindex(); NovelRecord r; return byId.TryGetValue(key, out r) ? r : null; }
-        public List<string> MissingPawnCache(IEnumerable<string> observableIds)
+        private HashSet<string> sourceSubjects;
+        public bool HasSourceRecord(string source, string category, string subject)
         {
-            var profiles = new HashSet<string>(records.Where(r => r.category == "profile").Select(r => r.subject));
-            return observableIds.Distinct().Where(id => !profiles.Contains(id) || !baselines.ContainsKey("pawns:profile:" + id)
-                || !baselines.ContainsKey("pawns:state:" + id)).ToList();
+            if (sourceSubjects == null) sourceSubjects = new HashSet<string>(records.Select(r => SubjectKey(r.source, r.category, r.subject)));
+            return sourceSubjects.Contains(SubjectKey(source, category, subject));
         }
+        private static string SubjectKey(string source, string category, string subject)
+        { return source + "\n" + category + "\n" + subject; }
         public bool Add(NovelRecord record)
         {
-            if (record == null || string.IsNullOrEmpty(record.key) || Seen(record.key)) return false;
+            if (record == null || string.IsNullOrEmpty(record.key)) return false;
+            bool keySeen = Seen(record.key);
+            string baselineKey = record.pendingBaselineKey;
+            if (baselineKey == null && keySeen) return false;
+            if (baselineKey != null)
+            {
+                string previous;
+                baselines.TryGetValue(baselineKey, out previous);
+                if (previous == record.stateAfter) return false;
+                if ((previous ?? "") != record.stateBefore)
+                {
+                    // A source may prepare multiple observations before yielding them.
+                    // Preserve each different observation, rebasing its comparison on the
+                    // last committed state instead of overwriting that evidence.
+                    record.stateBefore = previous ?? "";
+                    record.summary = record.pendingStateLabel + ": observed state changed from "
+                        + (previous ?? "unknown") + " to " + record.stateAfter;
+                }
+                // Distinct changes in one tick need distinct keys; the book sequence also
+                // survives save/load and avoids retaining another per-object counter.
+                if (keySeen) record.key += ":version:" + nextId;
+            }
             record.id = "r" + nextId++;
-            records.Add(record); seen.Add(record.key); byId.Add(record.id, record); return true;
+            records.Add(record); seen.Add(record.key); byId.Add(record.id, record);
+            if (sourceSubjects != null) sourceSubjects.Add(SubjectKey(record.source, record.category, record.subject));
+            if (baselineKey != null)
+            {
+                baselines[baselineKey] = record.stateAfter;
+                record.pendingBaselineKey = null;
+                record.pendingStateLabel = null;
+            }
+            return true;
         }
         public void Start(int now, int period)
         {

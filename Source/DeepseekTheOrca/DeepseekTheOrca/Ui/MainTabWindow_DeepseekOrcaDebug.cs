@@ -53,7 +53,6 @@ namespace DeepseekTheOrca
                 y += 42f;
             }
 
-            OrcaChatWindowManager.Session.Tick();
             string status = OrcaChatWindowManager.Session.StatusText;
             if (status.NullOrEmpty())
             {
@@ -190,7 +189,6 @@ namespace DeepseekTheOrca
             DrawSelectedPage(right.ContractedBy(10f));
             DrawBottom(bottom);
 
-            OrcaChatWindowManager.Session.Tick();
         }
 
         private void DrawOptions(Rect rect)
@@ -319,6 +317,8 @@ namespace DeepseekTheOrca
             DrawOrcaChatHistoryList(listOuter, logs);
 
             string logText = BuildOrcaChatTurnLog(logs[selectedChatLogIndex]);
+            if (selectedChatLogIndex == logs.Count - 1)
+                logText += "\n\n" + "DTO_DebugRuntimeDiagnostic".Translate() + "\n" + OrcaChatWindowManager.Session.RuntimeDiagnostic;
             Widgets.LabelScrollable(detailRect, logText, ref chatDetailScrollPosition, longLabel: true);
         }
 

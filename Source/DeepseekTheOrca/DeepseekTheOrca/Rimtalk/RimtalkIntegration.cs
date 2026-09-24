@@ -206,6 +206,25 @@ namespace DeepseekTheOrca.Rimtalk
             return "RimTalk is active. You may call get_rimtalk_chat_history before replying if recent pawn/player conversations could help you frame this beat, connect it to player behavior, or notice relevant pawn relationships. ";
         }
 
+        // Consumers may yield between entries. Copy only raw references up front, then
+        // perform reflection/text extraction incrementally without sorting the full history.
+        public static IEnumerable<RimtalkHistorySnapshot> EnumerateHistorySnapshots()
+        {
+            if (!IsAvailable) yield break;
+            Type type = ApiHistoryType();
+            MethodInfo getAll = type == null ? null : type.GetMethod("GetAll", BindingFlags.Public | BindingFlags.Static);
+            if (getAll == null) throw new InvalidOperationException("RimTalk ApiHistory.GetAll is unavailable");
+            var logs = getAll.Invoke(null, null) as IEnumerable;
+            if (logs == null) yield break;
+            var references = logs.Cast<object>().ToArray();
+            string playerName = GetPlayerName();
+            foreach (var log in references)
+            {
+                var record = RimtalkChatRecord.FromLog(log, int.MaxValue, false);
+                yield return record == null ? null : record.ToSnapshot(playerName);
+            }
+        }
+
         public static bool TryGetRecentHistorySnapshots(int count, int maxChars, out List<RimtalkHistorySnapshot> snapshots, out string error)
         {
             snapshots = new List<RimtalkHistorySnapshot>();
@@ -231,32 +250,51 @@ namespace DeepseekTheOrca.Rimtalk
                 return true;
             }
 
-            List<RimtalkChatRecord> records = new List<RimtalkChatRecord>();
-            foreach (object log in allLogs)
+            // Select only the newest raw references before expanding text/pawns/prompts.
+            // GetAll has no guaranteed ordering; retain its stable tie order explicitly.
+            string playerName = GetPlayerName();
+            foreach (var log in SelectRecentLogs(allLogs, count))
             {
-                RimtalkChatRecord record = RimtalkChatRecord.FromLog(log, maxChars);
-                if (record != null)
-                {
-                    records.Add(record);
-                }
-            }
-
-            records = records
-                .OrderBy(record => record.SortTime)
-                .ThenBy(record => record.CreatedTick)
-                .ToList();
-
-            if (records.Count > count)
-            {
-                records = records.GetRange(records.Count - count, count);
-            }
-
-            for (int i = 0; i < records.Count; i++)
-            {
-                snapshots.Add(records[i].ToSnapshot(GetPlayerName()));
+                var record = RimtalkChatRecord.FromLog(log, maxChars);
+                if (record != null) snapshots.Add(record.ToSnapshot(playerName));
             }
 
             return true;
+        }
+
+        internal static IEnumerable<object> SelectRecentLogs(IEnumerable logs, int count)
+        {
+            if (count <= 0 || logs == null) yield break;
+            var newest = new SortedSet<RecentHistoryLog>(Comparer<RecentHistoryLog>.Create((a, b) =>
+            {
+                int order = a.time.CompareTo(b.time);
+                if (order == 0) order = a.tick.CompareTo(b.tick);
+                return order == 0 ? a.sequence.CompareTo(b.sequence) : order;
+            }));
+            long sequence = 0;
+            foreach (object log in logs)
+            {
+                if (log == null) continue;
+                var time = RimtalkChatRecord.GetDateTime(GetProperty(log, "Timestamp"));
+                var candidate = new RecentHistoryLog
+                {
+                    log = log, time = time == DateTime.MinValue ? DateTime.MaxValue : time,
+                    tick = RimtalkChatRecord.GetInt(GetProperty(GetProperty(log, "TalkRequest"), "CreatedTick"), -1),
+                    sequence = sequence++
+                };
+                if (newest.Count == count && newest.Comparer.Compare(candidate, newest.Min) <= 0) continue;
+                newest.Add(candidate);
+                if (newest.Count > count) newest.Remove(newest.Min);
+            }
+            foreach (var candidate in newest) yield return candidate.log;
+        }
+
+        private struct RecentHistoryLog
+        {
+            public object log;
+            public DateTime time;
+            public int tick;
+            public long sequence;
         }
 
         private static bool MatchesOrigin(RimtalkChatRecord record, string originFilter)
@@ -491,7 +529,7 @@ namespace DeepseekTheOrca.Rimtalk
             public bool IsFirstDialogue;
             public bool IsError;
 
-            public static RimtalkChatRecord FromLog(object log, int maxChars)
+            public static RimtalkChatRecord FromLog(object log, int maxChars, bool includePrompt = true)
             {
                 if (log == null)
                 {
@@ -520,7 +558,7 @@ namespace DeepseekTheOrca.Rimtalk
                 record.PawnId = initiatorPawn == null ? "" : initiatorPawn.GetUniqueLoadID();
                 record.RecipientId = recipientPawn == null ? "" : recipientPawn.GetUniqueLoadID();
                 record.InteractionType = ValueText(GetProperty(log, "InteractionType"));
-                record.Prompt = Truncate(CleanRimtalkMarkup(FirstNonEmpty(ValueText(GetProperty(request, "RawPrompt")), ValueText(GetProperty(request, "Prompt")))), maxChars);
+                record.Prompt = includePrompt ? Truncate(CleanRimtalkMarkup(FirstNonEmpty(ValueText(GetProperty(request, "RawPrompt")), ValueText(GetProperty(request, "Prompt")))), maxChars) : "";
                 record.Response = Truncate(CleanRimtalkMarkup(ValueText(GetProperty(log, "Response"))), maxChars);
                 record.ConversationId = GetInt(GetProperty(log, "ConversationId"), -1);
                 record.CreatedTick = GetInt(GetProperty(request, "CreatedTick"), -1);
@@ -683,12 +721,12 @@ namespace DeepseekTheOrca.Rimtalk
                 return pawn == null ? "" : pawn.LabelShort;
             }
 
-            private static DateTime GetDateTime(object value)
+            internal static DateTime GetDateTime(object value)
             {
                 return value is DateTime ? (DateTime)value : DateTime.MinValue;
             }
 
-            private static int GetInt(object value, int defaultValue)
+            internal static int GetInt(object value, int defaultValue)
             {
                 if (value is int)
                 {

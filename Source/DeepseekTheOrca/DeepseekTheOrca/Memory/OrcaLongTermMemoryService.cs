@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Verse;
 
@@ -11,7 +12,7 @@ namespace DeepseekTheOrca
     // Facade for long-term memory: owns the record state, the keyword index,
     // and the embedding/compaction task lifecycle. Persistence lives in
     // OrcaMemoryStore and consolidation policy in OrcaMemoryCompactor.
-    public static class OrcaLongTermMemoryService
+    public static partial class OrcaLongTermMemoryService
     {
         private const int ConsolidationIntervalTicks = 2500;
         private const int MaxEmbeddingRetries = 3;
@@ -27,13 +28,24 @@ namespace DeepseekTheOrca
         private static string loadedPersonaKey = "";
         private static Task<OrcaEmbeddingResult> pendingEmbedding;
         private static OrcaMemoryRecord pendingEmbeddingRecord;
+        private static string pendingEmbeddingIdentity;
         private static Task<LlmChatResponse> pendingCompaction;
-        private static List<string> pendingCompactionIds = new List<string>();
+        private static bool embeddingQueueCancelled;
+        private static string reconciledEmbeddingIdentity = "";
+        private static long nextIdentityCheck;
+        private static HashSet<string> pendingCompactionIds = new HashSet<string>();
+        private static CancellationTokenSource compactionCancellation;
+        private static OrcaMemoryCompactionState compactionState = new OrcaMemoryCompactionState();
+        private static long recentEstimatedTokens;
+        private static List<OrcaMemoryRecord> pendingCommitChunks;
+        private static List<string> pendingCommitIds;
+        private static bool accessMetadataDirty;
+        private static long nextAccessMetadataFlush;
         private static int lastConsolidationTick = -ConsolidationIntervalTicks;
 
         public static string MemoryFolderPath
         {
-            get { return Path.Combine(GenFilePaths.ConfigFolderPath, "DeepseekTheOrca", "Memory", CurrentPersonaStorageKey()); }
+            get { return Path.Combine(configFolder(), "DeepseekTheOrca", "Memory", CurrentPersonaStorageKey()); }
         }
 
         public static string MemoryFilePath
@@ -61,7 +73,9 @@ namespace DeepseekTheOrca
             get { return Path.Combine(MemoryFolderPath, "keyword_index.json"); }
         }
 
-        public static void Add(string source, string text)
+        public static void Add(string source, string text) { RunStorage(() => AddCore(source, text)); }
+
+        private static void AddCore(string source, string text)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             text = (text ?? "").Trim();
@@ -75,13 +89,16 @@ namespace DeepseekTheOrca
             lock (syncRoot)
             {
                 recentExperiences.Add(record);
+                recentEstimatedTokens += OrcaTokenEstimator.Estimate(record.text);
                 SaveRecentLocked();
             }
 
             Debug("Recent experience buffered: " + record.source + " chars=" + record.text.Length);
         }
 
-        public static string ContextForPrompt(string query)
+        public static string ContextForPrompt(string query) { return RunStorage(() => ContextForPromptCore(query), ""); }
+
+        private static string ContextForPromptCore(string query)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
             if (settings == null || !settings.enableLongTermMemory)
@@ -102,7 +119,7 @@ namespace DeepseekTheOrca
                     {
                         record.lastAccessed = now;
                     }
-                    SaveRecordsLocked();
+                    accessMetadataDirty = true;
                 }
             }
 
@@ -136,11 +153,43 @@ namespace DeepseekTheOrca
             return builder.ToString();
         }
 
-        public static void Tick()
+        public static void Tick() { RunStorage(() => TickCore()); }
+
+        private static void TickCore()
         {
+            DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
+            if (settings == null || (!settings.enableLongTermMemory && !loaded)) return;
             EnsureLoaded();
+            if (!settings.enableLongTermMemory && compactionCancellation != null)
+                compactionCancellation.Cancel();
+            if (!settings.enableLongTermMemory && pendingEmbedding != null && !embeddingQueueCancelled)
+            {
+                embeddingClient.CancelQueuedRequests();
+                embeddingQueueCancelled = true;
+            }
+            if (settings.enableLongTermMemory || pendingEmbedding == null) embeddingQueueCancelled = false;
             CompleteFinishedEmbedding();
             CompleteFinishedCompaction();
+            if (accessMetadataDirty && OrcaMemoryRecord.NowUnixSeconds() >= nextAccessMetadataFlush) FlushAccessMetadata();
+
+            // Results already in flight may be committed, but disabled memory must never
+            // start another request or local compaction/consolidation job.
+            if (!settings.enableLongTermMemory) return;
+
+            long now = OrcaMemoryRecord.NowUnixSeconds();
+            if (now >= nextIdentityCheck)
+            {
+                nextIdentityCheck = now + 1;
+                string identity = OrcaEmbeddingIdentity.Current;
+                if (identity.Length > 0 && identity != reconciledEmbeddingIdentity)
+                {
+                    lock (syncRoot)
+                    {
+                        if (InvalidateEmbeddings(records, identity)) SaveAndRebuildIndexLocked();
+                        reconciledEmbeddingIdentity = identity;
+                    }
+                }
+            }
 
             if (TryStartOrRunCompactionIfIdle())
             {
@@ -166,7 +215,9 @@ namespace DeepseekTheOrca
             TryStartEmbedding(record);
         }
 
-        public static List<OrcaMemoryRecord> AllRecords()
+        public static List<OrcaMemoryRecord> AllRecords() { return RunStorage(() => AllRecordsCore(), new List<OrcaMemoryRecord>()); }
+
+        private static List<OrcaMemoryRecord> AllRecordsCore()
         {
             EnsureLoaded();
             lock (syncRoot)
@@ -178,7 +229,9 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static List<OrcaRecentExperienceRecord> AllRecentExperiences()
+        public static List<OrcaRecentExperienceRecord> AllRecentExperiences() { return RunStorage(() => AllRecentExperiencesCore(), new List<OrcaRecentExperienceRecord>()); }
+
+        private static List<OrcaRecentExperienceRecord> AllRecentExperiencesCore()
         {
             EnsureLoaded();
             lock (syncRoot)
@@ -187,7 +240,9 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static void Delete(string id)
+        public static void Delete(string id) { RunStorage(() => DeleteCore(id)); }
+
+        private static void DeleteCore(string id)
         {
             if (id.NullOrEmpty())
             {
@@ -213,13 +268,29 @@ namespace DeepseekTheOrca
             }
         }
 
-        public static void Clear()
+        public static void Clear() { RunStorage(() => ClearCore()); }
+
+        private static void ClearCore()
         {
             EnsureLoaded();
             lock (syncRoot)
             {
+                // Delete the recovery intent before altering live data; if locked,
+                // leave the current memory intact and let the player retry the clear.
+                if (File.Exists(StorageJournalPath)) File.Delete(StorageJournalPath);
                 records.Clear();
                 recentExperiences.Clear();
+                recentEstimatedTokens = 0;
+                embeddingClient.CancelQueuedRequests();
+                pendingEmbedding = null;
+                pendingEmbeddingRecord = null;
+                if (compactionCancellation != null) { compactionCancellation.Cancel(); compactionCancellation.Dispose(); compactionCancellation = null; }
+                pendingCompaction = null;
+                pendingCompactionIds.Clear();
+                compactionState.Reset();
+                pendingCommitChunks = null;
+                pendingCommitIds = null;
+                SaveCompactionStateLocked();
                 SaveRecentLocked();
                 SaveAndRebuildIndexLocked();
             }
@@ -279,44 +350,21 @@ namespace DeepseekTheOrca
 
         private static List<float> TryEmbedQueryForSemanticTopK(DeepseekTheOrcaSettings settings, string query)
         {
-            if (settings == null || !settings.enableSemanticMemoryQuery || query.NullOrEmpty() || !settings.HasModelForRole(OrcaLlmModelRole.Embedding))
-            {
-                return null;
-            }
-
-            try
-            {
-                if (LlmRequestScheduler.IsBusy)
-                {
-                    return null;
-                }
-
-                int timeoutMs = Math.Min(settings.semanticMemoryQueryHardTimeoutMs, Math.Max(1000, settings.semanticMemoryQueryWaitMs + 250));
-                Task<OrcaEmbeddingResult> task = embeddingClient.EmbedAsync(settings, query, timeoutMs);
-                if (!task.Wait(settings.semanticMemoryQueryWaitMs))
-                {
-                    return null;
-                }
-
-                OrcaEmbeddingResult result = task.Result;
-                return result != null && result.success ? OrcaMemoryCompactor.Normalize(result.embedding) : null;
-            }
-            catch
-            {
-                return null;
-            }
+            return settings != null && settings.enableLongTermMemory && settings.enableSemanticMemoryQuery ? OrcaSemanticQueryCache.Ready(query) : null;
         }
 
         private static void CompleteFinishedEmbedding()
         {
             Task<OrcaEmbeddingResult> finished = null;
             OrcaMemoryRecord record = null;
+            string identity = null;
             lock (syncRoot)
             {
                 if (pendingEmbedding != null && pendingEmbedding.IsCompleted)
                 {
                     finished = pendingEmbedding;
                     record = pendingEmbeddingRecord;
+                    identity = pendingEmbeddingIdentity;
                     pendingEmbedding = null;
                     pendingEmbeddingRecord = null;
                 }
@@ -324,6 +372,12 @@ namespace DeepseekTheOrca
 
             if (finished != null && record != null)
             {
+                if (finished.IsCanceled || !OrcaEmbeddingIdentity.Matches(identity, OrcaEmbeddingIdentity.Current))
+                {
+                    record.embeddingState = "pending";
+                    SaveAndRebuildIndexLocked();
+                    return;
+                }
                 CompleteEmbedding(finished, record);
             }
         }
@@ -331,7 +385,7 @@ namespace DeepseekTheOrca
         private static void TryStartEmbedding(OrcaMemoryRecord record)
         {
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (record == null || settings == null || !settings.HasModelForRole(OrcaLlmModelRole.Embedding))
+            if (record == null || settings == null || !settings.enableLongTermMemory || !settings.HasModelForRole(OrcaLlmModelRole.Embedding))
             {
                 return;
             }
@@ -345,6 +399,7 @@ namespace DeepseekTheOrca
 
                 record.embeddingState = "embedding";
                 pendingEmbeddingRecord = record;
+                pendingEmbeddingIdentity = OrcaEmbeddingIdentity.Current;
                 pendingEmbedding = embeddingClient.EmbedAsync(settings, record.DisplayText + "\n" + record.exemplarText);
                 SaveAndRebuildIndexLocked();
             }
@@ -379,11 +434,19 @@ namespace DeepseekTheOrca
                     return;
                 }
 
+                if (!OrcaEmbeddingIdentity.Matches(result.identity, OrcaEmbeddingIdentity.Current))
+                {
+                    record.embeddingState = "pending";
+                    SaveAndRebuildIndexLocked();
+                    return;
+                }
+
                 record.centroidEmbedding = normalized;
+                record.embeddingIdentity = result.identity;
                 record.embeddingState = "ready";
                 record.embeddingRetryCount = 0;
                 record.nextEmbeddingRetryAt = 0;
-                if (record.memoryKind == "chunk")
+                if (record.memoryKind == "chunk" && string.IsNullOrEmpty(record.clusterId))
                 {
                     OrcaMemoryCompactor.AttachChunkToCluster(records, record);
                 }
@@ -418,7 +481,7 @@ namespace DeepseekTheOrca
 
         private static bool IsReadyForEmbeddingAttempt(OrcaMemoryRecord record)
         {
-            if (record == null || record.memoryKind != "chunk" || record.consolidationState != "active")
+            if (record == null || (record.memoryKind != "chunk" && record.memoryKind != "cluster" && record.memoryKind != "atomic") || record.consolidationState != "active")
             {
                 return false;
             }
@@ -429,6 +492,24 @@ namespace DeepseekTheOrca
             return record.embeddingState == "failed_retryable" && record.nextEmbeddingRetryAt <= OrcaMemoryRecord.NowUnixSeconds();
         }
 
+        internal static bool InvalidateEmbeddings(IEnumerable<OrcaMemoryRecord> source, string identity)
+        {
+            if (string.IsNullOrEmpty(identity)) return false;
+            bool changed = false;
+            foreach (var record in source)
+            {
+                if (record == null || record.consolidationState != "active" || OrcaEmbeddingIdentity.Matches(record.embeddingIdentity, identity)) continue;
+                // Keep text, IDs and cluster membership. Only derived vectors are replaced.
+                record.centroidEmbedding.Clear();
+                record.embeddingIdentity = identity;
+                record.embeddingState = "pending";
+                record.embeddingRetryCount = 0;
+                record.nextEmbeddingRetryAt = 0;
+                changed = true;
+            }
+            return changed;
+        }
+
         private static bool TryStartOrRunCompactionIfIdle()
         {
             if (!IsIdleForBackgroundWork())
@@ -437,21 +518,27 @@ namespace DeepseekTheOrca
             }
 
             DeepseekTheOrcaSettings settings = DeepseekTheOrcaMod.Settings;
-            if (settings == null)
+            if (settings == null || !settings.enableLongTermMemory)
             {
                 return false;
+            }
+
+            if (compactionState.CanStart(OrcaMemoryRecord.NowUnixSeconds())
+                && pendingCommitChunks != null)
+            {
+                CompleteCompactionCommit();
+                return true;
             }
 
             List<OrcaRecentExperienceRecord> snapshot;
             lock (syncRoot)
             {
-                if (pendingCompaction != null || recentExperiences.Count == 0)
+                if (pendingCompaction != null || recentExperiences.Count == 0 || !compactionState.CanStart(OrcaMemoryRecord.NowUnixSeconds()))
                 {
                     return false;
                 }
 
-                int estimatedTokens = OrcaMemoryCompactor.EstimateRecentTokens(recentExperiences);
-                if (estimatedTokens < settings.memoryCompactionTokenThreshold)
+                if (recentEstimatedTokens < settings.memoryCompactionTokenThreshold)
                 {
                     return false;
                 }
@@ -475,8 +562,14 @@ namespace DeepseekTheOrca
                     return false;
                 }
 
-                pendingCompactionIds = snapshot.Select(record => record.id).ToList();
-                pendingCompaction = memoryClient.SendPlainChatCompletionAsync(settings, messages, OrcaLlmModelRole.Memory);
+                pendingCompactionIds = new HashSet<string>(snapshot.Select(record => record.id));
+                compactionState.Begin(OrcaMemoryRecord.NowUnixSeconds());
+                SaveCompactionStateLocked();
+                compactionCancellation = new CancellationTokenSource();
+                // Retry policy belongs to this workflow. Each attempt sends exactly once
+                // and waits behind foreground chat/planning in the shared scheduler.
+                pendingCompaction = memoryClient.SendBackgroundCompletionAsync(settings.RequestConfigForRole(OrcaLlmModelRole.Memory),
+                    messages, 800, compactionCancellation.Token, OrcaLlmModelRole.Memory, 0.85f);
             }
             Debug("Memory compaction request sent to Memory model.");
             return true;
@@ -493,12 +586,20 @@ namespace DeepseekTheOrca
                     finished = pendingCompaction;
                     pendingCompaction = null;
                     compacted = recentExperiences.Where(record => pendingCompactionIds.Contains(record.id)).OrderBy(record => record.createdAt).ToList();
-                    pendingCompactionIds = new List<string>();
+                    pendingCompactionIds.Clear();
+                    if (compactionCancellation != null) { compactionCancellation.Dispose(); compactionCancellation = null; }
                 }
             }
 
             if (finished == null)
             {
+                return;
+            }
+
+            if (finished.IsCanceled)
+            {
+                compactionState.CancelQueued();
+                SaveCompactionStateLocked();
                 return;
             }
 
@@ -509,17 +610,30 @@ namespace DeepseekTheOrca
             }
             catch (Exception ex)
             {
-                Debug("Memory compaction failed: " + ex.GetType().Name + ": " + ex.Message);
+                FailCompaction(ex.GetType().Name + ": " + ex.Message);
                 return;
             }
 
-            if (response == null || !response.success || response.content.NullOrEmpty())
+            if (response == null || !response.success || response.content.NullOrEmpty()
+                || response.finishReason == "length" || response.finishReason == "content_filter" || response.toolCalls.Count > 0)
             {
-                Debug("Memory compaction failed: " + (response == null ? "no response" : response.errorMessage));
+                FailCompaction(response == null ? "no response" : response.success ? "Incomplete compaction response: " + response.finishReason : response.errorMessage);
                 return;
             }
 
             AcceptCompactionSummary(response.content, compacted);
+        }
+
+        private static void FailCompaction(string error)
+        {
+            compactionState.Fail(OrcaMemoryRecord.NowUnixSeconds(), error);
+            SaveCompactionStateLocked();
+            Debug("Memory compaction failed: " + error);
+        }
+
+        private static void SaveCompactionStateLocked()
+        {
+            OrcaMemoryStore.SaveCompactionState(StorageStatePath, compactionState);
         }
 
         private static void AcceptCompactionSummary(string summary, List<OrcaRecentExperienceRecord> compacted)
@@ -530,18 +644,35 @@ namespace DeepseekTheOrca
                 return;
             }
 
-            List<OrcaMemoryRecord> chunks = OrcaMemoryCompactor.BuildChunks(summary, compacted);
+            pendingCommitChunks = OrcaMemoryCompactor.BuildChunks(summary, compacted);
+            pendingCommitIds = compacted.Select(record => record.id).ToList();
+            CompleteCompactionCommit();
+        }
+
+        private static void CompleteCompactionCommit()
+        {
             lock (syncRoot)
             {
-                records.AddRange(chunks);
-                HashSet<string> ids = new HashSet<string>(compacted.Select(record => record.id));
-                recentExperiences.RemoveAll(record => ids.Contains(record.id));
-                OrcaMemoryCompactor.Trim(records);
+                if (pendingCommitChunks == null) return;
+                if (!File.Exists(StorageJournalPath))
+                    OrcaMemoryStore.PrepareCompactionCommit(StorageJournalPath, pendingCommitChunks, pendingCommitIds);
+                // A partial write is replayable. Do not discard the generated result on failure.
+                SaveRecordsLocked();
                 SaveRecentLocked();
-                SaveAndRebuildIndexLocked();
+                OrcaMemoryStore.RecoverCompactionCommit(StorageJournalPath, StorageChunkPath, StorageRecentPath);
+                var existingIds = new HashSet<string>(records.Select(record => record.id));
+                foreach (var chunk in pendingCommitChunks)
+                    if (existingIds.Add(chunk.id)) records.Add(chunk);
+                var consumed = new HashSet<string>(pendingCommitIds);
+                recentExperiences.RemoveAll(record => consumed.Contains(record.id));
+                recentEstimatedTokens = recentExperiences.Sum(record => (long)OrcaTokenEstimator.Estimate(record.text));
+                pendingCommitChunks = null;
+                pendingCommitIds = null;
+                compactionState.Reset();
+                keywordIndex.Rebuild(records);
+                keywordIndex.Save(StorageIndexPath);
+                SaveCompactionStateLocked();
             }
-
-            Debug("Memory compaction accepted: chunks=" + chunks.Count + " clearedRecent=" + compacted.Count);
         }
 
         private static bool TryConsolidateIfIdle()
@@ -603,25 +734,44 @@ namespace DeepseekTheOrca
                     return;
                 }
 
-                loaded = true;
+                // Never abandon a successfully generated summary during a persona switch.
+                if (loaded && pendingCommitChunks != null) CompleteCompactionCommit();
+                if (accessMetadataDirty) FlushAccessMetadata();
+                loaded = false;
                 loadedPersonaKey = personaKey;
+                reconciledEmbeddingIdentity = "";
+                nextIdentityCheck = 0;
+                embeddingClient.CancelQueuedRequests();
                 pendingEmbedding = null;
                 pendingEmbeddingRecord = null;
+                if (compactionCancellation != null) { compactionCancellation.Cancel(); compactionCancellation.Dispose(); compactionCancellation = null; }
                 pendingCompaction = null;
-                pendingCompactionIds = new List<string>();
+                pendingCompactionIds.Clear();
+                pendingCommitChunks = null;
+                pendingCommitIds = null;
                 records.Clear();
                 recentExperiences.Clear();
-                Directory.CreateDirectory(MemoryFolderPath);
-                recentExperiences.AddRange(OrcaMemoryStore.LoadRecent(RecentExperienceFilePath));
-                records.AddRange(OrcaMemoryStore.LoadRecords(ChunkMemoryFilePath, "chunk"));
-                records.AddRange(OrcaMemoryStore.LoadRecords(ClusterMemoryFilePath, "cluster"));
+                Directory.CreateDirectory(StorageFolderPath);
+                bool recoveredCommit = OrcaMemoryStore.RecoverCompactionCommit(StorageJournalPath, StorageChunkPath, StorageRecentPath);
+                var loadedRecent = OrcaMemoryStore.LoadRecent(StorageRecentPath);
+                var loadedChunks = OrcaMemoryStore.LoadRecords(StorageChunkPath, "chunk");
+                var loadedClusters = OrcaMemoryStore.LoadRecords(StorageClusterPath, "cluster");
+                var loadedCompaction = OrcaMemoryStore.LoadCompactionState(StorageStatePath);
+                if (recoveredCommit) loadedCompaction.Reset();
+                recentExperiences.AddRange(loadedRecent);
+                records.AddRange(loadedChunks);
+                records.AddRange(loadedClusters);
+                recentEstimatedTokens = recentExperiences.Sum(record => (long)OrcaTokenEstimator.Estimate(record.text));
+                compactionState = loadedCompaction;
+                SaveCompactionStateLocked();
 
                 OrcaMemoryCompactor.Trim(records);
-                if (!keywordIndex.TryLoad(KeywordIndexFilePath, records))
+                if (!keywordIndex.TryLoad(StorageIndexPath, records))
                 {
                     keywordIndex.Rebuild(records);
-                    keywordIndex.Save(KeywordIndexFilePath);
+                    keywordIndex.Save(StorageIndexPath);
                 }
+                loaded = true;
             }
         }
 
@@ -629,20 +779,39 @@ namespace DeepseekTheOrca
         {
             SaveRecordsLocked();
             keywordIndex.Rebuild(records);
-            keywordIndex.Save(KeywordIndexFilePath);
+            keywordIndex.Save(StorageIndexPath);
         }
 
         private static void SaveRecordsLocked()
         {
-            Directory.CreateDirectory(MemoryFolderPath);
-            OrcaMemoryStore.SaveRecords(ChunkMemoryFilePath, records.Where(record => record != null && record.memoryKind == "chunk" && record.consolidationState != "pruned"));
-            OrcaMemoryStore.SaveRecords(ClusterMemoryFilePath, records.Where(record => record != null && record.memoryKind == "cluster" && record.consolidationState != "pruned"));
+            Directory.CreateDirectory(StorageFolderPath);
+            OrcaMemoryStore.SaveRecords(StorageChunkPath, records.Where(record => record != null && record.memoryKind == "chunk" && record.consolidationState != "pruned"));
+            OrcaMemoryStore.SaveRecords(StorageClusterPath, records.Where(record => record != null && record.memoryKind == "cluster" && record.consolidationState != "pruned"));
+            accessMetadataDirty = false;
+            nextAccessMetadataFlush = OrcaMemoryRecord.NowUnixSeconds() + 30;
+        }
+
+        private static void FlushAccessMetadata()
+        {
+            if (!loaded || !accessMetadataDirty) return;
+            string folder = StorageFolderPath;
+            OrcaMemoryStore.SaveRecords(Path.Combine(folder, "memory_chunks.jsonl"), records.Where(record => record != null && record.memoryKind == "chunk" && record.consolidationState != "pruned"));
+            OrcaMemoryStore.SaveRecords(Path.Combine(folder, "memory_clusters.jsonl"), records.Where(record => record != null && record.memoryKind == "cluster" && record.consolidationState != "pruned"));
+            accessMetadataDirty = false;
+            nextAccessMetadataFlush = OrcaMemoryRecord.NowUnixSeconds() + 30;
+        }
+
+        internal static void SuspendQueuedWork()
+        {
+            embeddingClient.CancelQueuedRequests();
+            if (compactionCancellation != null) compactionCancellation.Cancel();
+            RunStorage(FlushAccessMetadata);
         }
 
         private static void SaveRecentLocked()
         {
-            Directory.CreateDirectory(MemoryFolderPath);
-            OrcaMemoryStore.SaveRecent(RecentExperienceFilePath, recentExperiences);
+            Directory.CreateDirectory(StorageFolderPath);
+            OrcaMemoryStore.SaveRecent(StorageRecentPath, recentExperiences);
         }
 
         private static string Clamp(string text, int maxChars)

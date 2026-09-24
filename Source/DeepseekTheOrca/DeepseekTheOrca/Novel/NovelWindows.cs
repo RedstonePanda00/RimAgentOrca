@@ -13,7 +13,7 @@ namespace DeepseekTheOrca
         public override Vector2 WindowSize { get { return new Vector2(740f, 640f); } }
         public override void DrawSettings(Rect rect, OrcaSettingsContext context)
         {
-            var s = context.settings.novelSettings;
+            var s = context.settings.moduleData.Get<NovelSettings>("RimAgent.Novel");
             float days = s.periodDays;
             int length = s.targetLength, log = s.logInterval, state = s.stateInterval;
             var list = new Listing_Standard(); list.Begin(rect);

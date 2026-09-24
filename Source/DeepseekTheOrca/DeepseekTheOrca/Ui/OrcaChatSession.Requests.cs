@@ -10,6 +10,17 @@ namespace DeepseekTheOrca
 {
     public sealed partial class OrcaChatSession
     {
+        public string RuntimeDiagnostic
+        {
+            get { return OrcaChatAgentHub.DiagnosticStatus + "\n"
+                + "waiting=" + IsWaiting + "; task=" + (pendingRequest == null ? "none" : pendingRequest.Status.ToString())
+                + "; parallelTask=" + (pendingParallelToolRequest == null ? "none" : pendingParallelToolRequest.Status.ToString())
+                + "; toolBatch=" + (pendingToolBatch != null) + "; parallelBatch=" + (pendingParallelBatch != null)
+                + "; semanticContinuation=" + (afterSemanticQuery != null)
+                + "\n" + (pendingStreamingRequest == null ? "stream=none" : pendingStreamingRequest.DiagnosticStatus)
+                + "\nqueue=" + LlmRequestScheduler.WaitingCount + "; active=" + LlmRequestScheduler.ActiveLabel; }
+        }
+
         private void TickStreamingRequest()
         {
             if (pendingStreamingRequest == null)
@@ -35,6 +46,8 @@ namespace DeepseekTheOrca
             }
 
             LlmStreamingChatRequest completed = pendingStreamingRequest;
+            AddProcess("Streaming result received by game update: " + completed.DiagnosticStatus);
+            OrcaRuntimeDiagnostics.Record("Chat result consumed", RuntimeDiagnostic);
             OrcaChatLine line = pendingStreamingLine;
             pendingStreamingRequest = null;
             pendingStreamingLine = null;
@@ -204,7 +217,7 @@ namespace DeepseekTheOrca
                 ? OrcaChatHistoryMaintenance.SnapshotForFinalDialogue(transcript.Messages)
                 : transcript.SnapshotMessages();
             ApplySelectedSkillPromptForRole(messages, role);
-            string mood = GeminiHissService.RuntimePrompt();
+            string mood = OrcaPersonaBehaviors.Current.RuntimePrompt;
             if (!mood.NullOrEmpty()) messages.Add(LlmChatMessage.System(mood));
             return messages;
         }
