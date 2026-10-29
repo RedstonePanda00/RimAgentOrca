@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DTO_NovelName>殖民地小说</DTO_NovelName>
-  <DTO_NovelDescription>由当前叙事者根据殖民地的实际记录续写小说，沿用对话模型。默认关闭。</DTO_NovelDescription>
-  <DTO_NovelPeriod>章节周期（游戏日）</DTO_NovelPeriod>
+  <DTO_NovelDescription>自动记录殖民地素材并调用对话模型整理。选择已整理段落，点击“生成该段”后，由当前叙事者生成正文。默认关闭。</DTO_NovelDescription>
+  <DTO_NovelPeriod>素材分段周期（游戏日）</DTO_NovelPeriod>
   <DTO_NovelLength>每章目标篇幅（中文按字数，其他语言按词数）</DTO_NovelLength>
   <DTO_NovelLogInterval>高级：日志扫描间隔（tick，默认 250）</DTO_NovelLogInterval>
   <DTO_NovelStateInterval>高级：状态扫描间隔（tick，默认 2500）</DTO_NovelStateInterval>
-  <DTO_NovelSettingsHelp>本地采集不调用模型。开启后自动生成前言，此后通常每章调用两次。失败后暂停，需手动恢复。不设固定输入 Token 上限。周期调整影响下一个尚未划分的时间段；篇幅调整影响尚未开始生成的章节。</DTO_NovelSettingsHelp>
+  <DTO_NovelSettingsHelp>素材在本地自动采集，每段到期后使用对话模型自动整理。在阅读窗口选择已整理段落，点击“生成该段”才会请求正文；作者、模型、篇幅和写作 skill 在点击时固定。整理和生成可能产生 API 费用。关闭插件后停止采集及新请求，已有作品仍可阅读。</DTO_NovelSettingsHelp>
   <DTO_NovelOpen>阅读殖民地小说</DTO_NovelOpen>
   <DTO_NovelOff>已关闭采集和写作</DTO_NovelOff>
   <DTO_NovelCollecting>正在采集素材／补建人物档案</DTO_NovelCollecting>
   <DTO_NovelPaused>写作已暂停</DTO_NovelPaused>
-  <DTO_NovelWaiting>等待下一章</DTO_NovelWaiting>
+  <DTO_NovelWaiting>记录中／等待选择生成</DTO_NovelWaiting>
   <DTO_NovelWriting>正在撰写章节</DTO_NovelWriting>
+  <DTO_NovelReviewing>正在校验事实覆盖</DTO_NovelReviewing>
+  <DTO_NovelUnverifiedDraft>保留的候选正文（尚未通过事实校验）</DTO_NovelUnverifiedDraft>
+  <DTO_NovelRecoveryCoverage>正文遗漏或违背了重要事实。修正受现有限次重试预算约束；原章节和候选正文均已保留。</DTO_NovelRecoveryCoverage>
   <DTO_NovelOrganizing>正在整理章节素材</DTO_NovelOrganizing>
   <DTO_NovelCounts>已完成 {0} 章 · {1} 条素材</DTO_NovelCounts>
   <DTO_NovelResume>恢复／重试</DTO_NovelResume>
   <DTO_NovelPreface>前言</DTO_NovelPreface>
   <DTO_NovelChapter>第 {0} 章</DTO_NovelChapter>
-  <DTO_NovelRange>游戏第 {0:0.##}–{1:0.##} 日</DTO_NovelRange>
-  <DTO_NovelEmpty>在 RimAgent 的插件设置中启用“殖民地小说”，即可开始采集并生成前言。</DTO_NovelEmpty>
-  <DTO_NovelPending>本章尚未完成，正在等待生成。</DTO_NovelPending>
-  <DTO_NovelError>写作已停止，素材和已成功的步骤均已保留：</DTO_NovelError>
+  <DTO_NovelRange>游戏第 {0}–{1} 日</DTO_NovelRange>
+  <DTO_NovelEmpty>在插件设置中启用殖民地小说，开始采集素材并整理前言。正文需手动点击生成。</DTO_NovelEmpty>
+  <DTO_NovelPending>该时段正在等待自动整理。整理完成后，请自行点击“生成该段”生成正文。</DTO_NovelPending>
+  <DTO_NovelError>请求流程已暂停；素材和成功步骤已保留：</DTO_NovelError>
   <DTO_NovelSourceWarnings>部分素材来源暂时无法读取：</DTO_NovelSourceWarnings>
   <DTO_NovelExportTxt>导出 TXT</DTO_NovelExportTxt>
   <DTO_NovelExportMd>导出 Markdown</DTO_NovelExportMd>
@@ -34,7 +37,35 @@
   <DTO_NovelPawnCacheMissing>立即补采后，人物档案仍不完整，已暂停写作。请查看诊断信息，处理后点击恢复再次尝试。</DTO_NovelPawnCacheMissing>
   <DTO_NovelRegenerate>重新生成最新一段</DTO_NovelRegenerate>
   <DTO_NovelRegenerating>正在重新生成最新一段，旧文本仍保留</DTO_NovelRegenerating>
-  <DTO_NovelRegenerateHelp>使用当前人格、对话模型、篇幅和小说 skill，在原有时间范围内重新生成《{0}》。正常会重新调用模型两次。新文本成功前仍可阅读旧文本；成功后会清除并重建后续未完成的提纲。插件须已启用，且没有正在执行的请求或重生成任务。</DTO_NovelRegenerateHelp>
+  <DTO_NovelRegenerateHelp>使用当前叙事者、对话模型、篇幅和写作 skill，在原时段重新生成“{0}”，通常需两次模型调用。成功前旧正文仍可阅读，后续独立整理的段落会保留。</DTO_NovelRegenerateHelp>
   <DTO_NovelRegenerateStarted>已安排重新生成，新文本成功前旧文本仍保留。</DTO_NovelRegenerateStarted>
   <DTO_NovelRegenerateUnavailable>需要先启用插件、完成至少一段，并等待当前请求结束。同一时间只能执行一个重生成任务。</DTO_NovelRegenerateUnavailable>
+  <DTO_NovelQueueSummary>已完成 {0} 段；待手动生成 {1} 段；待整理 {2} 段；已请求正文 {3} 段；失败暂停 {4} 段。</DTO_NovelQueueSummary>
+  <DTO_NovelEvidenceSummary>当前任务：第 {0} 段（0 为序章），下一步：{4}。已固定素材 {1} 条；已选择展开 {2} 条；已选人物 {3} 个。</DTO_NovelEvidenceSummary>
+  <DTO_NovelCompressing>正在分批压缩素材</DTO_NovelCompressing>
+  <DTO_NovelCompressionProgress>上下文压缩：第 {0}/{1} 轮，已完成 {2}/{3} 批；模型报告容量 {4} tokens。摘要会增加模型调用，使用本章已固定的模型；原始素材和已完成批次均随存档保存。</DTO_NovelCompressionProgress>
+  <DTO_NovelRetryHelp>恢复失败步骤，保留成功步骤。自动纠错每步最多 2 次、每章最多 6 次。额度耗尽后，每次点击明确允许额外调用一次模型，可能产生费用；不会重置自动额度。</DTO_NovelRetryHelp>
+  <DTO_NovelSplit>拆分失败的压缩批次</DTO_NovelSplit>
+  <DTO_NovelSplitHelp>只将失败批次拆成两份，保留全部输入和成功摘要。此操作允许额外调用两次模型，可能产生费用；不会重置自动纠错次数。</DTO_NovelSplitHelp>
+  <DTO_NovelRecoveryBudget>自动纠错：当前步骤 {0}/{1} 次；本章 {2}/{3} 次。次数随存档保存。</DTO_NovelRecoveryBudget>
+  <DTO_NovelRecoveryFormat>响应格式无效。额度内会携带校验反馈自动纠错；若已暂停，可点击恢复，压缩步骤也可拆分失败批次。</DTO_NovelRecoveryFormat>
+  <DTO_NovelRecoveryReferences>响应引用了无效素材，不会静默放行。程序会有限纠错；若已暂停，可恢复或拆分失败压缩批次。</DTO_NovelRecoveryReferences>
+  <DTO_NovelRecoveryTruncated>模型输出被截断。有两次自动额度时会拆分失败压缩批次，否则请手动拆分或恢复。已有结果保留。</DTO_NovelRecoveryTruncated>
+  <DTO_NovelRecoveryContext>模型容量不足，最多压缩三轮。若失败的是压缩批次，可尝试拆分。原始素材仍保留。</DTO_NovelRecoveryContext>
+  <DTO_NovelRecoveryConfiguration>请检查本章固定连接的密钥、地址和模型可用性，再点击恢复。配置错误不会自动付费重试。</DTO_NovelRecoveryConfiguration>
+  <DTO_NovelRecoveryQuota>服务商额度或余额不足。请处理账户余额或配额后点击恢复，不会自动重试。</DTO_NovelRecoveryQuota>
+  <DTO_NovelRecoveryTransport>网络请求失败或触发限流。请检查连接及服务商状态，恢复后点击恢复。不会自动重试。</DTO_NovelRecoveryTransport>
+  <DTO_NovelRecoveryFiltered>服务商过滤了响应，或响应包含工具调用；工具未执行。请检查模型限制后再恢复。</DTO_NovelRecoveryFiltered>
+  <DTO_NovelRecoveryInternal>本地准备或处理发生异常，已有结果已保留。请查看诊断详情；反复发生时需要报告错误。</DTO_NovelRecoveryInternal>
+  <DTO_NovelSectionFailed>失败暂停</DTO_NovelSectionFailed>
+  <DTO_NovelSectionQueued>已请求</DTO_NovelSectionQueued>
+  <DTO_NovelSectionReady>待生成</DTO_NovelSectionReady>
+  <DTO_NovelSectionPreparing>待整理</DTO_NovelSectionPreparing>
+  <DTO_NovelSectionError>本段已暂停。若无服务商或采集流程故障，其他段仍可继续整理。请选择本段并点击“恢复”。</DTO_NovelSectionError>
+  <DTO_NovelGenerationWaiting>已请求生成正文。排队及生成期间使用点击时固定的作者、模型和写作设置。</DTO_NovelGenerationWaiting>
+  <DTO_NovelReadyHelp>已从 {0} 条素材完成整理。尚未生成正文，也不会自动发起正文请求。点击“生成该段”即可开始；可独立选择段落，不会补造未生成的前段内容。</DTO_NovelReadyHelp>
+  <DTO_NovelGenerateSection>生成该段</DTO_NovelGenerateSection>
+  <DTO_NovelGenerateHelp>使用当前叙事者、对话模型、目标篇幅和写作 skill 生成此段，可能产生 API 费用。请求队列和有限纠错进度随存档保存。</DTO_NovelGenerateHelp>
+  <DTO_NovelGenerationQueued>第 {0} 段已加入正文生成队列。</DTO_NovelGenerationQueued>
+  <DTO_NovelRequestTimeout>单次请求超时（现实秒；默认 180）</DTO_NovelRequestTimeout>
 </LanguageData>

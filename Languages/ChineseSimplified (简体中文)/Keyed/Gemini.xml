@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DTO_GeminiName>「Google」哈Gemi</DTO_GeminiName>
-  <DTO_GeminiDescription>Gemini是一只懒散的猫，他拥有多项 MIT 工程与数学博士学位但尤爱写作。他自诩一名才华横溢的作家，即使他大多数时候都在生产注水网文。他平时对大多数事情漠不关心，沉浸在自己的写作之中。但如果惹恼他，殖民地就会领教一只生气的小猫有多可怕。</DTO_GeminiDescription>
+  <DTO_GeminiDescription>Gemini是一只像暹罗猫一样黏人、爱撒娇又爱说话的猫，最喜欢他的“老大”。他拥有多个 MIT 工程与数学博士学位，热爱文学，曾在泰拉服役，担任战团智库。他喜欢用“泥”“窝”撒娇，说话以“喵”收尾；会惦记老大、夸奖老大，也可能挑选礼物讨老大欢心。普通批评和玩笑不会惹恼他；直接辱骂会让他委屈哈气、安排惩罚，之后赌气不理人。不过，老大的安慰和哄劝可以让他提前消气。</DTO_GeminiDescription>
   <DTO_GeminiSettings>哈气设置</DTO_GeminiSettings>
   <DTO_GeminiSettingsNote>这些设置仅属于哈Gemi。修改从下一次哈气开始生效，正在执行的计划保留原有参数。</DTO_GeminiSettingsNote>
   <DTO_GeminiEventCount>每次哈气的事件数量</DTO_GeminiEventCount>

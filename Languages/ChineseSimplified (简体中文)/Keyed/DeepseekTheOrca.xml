@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-  <DTO_EnableAiPlanning>启用 DeepSeek 规划</DTO_EnableAiPlanning>
+  <DTO_EnableAiPlanning>启用 agent 规划</DTO_EnableAiPlanning>
   <DTO_EnableAiPlanningTooltip>允许已配置的 LLM 提供方在连接后运行。没有提供方连接时，AI 组件保持沉默。</DTO_EnableAiPlanningTooltip>
   <DTO_DebugLogging>启用调试日志</DTO_DebugLogging>
   <DTO_DebugLoggingTooltip>把工具调用、事件选择和拒绝原因写入 RimWorld 日志。</DTO_DebugLoggingTooltip>
   <DTO_EnableWebSearch>启用 LLM 联网搜索</DTO_EnableWebSearch>
-  <DTO_EnableWebSearchTooltip>向 LLM 对话暴露公网搜索工具。当前本地提供方为 Tavily，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
+  <DTO_EnableWebSearchTooltip>向 LLM 对话暴露公网搜索工具。支持 Tavily 或深度求索，搜索词会发送到游戏外部。</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>联网搜索提供方</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily 本地工具</DTO_WebSearchProviderTavily>
-  <DTO_WebSearchProviderTooltip>使用 Tavily 作为本地联网搜索工具。</DTO_WebSearchProviderTooltip>
+  <DTO_WebSearchProviderTooltip>选择 Tavily 或深度求索联网搜索，与对话模型选择独立。</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API 密钥</DTO_TavilyApiKey>
   <DTO_TavilyApiKeyTooltip>仅在启用联网搜索时需要。保存在 RimWorld mod 设置内。</DTO_TavilyApiKeyTooltip>
-  <DTO_TavilyMaxResults>Tavily 最大结果数</DTO_TavilyMaxResults>
+  <DTO_TavilyMaxResults>搜索最大结果数</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily 搜索深度</DTO_TavilySearchDepth>
   <DTO_SettingsPageLlm>Agent 模型</DTO_SettingsPageLlm>
   <DTO_SettingsPageApiKeys>Provider</DTO_SettingsPageApiKeys>
@@ -25,7 +25,7 @@
   <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
   <DTO_SettingsPageDebug>调试</DTO_SettingsPageDebug>
   <DTO_EnableHttpMcp>启用外部 HTTP MCP</DTO_EnableHttpMcp>
-  <DTO_EnableHttpMcpTooltip>把一个由玩家配置的 HTTP MCP 服务器工具暴露给LLM。此模组本身不提供 MCP 工具。</DTO_EnableHttpMcpTooltip>
+  <DTO_EnableHttpMcpTooltip>让模组内 Agent 使用玩家配置的外部 HTTP MCP 服务器工具。如需让外部 Agent 控制 RimAgent，请启用“外部 Agent 桥接”。</DTO_EnableHttpMcpTooltip>
   <DTO_HttpMcpUrl>HTTP MCP 端点 URL</DTO_HttpMcpUrl>
   <DTO_HttpMcpUrlTooltip>例如 http://127.0.0.1:3333/mcp。建议只使用你信任的本地端点。</DTO_HttpMcpUrlTooltip>
   <DTO_HttpMcpBearerToken>HTTP MCP Bearer 令牌</DTO_HttpMcpBearerToken>
@@ -74,9 +74,9 @@
   <DTO_ModelTool>工具模型</DTO_ModelTool>
   <DTO_ModelToolTooltip>可选。填写后，LLM 聊天的第一轮可工具调用请求使用此模型；工具结果返回后再交给对话模型。</DTO_ModelToolTooltip>
   <DTO_ModelVision>识图模型</DTO_ModelVision>
-  <DTO_ModelVisionTooltip>用于可识图请求。留空则回退到兜底模型。</DTO_ModelVisionTooltip>
+  <DTO_ModelVisionTooltip>截取游戏渲染画面并发送给此识图模型分析。请明确选择支持图像的模型；截图请求不会回退到纯文本模型。</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>联网搜索模型</DTO_ModelWebSearch>
-  <DTO_ModelWebSearchTooltip>用于可联网搜索请求。当前 Tavily 搜索仍是本地工具。</DTO_ModelWebSearchTooltip>
+  <DTO_ModelWebSearchTooltip>调用联网工具的模型。请在工具设置中独立选择 Tavily 或深度求索搜索服务。</DTO_ModelWebSearchTooltip>
   <DTO_ModelUseFallback>使用兜底模型</DTO_ModelUseFallback>
   <DTO_ModelNoDiscoveredModels>尚未发现模型。请配置 API 密钥并等待模型发现完成。</DTO_ModelNoDiscoveredModels>
   <DTO_ModelSelectTitle>选择模型</DTO_ModelSelectTitle>
@@ -212,7 +212,7 @@
   <DTO_OrcaChatOpen>打开对话栏</DTO_OrcaChatOpen>
   <DTO_OrcaChatClose>关闭对话栏</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>悬浮对话；可读取工具，并可按请求触发事件。</DTO_OrcaChatNote>
-  <DTO_OrcaChatTitle>「深度求索」奥卡</DTO_OrcaChatTitle>
+  <DTO_OrcaChatTitle>RimAgent</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>背景透明度</DTO_OrcaChatAlpha>
   <DTO_OrcaChatSend>发送</DTO_OrcaChatSend>
   <DTO_OrcaChatWaiting>等待中...</DTO_OrcaChatWaiting>
@@ -263,4 +263,6 @@
   <DTO_KnowledgeReload>重新加载知识库</DTO_KnowledgeReload>
   <DTO_KnowledgeStoredCount>知识条目：{0}</DTO_KnowledgeStoredCount>
   <DTO_KnowledgeEmpty>尚未加载知识条目。</DTO_KnowledgeEmpty>
+  <DTO_DeepSeekSearchKey>深度求索搜索 API Key（可选覆盖）</DTO_DeepSeekSearchKey>
+  <DTO_DeepSeekSearchKeyTooltip>留空时使用已启用的深度求索官方连接。搜索和网页抓取使用深度求索官方接口，与对话模型独立。</DTO_DeepSeekSearchKeyTooltip>
 </LanguageData>

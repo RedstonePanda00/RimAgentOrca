@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DTO_NovelName>Colony novel</DTO_NovelName>
-  <DTO_NovelDescription>Your current narrator writes a continuing novel from recorded colony events. Uses the dialogue model. Disabled by default.</DTO_NovelDescription>
-  <DTO_NovelPeriod>Days per chapter (game days)</DTO_NovelPeriod>
+  <DTO_NovelDescription>Automatically records and prepares colony material with the dialogue model. Choose a prepared section and click Generate this section to request prose from the current narrator. Disabled by default.</DTO_NovelDescription>
+  <DTO_NovelPeriod>Material period (game days)</DTO_NovelPeriod>
   <DTO_NovelLength>Approximate length per chapter (characters in Chinese; words otherwise)</DTO_NovelLength>
   <DTO_NovelLogInterval>Advanced: log scan interval (ticks; default 250)</DTO_NovelLogInterval>
   <DTO_NovelStateInterval>Advanced: state scan interval (ticks; default 2500)</DTO_NovelStateInterval>
-  <DTO_NovelSettingsHelp>Local collection makes no model calls. Enabling generates a preface, then normally two calls per chapter. Failures pause until manually resumed. No fixed input token cap. Period changes affect the next unassigned interval; length changes affect the next chapter that has not started.</DTO_NovelSettingsHelp>
+  <DTO_NovelSettingsHelp>Records are collected locally. Each period is prepared automatically using the dialogue model. In the reader, choose a prepared section and click Generate this section to request prose. Author, model, length and writing skills are captured on that click. Preparation and generation may incur API costs. Disabling stops collection and new requests; existing work remains readable.</DTO_NovelSettingsHelp>
   <DTO_NovelOpen>Read colony novel</DTO_NovelOpen>
   <DTO_NovelOff>Collection and writing disabled</DTO_NovelOff>
   <DTO_NovelCollecting>Collecting material / rebuilding character dossiers</DTO_NovelCollecting>
   <DTO_NovelPaused>Writing paused</DTO_NovelPaused>
-  <DTO_NovelWaiting>Waiting for the next chapter</DTO_NovelWaiting>
+  <DTO_NovelWaiting>Collecting / waiting for your selection</DTO_NovelWaiting>
   <DTO_NovelWriting>Writing a chapter</DTO_NovelWriting>
+  <DTO_NovelReviewing>Checking factual coverage</DTO_NovelReviewing>
+  <DTO_NovelUnverifiedDraft>Preserved draft (not yet verified)</DTO_NovelUnverifiedDraft>
+  <DTO_NovelRecoveryCoverage>The draft omitted or contradicted important facts. Corrections use the existing limited retry budget; the original chapter and candidate draft are preserved.</DTO_NovelRecoveryCoverage>
   <DTO_NovelOrganizing>Organizing chapter material</DTO_NovelOrganizing>
   <DTO_NovelCounts>{0} completed chapters · {1} source records</DTO_NovelCounts>
   <DTO_NovelResume>Resume / retry</DTO_NovelResume>
   <DTO_NovelPreface>Preface</DTO_NovelPreface>
   <DTO_NovelChapter>Chapter {0}</DTO_NovelChapter>
-  <DTO_NovelRange>Game days {0:0.##}–{1:0.##}</DTO_NovelRange>
-  <DTO_NovelEmpty>Enable Colony novel in RimAgent's plugin settings to start collecting material and generate a preface.</DTO_NovelEmpty>
-  <DTO_NovelPending>This chapter is waiting to be completed.</DTO_NovelPending>
-  <DTO_NovelError>Writing stopped; the material and successful steps have been retained:</DTO_NovelError>
+  <DTO_NovelRange>Game days {0}–{1}</DTO_NovelRange>
+  <DTO_NovelEmpty>Enable Colony novel in plugin settings to collect material and prepare a preface. Prose requires a manual generation request.</DTO_NovelEmpty>
+  <DTO_NovelPending>This period is waiting for automatic preparation. Prose is generated only after you select Generate this section.</DTO_NovelPending>
+  <DTO_NovelError>Requests are paused; material and completed steps are retained:</DTO_NovelError>
   <DTO_NovelSourceWarnings>Some material sources could not be read:</DTO_NovelSourceWarnings>
   <DTO_NovelExportTxt>Export TXT</DTO_NovelExportTxt>
   <DTO_NovelExportMd>Export Markdown</DTO_NovelExportMd>
@@ -34,7 +37,35 @@
   <DTO_NovelPawnCacheMissing>Character dossiers are still incomplete after an immediate scan. Writing is paused. See Diagnostics for details, then resume to try again.</DTO_NovelPawnCacheMissing>
   <DTO_NovelRegenerate>Regenerate latest section</DTO_NovelRegenerate>
   <DTO_NovelRegenerating>Regenerating the latest section; previous text retained</DTO_NovelRegenerating>
-  <DTO_NovelRegenerateHelp>Regenerate “{0}” using the current narrator, dialogue model, length and writing skill, within its original time range. Normally makes two new model calls. The old text remains readable until success. Later unfinished outlines will then be discarded and rebuilt. Available while the plugin is enabled and no request or regeneration is in progress.</DTO_NovelRegenerateHelp>
+  <DTO_NovelRegenerateHelp>Regenerate “{0}” with the current narrator, dialogue model, length and writing skills in its original time range. Normally makes two model calls. The old text remains readable until success; independently prepared later sections are retained.</DTO_NovelRegenerateHelp>
   <DTO_NovelRegenerateStarted>Regeneration queued. The old text remains available until the replacement succeeds.</DTO_NovelRegenerateStarted>
   <DTO_NovelRegenerateUnavailable>Enable the plugin and wait for active requests to finish. A completed section is required, and only one regeneration may run at a time.</DTO_NovelRegenerateUnavailable>
+  <DTO_NovelQueueSummary>Completed {0}; ready for manual generation {1}; awaiting preparation {2}; prose requested {3}; section failures {4}.</DTO_NovelQueueSummary>
+  <DTO_NovelEvidenceSummary>Current section: {0} (0 = preface); next step: {4}. Frozen records: {1}; selected details: {2}; selected people: {3}.</DTO_NovelEvidenceSummary>
+  <DTO_NovelCompressing>Summarizing oversized material</DTO_NovelCompressing>
+  <DTO_NovelCompressionProgress>Context compression: round {0}/{1}; {2}/{3} batches complete; reported model capacity {4} tokens. Extra summary calls use the captured chapter model; raw material and completed batches remain saved.</DTO_NovelCompressionProgress>
+  <DTO_NovelRetryHelp>Resume the failed step; completed steps are retained. Automatic corrections are limited to 2 per step and 6 per chapter. After exhaustion, each click explicitly permits one additional paid request; it does not reset the limits.</DTO_NovelRetryHelp>
+  <DTO_NovelSplit>Split failed compression batch</DTO_NovelSplit>
+  <DTO_NovelSplitHelp>Split only the failed batch into two, retaining all input and completed summaries. This action permits two additional paid requests. Automatic correction counters are not reset.</DTO_NovelSplitHelp>
+  <DTO_NovelRecoveryBudget>Automatic corrections: this step {0}/{1}; this chapter {2}/{3}. Counters are saved.</DTO_NovelRecoveryBudget>
+  <DTO_NovelRecoveryFormat>Response format invalid. Eligible automatic corrections include validation feedback. If paused, use Retry; for compression you can also split the failed batch.</DTO_NovelRecoveryFormat>
+  <DTO_NovelRecoveryReferences>Response cites invalid evidence. Unsupported citations are never silently accepted. Automatic correction is bounded; if paused, retry or split the failed compression batch.</DTO_NovelRecoveryReferences>
+  <DTO_NovelRecoveryTruncated>Model output was truncated. A failed compression batch is split when two automatic calls remain; otherwise use Split or Retry explicitly. Earlier results are preserved.</DTO_NovelRecoveryTruncated>
+  <DTO_NovelRecoveryContext>Model capacity is insufficient. Up to three compression rounds are allowed. For a failed compression batch, try Split. Source material remains saved.</DTO_NovelRecoveryContext>
+  <DTO_NovelRecoveryConfiguration>Check the captured chapter connection, API key, endpoint and model availability, then click Retry. No automatic paid retries for configuration errors.</DTO_NovelRecoveryConfiguration>
+  <DTO_NovelRecoveryQuota>Provider quota or balance exhausted. Resolve billing/quota with the provider, then click Retry. No automatic retries.</DTO_NovelRecoveryQuota>
+  <DTO_NovelRecoveryTransport>Request failed in transit or was rate-limited. Check connectivity/provider status and click Retry when ready. No automatic retries.</DTO_NovelRecoveryTransport>
+  <DTO_NovelRecoveryFiltered>Provider filtered the response or returned tools. No tools were executed. Review model restrictions before retrying.</DTO_NovelRecoveryFiltered>
+  <DTO_NovelRecoveryInternal>A local preparation/processing error occurred. Existing results are retained. Open diagnostics for details; repeated errors require a bug report.</DTO_NovelRecoveryInternal>
+  <DTO_NovelSectionFailed>Paused</DTO_NovelSectionFailed>
+  <DTO_NovelSectionQueued>Requested</DTO_NovelSectionQueued>
+  <DTO_NovelSectionReady>Ready</DTO_NovelSectionReady>
+  <DTO_NovelSectionPreparing>Preparing</DTO_NovelSectionPreparing>
+  <DTO_NovelSectionError>This section is paused. Other sections can still be prepared unless the provider or collection workflow is paused. Use Resume for this section.</DTO_NovelSectionError>
+  <DTO_NovelGenerationWaiting>Prose has been requested. The captured author, model and writing settings remain fixed while this section is queued or running.</DTO_NovelGenerationWaiting>
+  <DTO_NovelReadyHelp>Prepared from {0} records. No prose has been generated and no prose request will start until you click Generate this section. You may select sections independently; missing earlier prose will not be invented.</DTO_NovelReadyHelp>
+  <DTO_NovelGenerateSection>Generate this section</DTO_NovelGenerateSection>
+  <DTO_NovelGenerateHelp>Generate this prepared section with the current narrator, dialogue model, target length and writing skills. This may incur API costs. Queued requests and bounded corrections are saved.</DTO_NovelGenerateHelp>
+  <DTO_NovelGenerationQueued>Section {0} was queued for prose generation.</DTO_NovelGenerationQueued>
+  <DTO_NovelRequestTimeout>Request timeout (real seconds; default 180)</DTO_NovelRequestTimeout>
 </LanguageData>

@@ -1,0 +1,137 @@
+using System;
+using System.Collections.Generic;
+using RimAgent.Rimtalk;
+using RimWorld;
+using Verse;
+
+namespace RimAgent
+{
+    public sealed class OrcaProactiveConversationRequest
+    {
+        public string source;
+        public string title;
+        public string body;
+        public bool openChatWindow = true;
+
+        public OrcaProactiveConversationRequest(string source, string title, string body)
+        {
+            this.source = source ?? "";
+            this.title = title ?? "";
+            this.body = body ?? "";
+        }
+    }
+
+    public interface IOrcaProactiveConversationSource
+    {
+        void Tick();
+    }
+
+    public static class OrcaProactiveConversationManager
+    {
+        public const string ExtensionDefName = "DTO_Extension_AmbientProactiveDialogue";
+        private const int MaxQueuedRequests = 20;
+        private static readonly Queue<OrcaProactiveConversationRequest> pendingRequests = new Queue<OrcaProactiveConversationRequest>();
+        private static readonly List<IOrcaProactiveConversationSource> sources = new List<IOrcaProactiveConversationSource>();
+        private static readonly HashSet<IOrcaProactiveConversationSource> faultedSources = new HashSet<IOrcaProactiveConversationSource>();
+        private static IOrcaProactiveConversationSource[] sourceSnapshot;
+        private static bool defaultsRegistered;
+
+        public static void Reset()
+        {
+            pendingRequests.Clear();
+            faultedSources.Clear();
+            sourceSnapshot = null;
+            sources.RemoveAll(source => source is OrcaNarrativeDirectorSource || source is RimtalkProactiveConversationSource);
+            defaultsRegistered = false;
+        }
+
+        public static bool AmbientEnabled
+        {
+            get { return OrcaExtensionManager.ExtensionEnabled(ExtensionDefName); }
+        }
+
+        public static void RegisterSource(IOrcaProactiveConversationSource source)
+        {
+            EnsureDefaultsRegistered();
+            if (source != null && !sources.Contains(source))
+            {
+                sources.Add(source);
+                sourceSnapshot = null;
+            }
+        }
+
+        public static void Enqueue(OrcaProactiveConversationRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            while (pendingRequests.Count >= MaxQueuedRequests)
+            {
+                pendingRequests.Dequeue();
+            }
+
+            pendingRequests.Enqueue(request);
+        }
+
+        public static void UnregisterSource(IOrcaProactiveConversationSource source)
+        {
+            sources.Remove(source);
+            sourceSnapshot = null;
+            faultedSources.Remove(source);
+        }
+
+        public static void NotifyStorytellerIncidentScheduled(AiIncidentPlan plan, FiringIncident firingIncident, IIncidentTarget target, OrcaNarrativeHistoryRecord history = null)
+        {
+            OrcaNarrativeDirector.NotifyStorytellerIncidentScheduled(plan, firingIncident, target, history);
+        }
+
+        public static void Tick()
+        {
+            EnsureDefaultsRegistered();
+
+            // Iterate a snapshot: a submod may register/unregister during its callback.
+            foreach (var source in sourceSnapshot ?? (sourceSnapshot = sources.ToArray()))
+            {
+                if (faultedSources.Contains(source) || !sources.Contains(source)) continue;
+                try { source.Tick(); }
+                catch (Exception ex)
+                {
+                    faultedSources.Add(source);
+                    Log.Warning("[RimAgent] Proactive source paused until next game: " + source.GetType().FullName + ": " + ex);
+                }
+            }
+
+            if (pendingRequests.Count == 0 || OrcaChatAgentHub.IsChatBusy)
+            {
+                return;
+            }
+
+            OrcaProactiveConversationRequest request = pendingRequests.Peek();
+            if (OrcaChatAgentHub.TryStartProactive(request))
+            {
+                pendingRequests.Dequeue();
+            }
+        }
+
+        private static void EnsureDefaultsRegistered()
+        {
+            if (defaultsRegistered)
+            {
+                return;
+            }
+
+            defaultsRegistered = true;
+            sources.Add(new OrcaNarrativeDirectorSource());
+            if (RimtalkIntegration.IsAvailable)
+            {
+                sources.Add(new RimtalkProactiveConversationSource());
+            }
+        }
+    }
+
+    public sealed class OrcaProactiveConversationExtensionWorker : OrcaExtensionWorker
+    {
+    }
+}

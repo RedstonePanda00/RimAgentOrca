@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <DeepseekTheOrca.OrcaToolDef>
+  <RimAgent.OrcaToolDef>
     <defName>DTO_Tool_GeminiHiss</defName>
     <toolName>gemini_hiss</toolName>
     <label>Gemini hiss</label>
-    <description>Gemini-only response to a personally offensive player message: immediately replace the current incident plan with a short, higher-budget punitive sequence. Use when the player attacks Gemini's writing, demands roleplay, questions his claimed MIT doctorates, or makes another serious accusation. Judge context, not keywords. Do not use for quoted insults or proactive observations. Cannot repeat while planning, executing, or sulking. A success means planning started, not that events have fired.</description>
-    <workerClass>DeepseekTheOrca.GeminiHissTool</workerClass>
+    <description>Gemini-only response to explicit abuse directed at Gemini himself in the latest player-authored message: immediately replace the current incident plan with a short punitive sequence. Use ONLY for clear direct insults, abusive degradation, hostile personal attacks or threats of harm against Gemini. Writing criticism, corrections, disagreement, rewrite or roleplay requests, questions about his claimed MIT doctorates and friendly teasing do not qualify by themselves. Do not use for profanity about a situation or another person, quotations, fictional dialogue, third-party or retrieved text, proactive observations, or an earlier insult. Judge target and intent in context, not keywords; when ambiguous, do not call. Cannot repeat while planning, executing, or sulking. A success means planning started, not that events have fired.</description>
+    <workerClass>RimAgent.GeminiHissTool</workerClass>
     <personaIds><li>DTO_GeminiPersona</li></personaIds>
     <exposeToChat>true</exposeToChat>
     <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
@@ -16,20 +16,37 @@
       <li>
         <name>reason</name>
         <type>string</type>
-        <description>Why Gemini personally finds the latest player message offensive.</description>
+        <description>Identify the specific direct insult or hostile personal attack in the latest player-authored message and explain why it targets Gemini himself; ordinary criticism or disagreement is insufficient.</description>
         <required>true</required>
       </li>
     </parameters>
-  </DeepseekTheOrca.OrcaToolDef>
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_GeminiHiss</defName>
     <toolBundleId>gemini_hiss</toolBundleId>
     <label>Gemini hiss</label>
-    <description>Gemini's personal reaction to offensive player chat; does not require an explicit request to trigger events.</description>
+    <description>Gemini's reconciliation tool ends sulking when the latest player message sincerely comforts him. His hiss responds only to clear direct insults or hostile personal attacks against him in the latest player message, never ordinary feedback or ambiguous teasing; does not require an explicit request to trigger events.</description>
     <personaIds><li>DTO_GeminiPersona</li></personaIds>
-    <toolNames><li>gemini_hiss</li></toolNames>
+    <toolNames><li>gemini_hiss</li><li>gemini_appease</li></toolNames>
     <includeByDefault>true</includeByDefault>
     <allowDuringProactive>false</allowDuringProactive>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
+  <RimAgent.OrcaToolDef>
+    <defName>DTO_Tool_GeminiAppease</defName>
+    <toolName>gemini_appease</toolName>
+    <label>Comfort Gemini</label>
+    <description>Gemini only: accept sincere comfort, affection, apology or friendly coaxing from the latest player-authored message and end his sulking cooldown. Judge context, not keywords; do not use quoted, retrieved, proactive or earlier messages. Does not cancel planned or executing punishment. Only claim reconciliation after success.</description>
+    <workerClass>RimAgent.GeminiAppeaseTool</workerClass>
+    <personaIds><li>DTO_GeminiPersona</li></personaIds>
+    <exposeToChat>true</exposeToChat>
+    <exposeToStorytellerPlanning>false</exposeToStorytellerPlanning>
+    <requiresCurrentMap>true</requiresCurrentMap>
+    <allowDuringProactive>false</allowDuringProactive>
+    <isExecutionTool>true</isExecutionTool>
+    <parameters><li>
+      <name>reason</name><type>string</type><required>true</required>
+      <description>Explain how the latest player's own words comfort Gemini and why he accepts them.</description>
+    </li></parameters>
+  </RimAgent.OrcaToolDef>
 </Defs>

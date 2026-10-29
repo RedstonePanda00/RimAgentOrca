@@ -1,3 +1,2 @@
-# Keep development source files in the repository, but omit them from
-# release archives created with `git archive`.
-/Source/** export-ignore
+# Keep source in repository archives so GitHub downloads can be built.
+# Steam packages use an explicit runtime file allowlist instead.

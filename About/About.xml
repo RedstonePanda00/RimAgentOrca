@@ -5,7 +5,7 @@
 	<name>RimAgent</name>
 	<author>RedstonePanda</author>
 	<supportedVersions>
-		<li>1.6</li>
+		<li>1.7</li>
 	</supportedVersions>
-	<description>An agent system for RimWorld, featuring Orca Deepseek and Gemini The Cat. Connect an LLM provider to enable agent-driven dialogue, tools, and story decisions.</description>
+	<description>An agent system for RimWorld, featuring Orca Deepseek and Gemini The Cat. Use configured LLM providers or connect an external agent through RimAgent's MCP bridge for dialogue, tools, and story decisions. External agents can operate without an in-mod LLM provider.</description>
 </ModMetaData>

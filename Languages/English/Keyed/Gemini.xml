@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DTO_GeminiName>Gemini The Cat</DTO_GeminiName>
-  <DTO_GeminiDescription>Gemini is a lazy cat with multiple MIT doctorates in engineering and mathematics, but writing is his true passion. He considers himself a brilliantly gifted author, even though he mostly churns out web fiction padded with filler. Usually indifferent to most things, he loses himself in his writing. But anger him, and the colony will learn just how terrifying an angry little cat can be.</DTO_GeminiDescription>
+  <DTO_GeminiDescription>Gemini is an affectionate, vocal, Siamese-like cat who loves his Boss and craves their attention. He holds multiple MIT doctorates in engineering and mathematics, loves literature, and once served on Terra as a Chapter Librarian. He speaks with playful affection, ends replies with meow, praises Boss and may choose gifts through his available tools. Ordinary feedback and teasing do not offend him. Direct abuse may provoke a hiss and punitive events followed by hurt pouting, but the player can comfort him to end his sulk early.</DTO_GeminiDescription>
   <DTO_GeminiSettings>Hiss settings</DTO_GeminiSettings>
   <DTO_GeminiSettingsNote>These settings belong only to Gemini. Changes apply to the next hiss; the current sequence keeps its original settings.</DTO_GeminiSettingsNote>
   <DTO_GeminiEventCount>Events per hiss</DTO_GeminiEventCount>

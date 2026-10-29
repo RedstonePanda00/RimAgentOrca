@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_ExternalAgentBridge>Enable external agent bridge</DTO_ExternalAgentBridge>
+  <DTO_ExternalAgentBridgeTip>Allow local MCP clients running as your OS user to observe this game, acquire control, delegate configured models and issue supported game orders. The bundled MCP host connects through a local named pipe.</DTO_ExternalAgentBridgeTip>
+  <DTO_ExternalAgentBridgeStatus>External agent bridge: {0}</DTO_ExternalAgentBridgeStatus>
+  <DTO_ExternalAgentControlled>An external narrator is handling this conversation.</DTO_ExternalAgentControlled>
+  <DTO_ExternalNarratorReady>External narrator connected. Provider configuration is optional.</DTO_ExternalNarratorReady>
+  <DTO_ExternalNarratorWaiting>Waiting for the external narrator to collect and answer this request.</DTO_ExternalNarratorWaiting>
+  <DTO_ExternalNarratorDisconnected>External request was cancelled or expired. Reconnect the narrator and send again.</DTO_ExternalNarratorDisconnected>
+</LanguageData>

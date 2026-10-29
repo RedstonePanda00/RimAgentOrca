@@ -1,6 +1,29 @@
 .agents/
+/.codex/
+
+# Local documentation, publishing copy, and generated development output
+/Docs/
 /output/
-/1.6/Assemblies/*.pdb
+# Ship only the MCP runtime payload; keep symbols and other output local.
+/MCP/*
+!/MCP/RimAgent.Core.dll
+!/MCP/RimAgent.McpHost.dll
+!/MCP/RimAgent.McpHost.exe
+!/MCP/RimAgent.McpHost.deps.json
+!/MCP/RimAgent.McpHost.runtimeconfig.json
+!/MCP/CONNECT.md
+/TestResults/
+/coverage/
+
+# Local build helpers and regression suites (retained locally)
+/scripts/
+/Tests/
+/Source/RimAgent.Tests/
+/Source/RimAgent.MigrationTests/
+/Source/RimAgent.PerformanceTests/
+
+# Build and editor caches
+/1.7/Assemblies/*.pdb
 **/bin/
 **/obj/
 **/.idea/
@@ -8,3 +31,13 @@
 *.user
 *.suo
 __pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Local credentials and machine-specific environment files
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.key

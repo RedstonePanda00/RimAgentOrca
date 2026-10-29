@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Defs>
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_ColonyState</defName>
     <toolBundleId>colony_state</toolBundleId>
     <label>Colony state</label>
@@ -22,9 +22,9 @@
     <priority>20</priority>
     <includeByDefault>true</includeByDefault>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_PawnCore</defName>
     <toolBundleId>pawn_core</toolBundleId>
     <label>Pawn core</label>
@@ -45,9 +45,9 @@
     <priority>18</priority>
     <includeByDefault>true</includeByDefault>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_PawnHealth</defName>
     <toolBundleId>pawn_health</toolBundleId>
     <label>Pawn health</label>
@@ -73,9 +73,9 @@
     </toolNames>
     <priority>16</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_PawnNeeds</defName>
     <toolBundleId>pawn_needs</toolBundleId>
     <label>Pawn needs and mood</label>
@@ -99,9 +99,9 @@
     </toolNames>
     <priority>15</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_PawnRelations</defName>
     <toolBundleId>pawn_relations</toolBundleId>
     <label>Pawn relationships</label>
@@ -131,9 +131,9 @@
     </toolNames>
     <priority>16</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_PawnSkills</defName>
     <toolBundleId>pawn_skills</toolBundleId>
     <label>Pawn skills</label>
@@ -157,9 +157,9 @@
     </toolNames>
     <priority>12</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_Letters</defName>
     <toolBundleId>letters</toolBundleId>
     <label>Latest letter</label>
@@ -180,9 +180,9 @@
     </toolNames>
     <priority>14</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_RimtalkHistory</defName>
     <toolBundleId>rimtalk_history</toolBundleId>
     <label>RimTalk history</label>
@@ -202,9 +202,9 @@
     </toolNames>
     <priority>10</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_RimtalkKnowledge</defName>
     <toolBundleId>rimtalk_knowledge</toolBundleId>
     <label>RimTalk world knowledge</label>
@@ -223,9 +223,9 @@
     </toolNames>
     <priority>8</priority>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 
-  <DeepseekTheOrca.OrcaToolBundleDef>
+  <RimAgent.OrcaToolBundleDef>
     <defName>DTO_ToolBundle_IncidentPlanning</defName>
     <toolBundleId>incident_planning</toolBundleId>
     <label>Incident planning</label>
@@ -250,5 +250,5 @@
     <allowDuringProactive>false</allowDuringProactive>
     <requiresExplicitIntent>true</requiresExplicitIntent>
     <exposeToRoles><li>tool</li></exposeToRoles>
-  </DeepseekTheOrca.OrcaToolBundleDef>
+  </RimAgent.OrcaToolBundleDef>
 </Defs>

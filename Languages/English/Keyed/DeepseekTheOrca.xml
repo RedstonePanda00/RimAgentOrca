@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-  <DTO_EnableAiPlanning>Enable AI planning</DTO_EnableAiPlanning>
+  <DTO_EnableAiPlanning>Enable agent planning</DTO_EnableAiPlanning>
   <DTO_EnableAiPlanningTooltip>Allow the configured LLM provider to run once a provider is connected. When no provider is connected, the AI comp stays silent.</DTO_EnableAiPlanningTooltip>
   <DTO_DebugLogging>Enable debug logging</DTO_DebugLogging>
   <DTO_DebugLoggingTooltip>Write tool calls, selected incidents, and rejection reasons to the RimWorld log.</DTO_DebugLoggingTooltip>
   <DTO_EnableWebSearch>Enable LLM web search</DTO_EnableWebSearch>
-  <DTO_EnableWebSearchTooltip>Expose a public web search tool to LLM chat. Current local provider is Tavily and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
+  <DTO_EnableWebSearchTooltip>Expose a public web search tool to LLM chat. Providers: Tavily or DeepSeek and search queries are sent outside the game.</DTO_EnableWebSearchTooltip>
   <DTO_WebSearchProvider>Web search provider</DTO_WebSearchProvider>
   <DTO_WebSearchProviderTavily>Tavily local tool</DTO_WebSearchProviderTavily>
-  <DTO_WebSearchProviderTooltip>Use Tavily as the local web search tool.</DTO_WebSearchProviderTooltip>
+  <DTO_WebSearchProviderTooltip>Choose Tavily or DeepSeek independently of the language model.</DTO_WebSearchProviderTooltip>
   <DTO_TavilyApiKey>Tavily API key</DTO_TavilyApiKey>
   <DTO_TavilyApiKeyTooltip>Required only when web search is enabled. Stored in RimWorld mod settings.</DTO_TavilyApiKeyTooltip>
-  <DTO_TavilyMaxResults>Tavily max results</DTO_TavilyMaxResults>
+  <DTO_TavilyMaxResults>Search max results</DTO_TavilyMaxResults>
   <DTO_TavilySearchDepth>Tavily search depth</DTO_TavilySearchDepth>
   <DTO_SettingsPageLlm>Agent models</DTO_SettingsPageLlm>
   <DTO_SettingsPageApiKeys>Providers</DTO_SettingsPageApiKeys>
@@ -27,7 +27,7 @@
   <DTO_SettingsPageMcp>HTTP MCP</DTO_SettingsPageMcp>
   <DTO_SettingsPageDebug>Debug</DTO_SettingsPageDebug>
   <DTO_EnableHttpMcp>Enable external HTTP MCP</DTO_EnableHttpMcp>
-  <DTO_EnableHttpMcpTooltip>Expose tools from one player-configured HTTP MCP server to LLM chat. This mod does not provide MCP tools by itself.</DTO_EnableHttpMcpTooltip>
+  <DTO_EnableHttpMcpTooltip>Let in-mod agents use tools from player-configured external HTTP MCP servers. To let an external agent control RimAgent, enable the external agent bridge.</DTO_EnableHttpMcpTooltip>
   <DTO_HttpMcpUrl>HTTP MCP endpoint URL</DTO_HttpMcpUrl>
   <DTO_HttpMcpUrlTooltip>For example http://127.0.0.1:3333/mcp. Prefer local endpoints you control.</DTO_HttpMcpUrlTooltip>
   <DTO_HttpMcpBearerToken>HTTP MCP bearer token</DTO_HttpMcpBearerToken>
@@ -76,9 +76,9 @@
   <DTO_ModelTool>Tool model</DTO_ModelTool>
   <DTO_ModelToolTooltip>Optional. When set, LLM chat uses this model for the first tool-capable pass, then the dialogue model after tool results.</DTO_ModelToolTooltip>
   <DTO_ModelVision>Vision model</DTO_ModelVision>
-  <DTO_ModelVisionTooltip>Used by vision-capable requests when available. Empty means fall back to the fallback model.</DTO_ModelVisionTooltip>
+  <DTO_ModelVisionTooltip>Captures the rendered game view and sends it to this image-capable model for analysis. Select a Vision model explicitly; screenshots do not fall back to a text-only model.</DTO_ModelVisionTooltip>
   <DTO_ModelWebSearch>Web-search model</DTO_ModelWebSearch>
-  <DTO_ModelWebSearchTooltip>Used by web-search-capable requests when available. Current Tavily search remains a local tool.</DTO_ModelWebSearchTooltip>
+  <DTO_ModelWebSearchTooltip>Model that uses web-search tools. Select the independent Tavily or DeepSeek search service in Tools settings.</DTO_ModelWebSearchTooltip>
   <DTO_ModelEmbedding>Embedding model</DTO_ModelEmbedding>
   <DTO_ModelEmbeddingTooltip>Used for long-term memory vectors. Select an OpenAI-compatible embeddings model when available.</DTO_ModelEmbeddingTooltip>
   <DTO_ModelMemory>Memory model</DTO_ModelMemory>
@@ -243,7 +243,7 @@
   <DTO_OrcaChatOpen>Open chat</DTO_OrcaChatOpen>
   <DTO_OrcaChatClose>Close chat</DTO_OrcaChatClose>
   <DTO_OrcaChatNote>Floating chat; can read tools and trigger incidents on request.</DTO_OrcaChatNote>
-  <DTO_OrcaChatTitle>Orca Deepseek</DTO_OrcaChatTitle>
+  <DTO_OrcaChatTitle>RimAgent</DTO_OrcaChatTitle>
   <DTO_OrcaChatAlpha>Background alpha</DTO_OrcaChatAlpha>
   <DTO_OrcaChatSend>Send</DTO_OrcaChatSend>
   <DTO_OrcaChatWaiting>Waiting...</DTO_OrcaChatWaiting>
@@ -263,4 +263,6 @@
   <DTO_OrcaChatLogReply>3. LLM reply</DTO_OrcaChatLogReply>
   <DTO_OrcaChatLogError>4. Error</DTO_OrcaChatLogError>
   <DTO_OfflineNote>Offline behavior: the AI decision layer returns immediately. Story events are generated only by the XML-defined vanilla storyteller comps until an LLM provider is connected.</DTO_OfflineNote>
+  <DTO_DeepSeekSearchKey>DeepSeek Search API key (optional override)</DTO_DeepSeekSearchKey>
+  <DTO_DeepSeekSearchKeyTooltip>Empty uses an enabled official DeepSeek connection. Search and Fetch use the official DeepSeek API, independently of the chat model.</DTO_DeepSeekSearchKeyTooltip>
 </LanguageData>

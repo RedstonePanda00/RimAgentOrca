@@ -1,122 +1,116 @@
 # RimAgent
 
-RimAgent is a RimWorld 1.6 agent and storyteller mod. Its built-in personas, Orca Deepseek and Gemini The Cat (「Google」哈Gemi), can observe colony state, chat with the player, and plan story incidents using any configured model provider. The historical `DeepseekTheOrca` namespace and package ID remain implementation identifiers.
+[简体中文](#简体中文) · [English](#english)
 
-The mod still includes XML storyteller comps for offline play. Without a configured LLM connection, the AI decision layer stays silent and RimWorld falls back to the XML-defined storyteller behavior.
+## 简体中文
 
-If you like my mod, please make sure to give me a Star!
+### 什么是 RimAgent？
 
-## Features
+RimAgent 是一款基于 .NET 10 核心打造的 RimWorld 模组，为边缘世界带来了真正意义上的 AI 叙事者。
 
-- Adds the `Orca Deepseek` storyteller for RimWorld 1.6.
-- Supports default connections for DeepSeek, OpenAI and Google Gemini, plus custom OpenAI-compatible `/chat/completions` APIs (including OpenRouter).
-- Gemini is normally a lazy, gentle storyteller. His exclusive `gemini_hiss` tool replaces the current plan with a short punitive sequence when the model judges the player's chat offensive. Defaults: 15 budget, 5 events, an immediate first event, then 1–2 game hours between events. After the sequence he sulks for 48 game hours; the model still replies, but in character refuses meaningful conversation. Parameters are available only through Gemini's entry in the persona manager. Switching persona resets his mood but leaves an already scheduled plan in place. Hiss requires AI planning, a decision model and the RimAgent storyteller; all personas share the same offline fallback.
-- Lets different model roles use different configured models: fallback, controller, decision, dialogue, tool, vision, and web search.
-- Provides an in-game Orca chat window with optional tool calls.
-- Can expose colony summary, recent letters, pawns, pawn details, available incidents, and incident execution tools to Orca.
-- Optional Tavily web search tool for current external information.
-- Optional HTTP MCP tool discovery for player-configured external tool servers.
-- Optional RimTalk integration for recent chat history and proactive dialogue hooks when RimTalk is active.
-- Includes English and Simplified Chinese localization.
-- Optional built-in Colony novel plugin: the current narrator writes a preface and continuing chapters from locally collected game records. Defaults to one approximately 2,000-character/word chapter per three game days, using the dialogue model in two steps. Includes save-bound progress, a reader, TXT/Markdown export and extensible material sources without Harmony.
+通过接入 LLM API 并运行内置的 Agent 工作流，RimAgent 能实时感知你的殖民地局势，为你演化出千人千面的动态体验。
 
-## Requirements
+在这里，你的 Agent 伙伴拥有真实的记忆、鲜明的人格与独特的叙事倾向。除了直接选用内置人格外，你还可以亲手定制专属的 AI 叙事者——用 **.skill** 技能文件教会它如何推动你的故事，或是挂载专属知识库，让它彻底读懂你的世界观。
 
-- RimWorld 1.6.
-- An API key for at least one supported LLM provider if you want AI planning or Orca chat.
-- Optional: Tavily API key for web search.
-- Optional: RimTalk for RimTalk-aware chat history and proactive dialogue.
+### 一切皆插件
 
-## Installation
+RimAgent 采用纯粹的模块化架构，能自动识别并加载所有已声明的插件。每个插件均由独立的 WorkerClass 驱动，并可在设置中随时自由开关。
 
-1. Place this repository folder in your RimWorld `Mods` directory.
-2. Enable `RimAgent`.
-3. Start RimWorld and select `Orca Deepseek` as the storyteller.
+模组目前已内置多款实用插件——比如根据你的游玩进度，将殖民地的兴衰起落自动提炼、续写成专属于你的**殖民地小说**，把这一路的珍贵回忆真正留存下来。
 
-## Configuration
+### 他们会记得
 
-Open RimWorld mod settings for `RimAgent`.
+只要接入 Embedding 模型，即可唤醒 RimAgent 内置的 RAG 记忆系统。配合独特的**“快速眼动期（REM）”记忆整理机制**，你的伙伴会在后台沉淀过往点滴，记住你的每一次凯旋与挫败——让那些惊心动魄的游戏瞬间，从此不再只有你一个人记得。
 
-1. Add an LLM connection.
-2. Select a provider: DeepSeek, OpenAI, Google Gemini, or Custom OpenAI-compatible.
-3. Enter the provider API key.
-4. Refresh available models.
-5. Select models for the roles you want to use.
-6. Enable AI planning if you want Orca to choose incidents automatically.
+### 现在，一键搬迁
 
-With AI planning enabled and a decision model configured, planning starts automatically. A successful connection test is not required. Connection status reports do not replace or cancel a running planner; each workflow handles its own request failures.
+RimAgent 支持作为 Runtime MCP 直接运行。无论是 Codex、Antigravity、Claude Code 还是 DeepSeek Harness，你都可以用日常顺手的 Agent 客户端直接连入正在运行的 RimWorld，把你最熟悉的 AI 伙伴无缝“搬”进边缘世界。
 
-Web search, HTTP MCP, proactive dialogue, persona, skill, plugin, and debug settings are also configured from the mod settings window. Optional sub-mods can add more plugins to the same plugin settings page.
+### 不只是你自己
 
-## Mod Integration
+RimAgent 配备了完备的 Agent 自主游玩工具链。只要你需要，你的伙伴随时能接手打理殖民地日常，或是结合当下战局，给出充满个人色彩（Agent Flavor）的实时战术建议。
 
-External mods can ship Orca knowledge base entries with XML Defs and register behavior through `OrcaExtensionWorker.Register`.
+*注：部分界面交互功能需要 Agent 具备视觉理解能力。*
 
-See [the persona and plugin API guide](Docs/Extensions.md) for XML personas with optional DLL behaviors, persona-exclusive tools, per-game state, custom configuration and lifecycle hooks. Built-in Gemini uses the same public behavior and module-data interfaces.
+### 快速开始
 
-Novel sources register with `registry.AddNovelSource(() => new YourSource())`. Implement `INovelSource.Scan`, yielding records or null checkpoints on the main thread. `NovelCaptureContext` provides source-scoped `Seen`, `State`, `Baseline`, `BaselineKeys`, `RemoveBaseline`, `HasRecord`, `Diagnostic` and `ClearDiagnostic`; it does not expose the book or chapters. Keys passed to these methods are local to the source. Optional `INovelSourceReadiness.PrepareForWriting` supplies incremental cache repair before requests; failure pauses writing until manual recovery.
+1. 安装并启用 RimAgent。本版本仅支持 RimWorld 1.7。
+2. 使用内置工作流：在模组设置中添加模型连接、填写连接信息和 API 密钥，并为需要的职责分配模型。选择模组叙事者并启用 Agent 规划，即可使用 AI 叙事。
+3. 使用外部 Agent：启用“外部 Agent 桥接”，按[接入文档](MCP/CONNECT.md)配置本地 MCP 客户端。它与让模组调用其他服务器的“外部 HTTP MCP”是两个不同功能。
+4. 按需启用人格、技能、知识库、记忆与殖民地小说等功能。模型连接和密钥由玩家填写；外部 Agent 可协助调整获准的非密钥配置。
 
-Skills can declare `taskScopes` in their metadata: `chat`, `novel_organize`, `novel_write`, or extension-defined task names. Missing/empty scopes preserve legacy chat behavior. Scopes restrict which task may load the skill; `contexts` remain relevance hints within a task. The skill editor exposes this field. Novel generation captures all enabled matching skills once per chapter, separately for each stage, independent of skill name or source mod. Disabled skills contribute no instructions; missing scopes or empty enabled instructions report a configuration error. Existing chapters retain their saved instruction snapshots.
+希望 Agent 自行完成接入时，可将[英文连接教程](Source/RimAgent.McpHost/CONNECT.md)交给它。发布包中同一份教程位于 `MCP/CONNECT.md`，末尾附有可直接复制给 Agent 的提示词。
 
-## Privacy And Network Use
+### 补充说明
 
-This mod can send data outside the game when you enable external providers or tools.
+- RAG 语义记忆需要 embedding 模型和对应选项。未配置 embedding 时，基础记忆仍可使用关键词回退，但不提供相同的语义检索体验。
+- 技能使用 `SKILL.md` 文件提供任务指令，并非微调或训练模型。技能可区分聊天、小说整理和小说正文等用途。
+- 外部 Agent 必须持续运行并处理请求，模组不会自动唤醒一个已停止的对话。模组内小说生成、委派给已配置模型的分析、内置视觉和搜索等工作流仍需各自的模型或服务配置。
+- 无可用 AI 规划连接且未由外部 Agent 接管时，模组仍保留 XML 定义的叙事者后备行为。
+- API 密钥和令牌保存在 RimWorld 模组设置中。联网服务按所启用的功能接收数据，请自行选择服务与预算。
 
-- LLM requests are sent to the configured provider.
-- Tavily search queries are sent to Tavily when web search is enabled.
-- HTTP MCP requests are sent to the MCP endpoint URLs you configure.
-- API keys and tokens are stored in RimWorld mod settings.
-- RimWorld, Unity, Ludeon, DeepSeek, OpenAI, OpenRouter, Tavily, and RimTalk are separate third-party projects or services.
+## English
 
-Only configure providers, proxies, and MCP servers you trust.
+### What Is RimAgent?
 
-## Development
+RimAgent is a RimWorld mod powered by .NET 10 that brings a true AI storyteller to life on the Rim.
 
-The C# project targets .NET Framework 4.8 and outputs the compiled assembly to `1.6/Assemblies`.
+By connecting to an LLM API and running its built-in agent workflow, RimAgent reads the pulse of your colony in real time—crafting a dynamically evolving experience tailored to every run.
+
+Your agent companion comes with persistent memories, a distinct personality, and a storytelling style of their own. Roll with one of the built-in personas or design your own AI storyteller from scratch: use **.skill** files to teach them how to drive your narrative, or attach a custom knowledge base so they truly understand your world's lore.
+
+### Everything Is a Plugin
+
+Built on a purely modular architecture, RimAgent automatically discovers and loads any declared plugin. Each plugin is powered by its own independent WorkerClass and can be toggled on or off anytime in the settings.
+
+Several built-in plugins are ready out of the box—including a **Colony Novel** generator that chronicles the rise and fall of your settlement as you play, turning your favorite memories into a story worth keeping.
+
+### They Will Remember
+
+Hook up an embedding model to awaken RimAgent's built-in RAG memory system. Through its signature **REM (Rapid Eye Movement) memory consolidation**, your companion processes and distills past events in the background, remembering every triumph and disaster—so those unforgettable moments on the Rim are never yours to carry alone.
+
+### One-Click Move-In
+
+RimAgent can run directly as a Runtime MCP. Whether your daily driver is Codex, Antigravity, Claude Code, or DeepSeek Harness, you can link your favorite agent client straight into a running RimWorld session and seamlessly bring your go-to AI companion onto the Rim.
+
+### You're Not in This Alone
+
+Equipped with a full toolkit for autonomous play, your companion can step in whenever you need a hand—helping manage day-to-day colony operations or reading the battlefield to offer real-time tactical advice with their own unmistakable **Agent Flavor**.
+
+*\* Note: Certain UI interactions require an agent with vision capabilities.*
+
+### Quick start
+
+1. Install and enable RimAgent. This release supports RimWorld 1.7 only.
+2. For built-in workflows, add model connections in mod settings, enter connection details and API keys, and assign models to the roles you need. Select the mod's storyteller and enable agent planning for AI storytelling.
+3. For an external agent, enable **External agent bridge** and configure your local MCP client using the [connection guide](MCP/CONNECT.md). This is separate from **External HTTP MCP**, which lets the mod call other tool servers.
+4. Enable personas, skills, knowledge, memory, and Colony Novel as needed. Connections and credentials remain player-managed; external agents can help adjust permitted non-secret settings.
+
+To let your agent set up the connection, give it the [connection walkthrough](Source/RimAgent.McpHost/CONNECT.md). The same guide ships as `MCP/CONNECT.md` and includes a ready-to-copy player prompt.
+
+### Additional details
+
+- RAG semantic memory requires an embedding model and the corresponding options. Without embeddings, basic memory can fall back to keywords, which does not provide the same semantic retrieval experience.
+- `SKILL.md` files supply task instructions; they do not fine-tune or train a model. Skills can target chat, novel preparation, novel prose, or extension-defined tasks.
+- An external agent must remain running and serve requests. The mod does not wake a stopped conversation. In-mod novel generation, analysis delegated to configured models, built-in vision, and search still require their respective model or service configurations.
+- Without a usable AI planning connection or external narrative takeover, the mod retains XML-defined fallback storyteller behavior.
+- API keys and tokens are stored in RimWorld mod settings. Enabled network services receive the data needed for those features; choose your services and budgets accordingly.
+
+## Documentation / 文档
+
+- [外部 Agent 连接教程 / External agent connection walkthrough](MCP/CONNECT.md)
+
+## Development / 开发
+
+Build the mod and publish the bundled MCP host with the .NET 10 SDK:
 
 ```powershell
-dotnet build .\Source\DeepseekTheOrca\DeepseekTheOrca.sln -c Release
+dotnet build Source/RimAgent/RimAgent.sln -c Release
+dotnet publish Source/RimAgent.McpHost/RimAgent.McpHost.csproj -c Release --no-self-contained -o MCP
 ```
 
-The project file currently references RimWorld assemblies under the default Steam install path:
+Build against an installed RimWorld 1.7. The default game path is `C:\Program Files (x86)\Steam\steamapps\common\RimWorld`; for another installation, append `-p:RimWorldDir="D:\Games\RimWorld"` to the build command. Game assemblies are referenced from that installation and are not redistributed here. Local regression suites and helper scripts are not included in this repository.
 
-```text
-C:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed
-```
+## License / 许可
 
-If your RimWorld installation is elsewhere, update the reference hint paths in `Source/DeepseekTheOrca/DeepseekTheOrca/DeepseekTheOrca.csproj`.
-
-### Behavior Changes In The Structure Refactor
-
-- Scheduled storyteller incidents now notify the narrative system through `OrcaProactiveConversationManager.NotifyStorytellerIncidentScheduled`, so narrative history and proactive dialogue share one path.
-- Switching the active persona and toggling external skills now persist immediately via `WriteSettings`.
-- The storyteller planning tool whitelist is now driven solely by the `exposeToStorytellerPlanning` flag in `OrcaToolDef` XML; tools marked in XML are actually exposed to the planning stage.
-
-### Runtime Boundaries
-
-- Ordinary chat retains controller-led routing when a controller model is configured. Persona constraints may require dialogue only (for example Gemini's cooldown). Without a controller, local routing remains available. Incident planning and novel writing are independent background workflows.
-- `OrcaPersonaBehavior` supplies runtime prompts, routing constraints, execution restrictions, selection lifecycle and settings entry points. Additional personas register policies through `OrcaPersonaBehaviors.Register`. Gemini's implementation owns its special decisions; shared chat code consumes the behavior interface.
-- The incident planner accepts `IncidentPlanningPolicy` rather than concrete persona settings. The schedule uses the generic `finishWhenEventsComplete` field and save key. This release intentionally does not migrate old persona/plugin state or preserve replaced extension APIs.
-- `NovelGameComponent` owns game lifetime, persistence and coordination. `NovelCollectionScheduler` handles scanning and readiness; `NovelGenerationRunner` handles requests, configuration snapshots and failure recovery; `NovelWriting` handles indexes and response protocols. Sources cannot directly mutate chapter state.
-- Background generation uses the shared request scheduler and yields admission to waiting foreground requests. Active requests complete normally. Game-instance checks prevent stale completions from entering another save.
-- Chat workflows advance through game updates even with all chat windows closed. Remote tools and semantic query preparation yield while waiting; their results are consumed on the main thread.
-- Memory compaction waits 30 seconds and then 120 seconds between failures, with at most three total attempts before manual resume. Retry progress persists per persona. Missing or rebuilding embeddings retain keyword retrieval. Changing the embedding model schedules gradual background vector rebuilding, which uses the newly configured provider and may incur API costs.
-- Memory files use atomic replacement and a replayable journal for compaction. File access errors or corrupt primary records pause memory collection and requests; manual resume retries local persistence before generating again. Pending in-memory changes remain owned by their original persona. Changes that cannot be written do not survive process exit, so resolve the displayed storage error before quitting.
-- Extension callbacks receive copied `OrcaChatSnapshot` values rather than mutable chat sessions. Persona policies, plugin hooks, and proactive/narrative sources isolate failing callbacks. Submods can unregister their sources when disabled.
-- RimTalk proactive scans select the newest records before expanding their text, using O(N log K) selection and O(K) retained references (K = 30). Disabled ambient dialogue does not scan this history. Novel collection still retains all captured evidence.
-- Novel scan budgets are shared across tick/update calls within a frame. Skill catalogs are cached for five seconds; explicit reload invalidates them immediately, and reference text is invalidated when file metadata changes.
-- RimTalk text conversion, pawn checks and building counts yield incrementally. Raw game collections still require reference snapshots, and external API calls cannot be forcibly preempted: the 2 ms scan budget is a cooperative target, not a strict frame-time guarantee.
-
-## Repository Layout
-
-- `About/` - RimWorld mod metadata and preview image.
-- `1.6/` - RimWorld 1.6 defs and compiled assemblies.
-- `Languages/` - English and Simplified Chinese localization.
-- `Textures/` - Orca storyteller portraits.
-- `Source/` - C# solution and mod source code.
-
-## License
-
-This project is licensed under the MIT License. See `LICENSE` for details.
-
-The MIT License applies to this repository's own code, XML, textures, and documentation to the extent they are owned by the project author. It does not grant rights to RimWorld, Unity, or other third-party software and services.
+[MIT License](LICENSE). Applies to project-owned material; it grants no rights to RimWorld or other third-party software and services.

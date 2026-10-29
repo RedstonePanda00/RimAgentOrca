@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <MainButtonDef>
+    <defName>DTO_DeepseekOrcaDebug</defName>
+    <label>RimAgent</label>
+    <description>Open RimAgent chat, settings, and agent diagnostics.</description>
+    <workerClass>RimAgent.MainButtonWorker_OrcaDebug</workerClass>
+    <tabWindowClass>RimAgent.MainTabWindow_DeepseekOrcaDebug</tabWindowClass>
+    <order>95</order>
+    <validWithoutMap>false</validWithoutMap>
+    <closesWorldView>true</closesWorldView>
+  </MainButtonDef>
+</Defs>

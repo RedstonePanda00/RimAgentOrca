@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>RimAgent</RootNamespace>
+    <AssemblyName>RimAgent</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>..\..\..\1.7\Assemblies\</OutputPath>
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\RimAgent.Core\RimAgent.Core.csproj" />
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <HintPath>$(RimWorldDir)\UnityStubs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Waylith.UnityCompat">
+      <HintPath>$(RimWorldDir)\Waylith.UnityCompat.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="RemoveLegacyAssembly" AfterTargets="Build">
+    <Delete Files="$(TargetDir)DeepseekTheOrca.dll;$(TargetDir)DeepseekTheOrca.pdb;$(TargetDir)DeepseekTheOrca.deps.json" />
+  </Target>
+</Project>

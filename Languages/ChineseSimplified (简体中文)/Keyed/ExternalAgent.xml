@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DTO_ExternalAgentBridge>启用外部 Agent 桥接</DTO_ExternalAgentBridge>
+  <DTO_ExternalAgentBridgeTip>允许以当前系统用户运行的本地 MCP 客户端观察游戏、接管主控、委派已配置的模型，并执行受支持的游戏指令。附带的 MCP 程序通过本地命名管道连接。</DTO_ExternalAgentBridgeTip>
+  <DTO_ExternalAgentBridgeStatus>外部 Agent 桥接：{0}</DTO_ExternalAgentBridgeStatus>
+  <DTO_ExternalAgentControlled>外部叙事 Agent 正在处理当前对话。</DTO_ExternalAgentControlled>
+  <DTO_ExternalNarratorReady>外部叙事 Agent 已连接，无需配置模组内 provider。</DTO_ExternalNarratorReady>
+  <DTO_ExternalNarratorWaiting>等待外部叙事 Agent 领取并回复此请求。</DTO_ExternalNarratorWaiting>
+  <DTO_ExternalNarratorDisconnected>外部请求已取消或超时，请重新连接叙事 Agent 后再次发送。</DTO_ExternalNarratorDisconnected>
+</LanguageData>

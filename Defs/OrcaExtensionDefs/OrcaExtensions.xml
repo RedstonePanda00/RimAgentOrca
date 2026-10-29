@@ -1,6 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
-  <DeepseekTheOrca.OrcaExtensionDef>
+  <RimAgent.OrcaExtensionDef>
     <defName>DTO_Extension_AmbientProactiveDialogue</defName>
     <label>DTO_ProactivePluginName</label>
     <description>DTO_ProactivePluginDescription</description>
@@ -49,9 +49,9 @@
         <max>60000</max>
       </li>
     </settings>
-    <workerClass>DeepseekTheOrca.OrcaProactiveConversationExtensionWorker</workerClass>
+    <workerClass>RimAgent.OrcaProactiveConversationExtensionWorker</workerClass>
     <defaultEnabled>true</defaultEnabled>
     <order>20</order>
-  </DeepseekTheOrca.OrcaExtensionDef>
+  </RimAgent.OrcaExtensionDef>
 </Defs>
 
